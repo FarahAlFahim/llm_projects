@@ -1,7 +1,8 @@
 # prompt templating and chaining
 from langchain import PromptTemplate
-from langchain_community.llms import OpenAI
+from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
+
 
 
 # template
@@ -32,7 +33,7 @@ Please don't truncate the response. Please generate the full bug report in json 
 
 
 prompt = PromptTemplate.from_template(template)
-llm = OpenAI(temperature = 0)
+llm = ChatOpenAI(model='gpt-4o-mini', temperature = 0)
 
 chain = LLMChain(llm=llm, prompt=prompt)
 
@@ -55,4 +56,10 @@ java.lang.NullPointerException
     at org.aspectj.ajde.internal.AspectJBuildManager$CompilerThread.run(AspectJBuildManager.java:191)
 '''
 
+print('--------------- BUG REPORT ---------------')
 print(chain.run(stack_trace))
+print('--------------- END ---------------')
+
+
+# Check the model is being used
+print(f"Model being used: {llm.model_name}")
