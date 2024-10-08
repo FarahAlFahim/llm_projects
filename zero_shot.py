@@ -5,8 +5,11 @@ from langchain.chains import LLMChain
 
 
 # template
-template = '''You are a bug report generator. You will be given a {stack_trace}.
-Based on the given {stack_trace}, generated a bug report in json format having title, description, steps to reproduce, expected behaviour, actual behaviour, possible cause and the stack trace. 
+template = '''You are a bug report generator. You are given a stack trace below:
+
+{stack_trace}
+
+Based on the given stack trace info, generate a bug report in json format having title, description, steps to reproduce, expected behaviour, actual behaviour, possible cause and the stack trace. 
 Please don't truncate the response. Please generate the full bug report in json format using the following template:
 
 {{
