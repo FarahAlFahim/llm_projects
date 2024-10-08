@@ -5,9 +5,9 @@ from langchain.chains import LLMChain
 
 
 # template
-template = '''You are a bug report generator. 
-Based on the given {stack_trace}, generated a bug report in json format having title, description, steps to reproduce, expected behaviour, actual behaviour, possible cause. 
-please generate the bug report in json format using the following template:
+template = '''You are a bug report generator. You will be given a {stack_trace}.
+Based on the given {stack_trace}, generated a bug report in json format having title, description, steps to reproduce, expected behaviour, actual behaviour, possible cause and the stack trace. 
+Please don't truncate the response. Please generate the full bug report in json format using the following template:
 
 {{
   "title": "<title>",
@@ -21,7 +21,7 @@ please generate the bug report in json format using the following template:
     "actualBehavior": "<What happens instead>",
     "possibleCause": "<Insights or hypotheses about the issue>"
   }},
-  "stackTrace": "<Stack trace>"
+  "stackTrace": "{stack_trace}"
 }}
 '''
 
@@ -29,7 +29,7 @@ please generate the bug report in json format using the following template:
 
 
 prompt = PromptTemplate.from_template(template)
-llm = OpenAI(temperature = 0.9)
+llm = OpenAI(temperature = 0)
 
 chain = LLMChain(llm=llm, prompt=prompt)
 
