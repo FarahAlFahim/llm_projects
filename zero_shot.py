@@ -1,5 +1,6 @@
 # prompt templating and chaining
 from langchain import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
 
@@ -11,7 +12,7 @@ template = '''You are a bug report generator. You are given a stack trace below:
 {stack_trace}
 
 Based on the given stack trace info, generate a bug report in json format having title, description, steps to reproduce, expected behaviour, actual behaviour, possible cause and the stack trace. 
-Please don't truncate the response. Please generate the full bug report in json format using the following template:
+Generate the full bug report in json format using the following template:
 
 {{
   "title": "<title>",
@@ -25,7 +26,7 @@ Please don't truncate the response. Please generate the full bug report in json 
     "actualBehavior": "<What happens instead>",
     "possibleCause": "<Insights or hypotheses about the issue>"
   }},
-  "stackTrace": "{stack_trace}"
+  "stackTrace": "<stack trace>"
 }}
 '''
 
@@ -63,3 +64,6 @@ print('--------------- END ---------------')
 
 # Check the model is being used
 print(f"Model being used: {llm.model_name}")
+
+# Check prompt template
+print(prompt.format(stack_trace={stack_trace}))
