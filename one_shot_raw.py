@@ -15,18 +15,7 @@ template = '''You are a bug report generator. Below is an example of a stack tra
 
 ### Example Bug Report:
 {{
-  "title": "NullPointerException during project compilation with pointcuts",
-  "description": {{
-    "stepsToReproduce": [
-      "Use pointcuts with before and after advice",
-      "Include a pointcut that matches 6 methods in a class",
-      "Compile the project"
-    ],
-    "expectedBehavior": "The project should compile successfully without errors",
-    "actualBehavior": "A NullPointerException occurs during compilation when the pointcut is included",
-    "possibleCause": "The pointcut is causing an issue in the aspect after restarting Eclipse"
-  }},
-  "stackTrace": "java.lang.NullPointerException\n\tat org.aspectj.weaver.bcel.BcelWeaver.validateOrBranch(BcelWeaver.java:584)\n\tat org.aspectj.weaver.bcel.BcelWeaver.validateBindings(BcelWeaver.java:552)\n\tat org.aspectj.weaver.bcel.BcelWeaver.rewritePointcuts(BcelWeaver.java:490)\n\tat org.aspectj.weaver.bcel.BcelWeaver.prepareForWeave(BcelWeaver.java:426)\n\tat org.aspectj.ajdt.internal.compiler.AjCompilerAdapter.weave(AjCompilerAdapter.java:248)\n\tat org.aspectj.ajdt.internal.compiler.AjCompilerAdapter.afterCompiling(AjCompilerAdapter.java:129)\n\tat org.aspectj.org.eclipse.jdt.internal.compiler.Compiler.compile(Compiler.java:385)\n\tat org.aspectj.ajdt.internal.core.builder.AjBuildManager.performCompilation(AjBuildManager.java:727)\n\tat org.aspectj.ajdt.internal.core.builder.AjBuildManager.doBuild(AjBuildManager.java:206)\n\tat org.aspectj.ajdt.internal.core.builder.AjBuildManager.batchBuild(AjBuildManager.java:140)\n\tat org.aspectj.ajde.internal.CompilerAdapter.compile(CompilerAdapter.java:121)\n\tat org.aspectj.ajde.internal.AspectJBuildManager$CompilerThread.run(AspectJBuildManager.java:191)"
+  'raw_text': "Hello,\n\n I am getting a NullPointerException when trying to compile my project. I am \njust using pointcuts with before and after advice. I have a pointcut which \nmatches 6 methods in a class and when it's included in the aspect, I get this \nerror ... and when I comment it out, everything compiles. It was working fine \nand then I restarted Eclipse and now I see this error.\n\nThanks,\nMark\n\n\n!ENTRY org.eclipse.ajdt.ui 4 0 Jun 29, 2005 16:42:43.516\n\n!MESSAGE NullPointerException thrown: null\n\n!STACK 0\n\njava.lang.NullPointerException\n\n\tat org.aspectj.weaver.bcel.BcelWeaver.validateOrBranch\n(BcelWeaver.java:584)\n\n\tat org.aspectj.weaver.bcel.BcelWeaver.validateBindings\n(BcelWeaver.java:552)\n\n\tat org.aspectj.weaver.bcel.BcelWeaver.rewritePointcuts\n(BcelWeaver.java:490)\n\n\tat org.aspectj.weaver.bcel.BcelWeaver.prepareForWeave\n(BcelWeaver.java:426)\n\n\tat org.aspectj.ajdt.internal.compiler.AjCompilerAdapter.weave\n(AjCompilerAdapter.java:248)\n\n\tat org.aspectj.ajdt.internal.compiler.AjCompilerAdapter.afterCompiling\n(AjCompilerAdapter.java:129)\n\n\tat org.aspectj.org.eclipse.jdt.internal.compiler.Compiler.compile\n(Compiler.java:385)\n\n\tat \norg.aspectj.ajdt.internal.core.builder.AjBuildManager.performCompilation\n(AjBuildManager.java:727)\n\n\tat org.aspectj.ajdt.internal.core.builder.AjBuildManager.doBuild\n(AjBuildManager.java:206)\n\n\tat org.aspectj.ajdt.internal.core.builder.AjBuildManager.batchBuild\n(AjBuildManager.java:140)\n\n\tat org.aspectj.ajde.internal.CompilerAdapter.compile\n(CompilerAdapter.java:121)\n\n\tat org.aspectj.ajde.internal.AspectJBuildManager$CompilerThread.run\n(AspectJBuildManager.java:191)"
 }}
 
 Now you are going to be provided with a new stack trace and you will need to generate a bug report. Here's the stack trace:

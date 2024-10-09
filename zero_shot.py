@@ -66,4 +66,4 @@ print('--------------- END ---------------')
 print(f"Model being used: {llm.model_name}")
 
 # Check prompt template
-print(prompt.format(stack_trace={stack_trace}))
+# print(prompt.format(stack_trace={stack_trace}))
