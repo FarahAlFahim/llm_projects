@@ -49,18 +49,21 @@ chain = LLMChain(llm=llm, prompt=prompt)
 # stack trace
 stack_trace = '''
 java.lang.NullPointerException
-    at org.aspectj.weaver.bcel.BcelWeaver.validateOrBranch(BcelWeaver.java:584)
-    at org.aspectj.weaver.bcel.BcelWeaver.validateBindings(BcelWeaver.java:552)
-    at org.aspectj.weaver.bcel.BcelWeaver.rewritePointcuts(BcelWeaver.java:490)
-    at org.aspectj.weaver.bcel.BcelWeaver.prepareForWeave(BcelWeaver.java:426)
-    at org.aspectj.ajdt.internal.compiler.AjCompilerAdapter.weave(AjCompilerAdapter.java:248)
-    at org.aspectj.ajdt.internal.compiler.AjCompilerAdapter.afterCompiling(AjCompilerAdapter.java:129)
-    at org.aspectj.org.eclipse.jdt.internal.compiler.Compiler.compile(Compiler.java:385)
-    at org.aspectj.ajdt.internal.core.builder.AjBuildManager.performCompilation(AjBuildManager.java:727)
+    at org.aspectj.weaver.bcel.BcelWeaver.validateOrBranch(BcelWeaver.java:593)
+    at org.aspectj.weaver.bcel.BcelWeaver.validateBindings(BcelWeaver.java:561)
+    at org.aspectj.weaver.bcel.BcelWeaver.rewritePointcuts(BcelWeaver.java:499)
+    at org.aspectj.weaver.bcel.BcelWeaver.prepareForWeave(BcelWeaver.java:434)
+    at org.aspectj.ajdt.internal.compiler.AjCompilerAdapter.weave(AjCompilerAdapter.java:269)
+    at org.aspectj.ajdt.internal.compiler.AjCompilerAdapter.afterCompiling(AjCompilerAdapter.java:165)
+    at org.aspectj.org.eclipse.jdt.internal.compiler.Compiler.compile(Compiler.java:367)
+    at org.aspectj.ajdt.internal.core.builder.AjBuildManager.performCompilation(AjBuildManager.java:728)
     at org.aspectj.ajdt.internal.core.builder.AjBuildManager.doBuild(AjBuildManager.java:206)
     at org.aspectj.ajdt.internal.core.builder.AjBuildManager.batchBuild(AjBuildManager.java:140)
-    at org.aspectj.ajde.internal.CompilerAdapter.compile(CompilerAdapter.java:121)
-    at org.aspectj.ajde.internal.AspectJBuildManager$CompilerThread.run(AspectJBuildManager.java:191)
+    at org.aspectj.ajdt.ajc.AjdtCommand.doCommand(AjdtCommand.java:114)
+    at org.aspectj.ajdt.ajc.AjdtCommand.runCommand(AjdtCommand.java:60)
+    at org.aspectj.tools.ajc.Main.run(Main.java:324)
+    at org.aspectj.tools.ajc.Main.runMain(Main.java:238)
+    at org.aspectj.tools.ajc.Main.main(Main.java:82)
 '''
 
 
@@ -468,99 +471,225 @@ public boolean batchBuild(
     }
 
 
-// class: CompilerAdapter.java, method: compile()
-public boolean compile(String configFile, BuildProgressMonitor progressMonitor, boolean buildModel) {
-		if (configFile == null) {
-			Ajde.getDefault().getErrorHandler().handleError("Tried to build null config file.");
-		}
-		init();
-		try { 
-			AjBuildConfig buildConfig = genBuildConfig(configFile);
-			if (buildConfig == null) {
+// class: AjdtCommand.java, method: doCommand()
+protected boolean doCommand(IMessageHandler handler, boolean repeat) {
+        try {
+            if (handler instanceof IMessageHolder) {
+                Dump.saveMessageHolder((IMessageHolder) handler);
+            }
+			// buildManager.setMessageHandler(handler);
+            CountingMessageHandler counter = new CountingMessageHandler(handler);
+            if (counter.hasErrors()) {
                 return false;
-			}
-			buildConfig.setGenerateModelMode(buildModel);
-			currNotifier = new BuildNotifierAdapter(progressMonitor, buildManager);		
-			buildManager.setProgressListener(currNotifier);
-			messageHandler.setBuildNotifierAdapter(currNotifier);
-			
-			String rtInfo = buildManager.checkRtJar(buildConfig); // !!! will get called twice
-			if (rtInfo != null) {
-				Ajde.getDefault().getErrorHandler().handleWarning(
-                	  "AspectJ Runtime error: " + rtInfo
-		            + "  Please place a valid aspectjrt.jar on the classpath.");
-	            return false;
-			}
-			boolean incrementalEnabled = 
-                buildConfig.isIncrementalMode()
-                || buildConfig.isIncrementalFileMode();
-			boolean successfulBuild;
-            if (incrementalEnabled && nextBuild) {
-				successfulBuild = buildManager.incrementalBuild(buildConfig, messageHandler);
-            } else {
-                if (incrementalEnabled) {
-                    nextBuild = incrementalEnabled;
-                } 
-				successfulBuild = buildManager.batchBuild(buildConfig, messageHandler); 
             }
-			IncrementalStateManager.recordSuccessfulBuild(configFile,buildManager.getState());
-			return successfulBuild;
-//        } catch (OperationCanceledException ce) {
-//			Ajde.getDefault().getErrorHandler().handleWarning(
-//				"build cancelled by user");
-//            return false;
-		} catch (AbortException e) {
-            final IMessage message = e.getIMessage();
-            if (null == message) {
-                signalThrown(e);
-            } else if (null != message.getMessage()) {
-				Ajde.getDefault().getErrorHandler().handleWarning(message.getMessage());
-            } else if (null != message.getThrown()) {
-                signalThrown(message.getThrown());
-            } else {
-                signalThrown(e);
+            // regenerate configuration b/c world might have changed (?)
+            AjBuildConfig config = genBuildConfig(savedArgs, counter);
+            if (!config.shouldProceed()) {
+            	return true;
             }
-			return false;
-		} catch (Throwable t) {
-            signalThrown(t);
-			return false; 
-		} 
-	}
+            if (!config.hasSources()) {
+                MessageUtil.error(counter, "no sources specified");
+            }
+            if (counter.hasErrors())  { // print usage for config errors
+                String usage = BuildArgParser.getUsage();
+                MessageUtil.abort(handler, usage);
+                return false;
+            }
+            //System.err.println("errs: " + counter.hasErrors());          
+            boolean result = ((repeat 
+                        		? buildManager.incrementalBuild(config, handler)
+                        		: buildManager.batchBuild(config, handler))
+                    		   && !counter.hasErrors());
+			Dump.dumpOnExit();
+			return result;
+        } catch (AbortException ae) {
+            if (ae.isSilent()) {
+                throw ae;
+            } else {
+                MessageUtil.abort(handler, ABORT_MESSAGE, ae);
+            }
+        } catch (MissingSourceFileException t) { 
+            MessageUtil.error(handler, t.getMessage());
+        } catch (Throwable t) {
+            MessageUtil.abort(handler, ABORT_MESSAGE, t);
+			Dump.dumpWithException(t);
+        } 
+        return false;
+    }
 
 
-// class: AspectJBuildManager.java, method: CompilerThread.run()
-public void run() {
-        	boolean succeeded = true;
-        	boolean warnings = false;
-            try {
-            	long timeStart = System.currentTimeMillis();
-            	notifyCompileStarted(configFile);
-                progressMonitor.start(configFile);
-                compilerMessages.clearTasks();
-  
-				if (Ajde.getDefault().isLogging())
-       			  Ajde.getDefault().logEvent("building with options: " 
-       				+ getFormattedOptionsString(buildOptions, Ajde.getDefault().getProjectProperties()));
-                
-                succeeded = compilerAdapter.compile(configFile, progressMonitor, buildModelMode);
-                
-                long timeEnd = System.currentTimeMillis();
-                lastCompileTime = (int)(timeEnd - timeStart);
-            } catch (ConfigParser.ParseException pe) {
-                    Ajde.getDefault().getErrorHandler().handleWarning(
-                    	"Config file entry invalid, file: " 
-                    	+ pe.getFile().getPath() 
-                    	+ ", line number: " 
-                    	+ pe.getLine());
-            } catch (Throwable e) {
-                Ajde.getDefault().getErrorHandler().handleError("Compile error, caught Throwable: " + e.toString(), e);
-            } finally {
-                warnings = compilerMessages.hasWarning();
-				progressMonitor.finish();
+// class: AjdtCommand.java, method: runCommand()
+public boolean runCommand(String[] args, IMessageHandler handler) {
+		buildManager = new AjBuildManager(handler); 
+		savedArgs = new String[args.length];
+        System.arraycopy(args, 0, savedArgs, 0, savedArgs.length);
+        for (int i = 0; i < args.length; i++) {
+// AMC - PR58681. No need to abort on -help as the Eclipse compiler does the right thing.
+//            if ("-help".equals(args[i])) {
+//                // should be info, but handler usually suppresses
+//                MessageUtil.abort(handler, BuildArgParser.getUsage());
+//                return true;
+//            } else 
+        	if ("-X".equals(args[i])) {
+            	 // should be info, but handler usually suppresses
+                MessageUtil.abort(handler, BuildArgParser.getXOptionUsage());
+                return true;
             }
-            notifyCompileFinished(configFile, lastCompileTime, succeeded, warnings);
+        }
+        return doCommand(handler, false);
+    }
+
+
+// class: Main.java, method: run()
+public void run(String[] args, IMessageHolder holder) {
+
+		boolean logMode = (-1 != ("" + LangUtil.arrayAsList(args)).indexOf("-log"));
+		PrintStream logStream = null;
+		FileOutputStream fos = null;
+		if (logMode){
+			int logIndex = LangUtil.arrayAsList(args).indexOf("-log");
+			String logFileName = args[logIndex + 1];
+			File logFile = new File(logFileName);
+			try{
+				logFile.createNewFile();
+				fos = new FileOutputStream(logFileName, true);
+				logStream = new PrintStream(fos,true);
+			} catch(Exception e){			
+				fail(holder, "Couldn't open log file: ", e);				
+			}
+			Date now = new Date();
+			logStream.println(now.toString());
+			boolean verbose = (-1 != ("" + LangUtil.arrayAsList(args)).indexOf("-verbose"));
+			if (verbose) {
+					ourHandler.setInterceptor(new LogModeMessagePrinter(true,logStream));
+		          } else {
+		              ourHandler.ignore(IMessage.INFO);
+					  ourHandler.setInterceptor(new LogModeMessagePrinter(false,logStream));
+		          }
+			holder = ourHandler;
+		}
+		
+		if (LangUtil.isEmpty(args)) {
+            args = new String[] { "-?" };
+        }  else if (controller.running()) {
+            fail(holder, "already running with controller: " + controller, null);
+            return;
+        } 
+        args = controller.init(args, holder);
+        if (0 < holder.numMessages(IMessage.ERROR, true)) {
+            return;
+        }      
+        ICommand command = ReflectionFactory.makeCommand(commandName, holder);
+        if (0 < holder.numMessages(IMessage.ERROR, true)) {
+            return;
+        }      
+        try {
+//            boolean verbose = (-1 != ("" + Arrays.asList(args)).indexOf("-verbose"));
+            outer:
+            while (true) {
+                boolean passed = command.runCommand(args, holder);
+                if (report(passed, holder) && controller.incremental()) {
+//                    final boolean onCommandLine = controller.commandLineIncremental();
+                    while (controller.doRepeatCommand(command)) {
+                        holder.clearMessages();
+                        if (controller.buildFresh()) {
+                            continue outer;
+                        } else {
+                            passed = command.repeatCommand(holder);
+                        }
+                        if (!report(passed, holder)) {
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+        } catch (AbortException ae) {
+        	if (ae.isSilent()) { 
+        		quit();
+        	} else {
+                IMessage message = ae.getIMessage();
+                Throwable thrown = ae.getThrown();
+                if (null == thrown) { // toss AbortException wrapper
+                    if (null != message) {
+                        holder.handleMessage(message);
+                    } else {
+                        fail(holder, "abort without message", ae);
+                    }
+                } else if (null == message) {
+                    fail(holder, "aborted", thrown);
+                } else {
+                    String mssg = MessageUtil.MESSAGE_MOST.renderToString(message);
+                    fail(holder, mssg, thrown);
+                }
+        	}
+    	} catch (Throwable t) {
+            fail(holder, "unexpected exception", t);
+        } finally{
+			if (logStream != null){
+				logStream.close();
+				logStream = null;
+			}
+			if (fos != null){
+				try {
+					fos.close();
+				} catch (IOException e){
+					fail(holder, "unexpected exception", e);
+				}
+				fos = null;
+			}
+        }
+    }
+
+
+// class: Main.java, method: runMain()
+public void runMain(String[] args, boolean useSystemExit) {
+        boolean verbose = (-1 != ("" + LangUtil.arrayAsList(args)).indexOf("-verbose"));
+        IMessageHolder holder = clientHolder;
+        if (null == holder) {
+            holder = ourHandler;
+            if (verbose) {
+                ourHandler.setInterceptor(MessagePrinter.VERBOSE);
+            } else {
+                ourHandler.ignore(IMessage.INFO);
+                ourHandler.setInterceptor(MessagePrinter.TERSE);
+            }
+        }
+        
+        // make sure we handle out of memory gracefully...
+        try {
+        	// byte[] b = new byte[100000000]; for testing OoME only!
+        	run(args, holder);
+        } catch (OutOfMemoryError outOfMemory) {
+        	IMessage outOfMemoryMessage = new Message(OUT_OF_MEMORY_MSG,null,true);
+        	holder.handleMessage(outOfMemoryMessage);
+        	systemExit(holder);  // we can't reasonably continue from this point.
         }
 
+        boolean skipExit = false;
+        if (useSystemExit && !LangUtil.isEmpty(args)) {  // sigh - pluck -noExit
+            for (int i = 0; i < args.length; i++) {
+				if ("-noExit".equals(args[i])) {
+                    skipExit = true;
+                    break;
+                }
+			}
+        }
+        if (useSystemExit && !skipExit) {
+            systemExit(holder);
+        }
+    }
+
+
+// class: Main.java, method: main()
+public static void main(String[] args) throws IOException {
+        new Main().runMain(args, true);
+    }
+public Main() {
+        controller = new CommandController();
+        commandName = ReflectionFactory.ECLIPSE;
+        ourHandler = new MessageHandler(true);
+    } 
 '''
 
 
