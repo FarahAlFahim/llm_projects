@@ -1,2 +1,3 @@
 .venv/
 .DS_Store
+bug_reports_with_stack_traces.json
