@@ -13,7 +13,7 @@ STACK_TRACE_PATTERN = r'(?i)(\b(?:Exception|Error|Caused by):?.*|\bat\s+\S+\.\S+
 
 
 # Path to the main bug reports folder of Pathidea_Data
-REPO_PATH = '/Users/fahim/Desktop/PhD/Projects/Pathidea_Data/bug_reports/Hive'
+REPO_PATH = '/Users/fahim/Desktop/PhD/Projects/Pathidea_Data/bug_reports/MAPREDUCE'
 
 # Function to recursively scan JSON files for stack traces
 def get_bug_reports_with_stack_traces(path, excluded_folders):
@@ -36,7 +36,7 @@ def get_bug_reports_with_stack_traces(path, excluded_folders):
                         if re.search(STACK_TRACE_PATTERN, content):
                             bug_reports.append({
                                 'filename': filename,
-                                'path': file_path,
+                                # 'path': file_path,
                                 'content': data 
                             })
 
@@ -57,12 +57,12 @@ def main():
         print(f"Found {len(bug_reports)} JSON files with stack traces.")
 
         # Save the results to a text file
-        with open("bug_reports/bug_reports_Hive.json", "w", encoding='utf-8') as f:
+        with open("bug_reports/bug_reports_MAPREDUCE.json", "w", encoding='utf-8') as f:
             json.dump(bug_reports, f, indent=4)
             # for report in bug_reports:
             #     f.write(f"{report['filename']} - {report['path']}\n")
         
-        print("Bug reports with stack traces saved to 'bug_reports_Hive.json'.")
+        print("Bug reports with stack traces saved to 'bug_reports_MAPREDUCE.json'.")
     else:
         print('No JSON files with stack traces found.')
 
