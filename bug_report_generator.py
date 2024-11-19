@@ -49,10 +49,14 @@ output_data = []
 
 for entry in stack_trace_data:
     filename = entry['filename']
+    creation_time = entry['created']
     stack_trace = entry['stack_trace']
     
     # Generate bug report
     bug_report_str = chain.run(stack_trace)
+    # print("--------------------------------------------------------------------")
+    # print(bug_report_str)
+    # print("--------------------------------------------------------------------")
 
 
     # Parse the bug report JSON from the generated string
@@ -67,6 +71,7 @@ for entry in stack_trace_data:
     # Add to output data
     output_data.append({
         'filename': filename,
+        'creation_time': creation_time,
         'bug_report': bug_report
     })
 

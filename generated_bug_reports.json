@@ -1,13 +1,14 @@
 [
     {
         "filename": "ZOOKEEPER-1864.json",
+        "creation_time": "2014-01-20T06:09:53.000+0000",
         "bug_report": {
-            "title": "NullPointerException in QuorumPeer.setQuorumVerifier",
+            "title": "NullPointerException in QuorumPeer when setting QuorumVerifier",
             "description": {
                 "stepsToReproduce": [
-                    "1. Start the ZooKeeper server with a quorum configuration.",
-                    "2. Attempt to set a quorum verifier using the QuorumPeer instance.",
-                    "3. Observe the server logs for any exceptions."
+                    "1. Start the ZooKeeper server with a configuration that includes a quorum verifier.",
+                    "2. Attempt to set the quorum verifier using the QuorumPeer.setQuorumVerifier method.",
+                    "3. Observe the server logs for any exceptions thrown."
                 ],
                 "actualBehavior": "The server throws a NullPointerException when trying to set the quorum verifier.",
                 "possibleCause": "It is possible that the quorum verifier being passed to the setQuorumVerifier method is null, leading to the NullPointerException."
@@ -17,29 +18,31 @@
     },
     {
         "filename": "ZOOKEEPER-2213.json",
+        "creation_time": "2015-06-10T15:29:23.000+0000",
         "bug_report": {
             "title": "IllegalArgumentException: Invalid path in ZooKeeper Server",
             "description": {
                 "stepsToReproduce": [
-                    "Start the ZooKeeper server with a configuration file that contains invalid paths.",
-                    "Attempt to load the database from the specified file.",
-                    "Observe the server logs for any exceptions thrown during startup."
+                    "Start the ZooKeeper server with a configuration that includes a data directory.",
+                    "Attempt to load a database that contains an invalid path.",
+                    "Observe the server logs for any exceptions thrown during the startup process."
                 ],
                 "actualBehavior": "The ZooKeeper server fails to start and throws an IllegalArgumentException indicating an invalid path.",
-                "possibleCause": "The issue may be caused by incorrect or malformed paths specified in the ZooKeeper configuration or data files."
+                "possibleCause": "The database being loaded may contain corrupted or improperly formatted paths that do not conform to ZooKeeper's expected path structure."
             },
-            "stackTrace": "java.lang.IllegalArgumentException: Invalid path\n        at org.apache.zookeeper.common.PathTrie.findMaxPrefix(PathTrie.java:259)\n        at org.apache.zookeeper.server.DataTree.getMaxPrefixWithQuota(DataTree.java:634)\n        at org.apache.zookeeper.server.DataTree.setData(DataTree.java:616)\n        at org.apache.zookeeper.server.DataTree.processTxn(DataTree.java:807)\n        at org.apache.zookeeper.server.persistence.FileTxnSnapLog.processTransaction(FileTxnSnapLog.java:198)\n        at org.apache.zookeeper.server.persistence.FileTxnSnapLog.restore(FileTxnSnapLog.java:151)\n        at org.apache.zookeeper.server.ZKDatabase.loadDataBase(ZKDatabase.java:223)\n        at org.apache.zookeeper.server.ZooKeeperServer.loadDataBase(ZooKeeperServer.java:250)\n        at org.apache.zookeeper.server.ZooKeeperServer.startdata(ZooKeeperServer.java:377)\n        at org.apache.zookeeper.server.NIOServerCnxnFactory.startup(NIOServerCnxnFactory.java:122)\n        at org.apache.zookeeper.server.ZooKeeperServerMain.runFromConfig(ZooKeeperServerMain.java:112)\n        at org.apache.zookeeper.server.ZooKeeperServerMain.initializeAndRun(ZooKeeperServerMain.java:86)\n        at org.apache.zookeeper.server.ZooKeeperServerMain.main(ZooKeeperServerMain.java:52)\n        at org.apache.zookeeper.server.quorum.QuorumPeerMain.initializeAndRun(QuorumPeerMain.java:116)\n        at org.apache.zookeeper.server.quorum.QuorumPeerMain.main(QuorumPeerMain.java:78)"
+            "stackTrace": "java.lang.IllegalArgumentException: Invalid path\n        at org.apache.zookeeper.common.PathTrie.findMaxPrefix(PathTrie.java:259)\n        at org.apache.zookeeper.server.DataTree.getMaxPrefixWithQuota(DataTree.java:634)\n        at org.apache.zookeeper.server.DataTree.setData(DataTree.java:616)\n        at org.apache.zookeeper.server.DataTree.processTxn(DataTree.java:807)\n        at org.apache.zookeeper.server.persistence.FileTxnSnapLog.processTransaction(FileTxnSnapLog.java:198)\n        at org.apache.zookeeper.server.persistence.FileTxnSnapLog.restore(FileTxnSnapLog.java:151)\n        at org.apache.zookeeper.server.ZKDatabase.loadDataBase(ZKDatabase.java:223)\n        at org.apache.zookeeper.server.ZooKeeperServer.loadData(ZKDatabase.java:250)\n        at org.apache.zookeeper.server.ZooKeeperServer.startdata(ZKDatabase.java:377)\n        at org.apache.zookeeper.server.NIOServerCnxnFactory.startup(NIOServerCnxnFactory.java:122)\n        at org.apache.zookeeper.server.ZooKeeperServerMain.runFromConfig(ZKServerMain.java:112)\n        at org.apache.zookeeper.server.ZooKeeperServerMain.initializeAndRun(ZKServerMain.java:86)\n        at org.apache.zookeeper.server.ZooKeeperServerMain.main(ZKServerMain.java:52)\n        at org.apache.zookeeper.server.quorum.QuorumPeerMain.initializeAndRun(QuorumPeerMain.java:116)\n        at org.apache.zookeeper.server.quorum.QuorumPeerMain.main(QuorumPeerMain.java:78)"
         }
     },
     {
         "filename": "ZOOKEEPER-2297.json",
+        "creation_time": "2015-10-19T11:38:58.000+0000",
         "bug_report": {
             "title": "NullPointerException in X509Util.createKeyManager",
             "description": {
                 "stepsToReproduce": [
                     "1. Start the ZooKeeper server with X509 authentication enabled.",
-                    "2. Attempt to connect a client that requires X509 authentication.",
-                    "3. Observe the server logs for any exceptions."
+                    "2. Attempt to connect a client that requires authentication.",
+                    "3. Observe the server logs for any errors."
                 ],
                 "actualBehavior": "The ZooKeeper server throws a NullPointerException during the initialization of the X509AuthenticationProvider.",
                 "possibleCause": "It is likely that a required configuration or certificate is missing, leading to a null reference in the createKeyManager method."
@@ -49,6 +52,7 @@
     },
     {
         "filename": "ZOOKEEPER-1264.json",
+        "creation_time": "2011-10-28T04:23:28.000+0000",
         "bug_report": {
             "title": "Assertion Failure in FollowerResyncConcurrencyTest",
             "description": {
@@ -57,7 +61,7 @@
                     "Execute the test case testResyncBySnapThenDiffAfterFollowerCrashes.",
                     "Observe the assertion failure related to the number of ephemerals in followers."
                 ],
-                "actualBehavior": "The test fails with an assertion error indicating a mismatch in the expected and actual number of ephemerals in the followers.",
+                "actualBehavior": "The test fails with an assertion error indicating a mismatch in the expected and actual number of ephemerals in followers.",
                 "possibleCause": "There may be an issue with the synchronization or state management of the followers during the resynchronization process after a crash."
             },
             "stackTrace": "junit.framework.AssertionFailedError: Should have same number of ephemerals in both followers expected:<11741> but was:<14001>\n       at org.apache.zookeeper.test.FollowerResyncConcurrencyTest.verifyState(FollowerResyncConcurrencyTest.java:400)\n       at org.apache.zookeeper.test.FollowerResyncConcurrencyTest.testResyncBySnapThenDiffAfterFollowerCrashes(FollowerResyncConcurrencyTest.java:196)\n       at org.apache.zookeeper.JUnit4ZKTestRunner$LoggedInvokeMethod.evaluate(JUnit4ZKTestRunner.java:52)"
@@ -65,6 +69,7 @@
     },
     {
         "filename": "ZOOKEEPER-2808.json",
+        "creation_time": "2017-06-15T17:46:22.000+0000",
         "bug_report": {
             "title": "RuntimeException when fetching ACLs in Zookeeper",
             "description": {
@@ -81,38 +86,41 @@
     },
     {
         "filename": "ZOOKEEPER-2982.json",
+        "creation_time": "2018-02-19T19:28:06.000+0000",
         "bug_report": {
-            "title": "UnknownHostException when connecting to Zookeeper",
+            "title": "UnknownHostException when connecting to Zookeeper quorum",
             "description": {
                 "stepsToReproduce": [
-                    "1. Start the Zookeeper server with the configuration pointing to zk-2.zk.default.svc.cluster.local.",
-                    "2. Attempt to connect a Zookeeper client to the server.",
+                    "1. Start the Zookeeper server with a quorum configuration.",
+                    "2. Attempt to connect to the Zookeeper ensemble using the hostname 'zk-2.zk.default.svc.cluster.local'.",
                     "3. Observe the connection attempt in the logs."
                 ],
-                "actualBehavior": "The connection attempt fails with an UnknownHostException for zk-2.zk.default.svc.cluster.local.",
-                "possibleCause": "The hostname zk-2.zk.default.svc.cluster.local may not be resolvable due to DNS issues or the service may not be running."
+                "actualBehavior": "The application throws a java.net.UnknownHostException indicating that the host 'zk-2.zk.default.svc.cluster.local' cannot be resolved.",
+                "possibleCause": "The hostname 'zk-2.zk.default.svc.cluster.local' may not be correctly configured in the DNS or hosts file, or the Zookeeper service may not be running or accessible."
             },
             "stackTrace": "java.net.UnknownHostException: zk-2.zk.default.svc.cluster.local\n        at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:184)\n        at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)\n        at java.net.Socket.connect(Socket.java:589)\n        at org.apache.zookeeper.server.quorum.Learner.sockConnect(Learner.java:227)\n        at org.apache.zookeeper.server.quorum.Learner.connectToLeader(Learner.java:256)\n        at org.apache.zookeeper.server.quorum.Follower.followLeader(Follower.java:76)\n        at org.apache.zookeeper.server.quorum.QuorumPeer.run(QuorumPeer.java:1133)"
         }
     },
     {
         "filename": "ZOOKEEPER-1179.json",
+        "creation_time": "2011-09-13T16:20:56.000+0000",
         "bug_report": {
             "title": "IOException during socket closure in NettyServerCnxn",
             "description": {
                 "stepsToReproduce": [
-                    "Start the Zookeeper server using Netty transport.",
-                    "Establish a connection to the Zookeeper server.",
-                    "Trigger a socket closure event (e.g., by shutting down the server or disconnecting the client)."
+                    "1. Start the Zookeeper server using Netty transport.",
+                    "2. Establish a connection to the server from a client.",
+                    "3. Attempt to close the connection abruptly while the server is processing requests."
                 ],
-                "actualBehavior": "An IOException is thrown indicating that a non-blocking socket operation could not be completed immediately during the socket closure process.",
-                "possibleCause": "The issue may be related to the handling of non-blocking socket operations in the Netty framework, particularly during the closure of sockets that are still in use or have pending operations."
+                "actualBehavior": "An IOException is thrown indicating that a non-blocking socket operation could not be completed immediately.",
+                "possibleCause": "The issue may be related to the handling of non-blocking socket operations during the closure process, possibly due to race conditions or improper state management."
             },
             "stackTrace": "java.io.IOException: A non-blocking socket operation could not be completed immediately\n\tat sun.nio.ch.SocketDispatcher.close0(Native Method)\n\tat sun.nio.ch.SocketDispatcher.preClose(SocketDispatcher.java:44)\n\tat sun.nio.ch.SocketChannelImpl.implCloseSelectableChannel(SocketChannelImpl.java:684)\n\tat java.nio.channels.spi.AbstractSelectableChannel.implCloseChannel(AbstractSelectableChannel.java:201)\n\tat java.nio.channels.spi.AbstractInterruptibleChannel.close(AbstractInterruptibleChannel.java:97)\n\tat org.jboss.netty.channel.socket.nio.NioWorker.close(NioWorker.java:593)\n\tat org.jboss.netty.channel.socket.nio.NioServerSocketPipelineSink.handleAcceptedSocket(NioServerSocketPipelineSink.java:119)\n\tat org.jboss.netty.channel.socket.nio.NioServerSocketPipelineSink.eventSunk(NioServerSocketPipelineSink.java:76)\n\tat org.jboss.netty.channel.Channels.close(Channels.java:720)\n\tat org.jboss.netty.channel.AbstractChannel.close(AbstractChannel.java:208)\n\tat org.apache.zookeeper.server.NettyServerCnxn.close(NettyServerCnxn.java:116)\n\tat org.apache.zookeeper.server.NettyServerCnxn.cleanupWriterSocket(NettyServerCnxn.java:241)\n\tat org.apache.zookeeper.server.NettyServerCnxn.access$0(NettyServerCnxn.java:231)\n\tat org.apache.zookeeper.server.NettyServerCnxn$CommandThread.run(NettyServerCnxn.java:314)\n\tat org.apache.zookeeper.server.NettyServerCnxn$CommandThread.start(NettyServerCnxn.java:305)\n\tat org.apache.zookeeper.server.NettyServerCnxn.checkFourLetterWord(NettyServerCnxn.java:674)\n\tat org.apache.zookeeper.server.NettyServerCnxn.receiveMessage(NettyServerCnxn.java:791)\n\tat org.apache.zookeeper.server.NettyServerCnxnFactory$CnxnChannelHandler.processMessage(NettyServerCnxnFactory.java:217)\n\tat org.apache.zookeeper.server.NettyServerCnxnFactory$CnxnChannelHandler.messageReceived(NettyServerCnxnFactory.java:141)\n\tat org.jboss.netty.channel.Channels.fireMessageReceived(Channels.java:274)\n\tat org.jboss.netty.channel.Channels.fireMessageReceived(Channels.java:261)\n\tat org.jboss.netty.channel.socket.nio.NioWorker.read(NioWorker.java:350)\n\tat org.jboss.netty.channel.socket.nio.NioWorker.processSelectedKeys(NioWorker.java:281)\n\tat org.jboss.netty.channel.socket.nio.NioWorker.run(NioWorker.java:201)\n\tat org.jboss.netty.util.internal.IoWorkerRunnable.run(IoWorkerRunnable.java:46)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)\n\tat java.lang.Thread.run(Thread.java:619)"
         }
     },
     {
         "filename": "ZOOKEEPER-2581.json",
+        "creation_time": "2016-09-14T07:12:58.000+0000",
         "bug_report": {
             "title": "NullPointerException in X509Util.createKeyManager",
             "description": {
@@ -129,15 +137,16 @@
     },
     {
         "filename": "ZOOKEEPER-1870.json",
+        "creation_time": "2014-01-28T18:45:43.000+0000",
         "bug_report": {
-            "title": "Client Connection Failure to Reestablished Quorum",
+            "title": "AssertionFailedError: Client could not connect to reestablished quorum",
             "description": {
                 "stepsToReproduce": [
                     "Run the ReconfigTest in the Apache ZooKeeper test suite.",
                     "Ensure that the quorum is reestablished during the test.",
                     "Observe the connection attempts made by the client."
                 ],
-                "actualBehavior": "The test fails with an AssertionFailedError indicating that the client could not connect to the reestablished quorum after 30 seconds.",
+                "actualBehavior": "The test fails with an AssertionFailedError after 30 seconds, indicating that the client could not connect to the reestablished quorum.",
                 "possibleCause": "There may be an issue with the quorum reestablishment process or network connectivity that prevents the client from connecting."
             },
             "stackTrace": "junit.framework.AssertionFailedError: client could not connect to reestablished quorum: giving up after 30+ seconds.\n\tat org.apache.zookeeper.test.ReconfigTest.testNormalOperation(ReconfigTest.java:143)\n\tat org.apache.zookeeper.server.quorum.StandaloneDisabledTest.startSingleServerTest(StandaloneDisabledTest.java:75)\n\tat org.apache.zookeeper.JUnit4ZKTestRunner$LoggedInvokeMethod.evaluate(JUnit4ZKTestRunner.java:52)"
@@ -145,15 +154,16 @@
     },
     {
         "filename": "ZOOKEEPER-2247.json",
+        "creation_time": "2015-08-14T13:13:18.000+0000",
         "bug_report": {
             "title": "IOException during Zookeeper commit operation",
             "description": {
                 "stepsToReproduce": [
-                    "1. Start the Zookeeper server with a configured data directory.",
+                    "1. Start the Zookeeper server with a valid configuration.",
                     "2. Perform a series of write operations to the Zookeeper instance.",
-                    "3. Attempt to commit the transactions to the disk."
+                    "3. Trigger a commit operation that requires flushing to disk."
                 ],
-                "actualBehavior": "An IOException is thrown indicating an input/output error during the commit operation.",
+                "actualBehavior": "The Zookeeper server throws an IOException indicating an input/output error during the commit operation.",
                 "possibleCause": "The issue may be related to disk space, file system permissions, or hardware failures affecting the ability to write to the disk."
             },
             "stackTrace": "java.io.IOException: Input/output error\n\tat sun.nio.ch.FileDispatcherImpl.force0(Native Method)\n\tat sun.nio.ch.FileDispatcherImpl.force(FileDispatcherImpl.java:76)\n\tat sun.nio.ch.FileChannelImpl.force(FileChannelImpl.java:376)\n\tat org.apache.zookeeper.server.persistence.FileTxnLog.commit(FileTxnLog.java:331)\n\tat org.apache.zookeeper.server.persistence.FileTxnSnapLog.commit(FileTxnSnapLog.java:380)\n\tat org.apache.zookeeper.server.ZKDatabase.commit(ZKDatabase.java:563)\n\tat org.apache.zookeeper.server.SyncRequestProcessor.flush(SyncRequestProcessor.java:178)\n\tat org.apache.zookeeper.server.SyncRequestProcessor.run(SyncRequestProcessor.java:113)"

@@ -7,7 +7,7 @@ from datetime import datetime
 STACK_TRACE_PATTERN = r'at\s+\S+\.\S+\s*\(.*\.java:\d*\)'
 
 # Path to the main bug reports folder of Pathidea_Data
-REPO_PATH = '/Users/fahim/Desktop/PhD/Projects/Pathidea_Data/bug_reports'
+REPO_PATH = '/Users/fahim/Desktop/PhD/Projects/Pathidea_Data/bug_reports/Zookeeper'
 
 
 
@@ -70,7 +70,9 @@ def get_bug_reports_with_stack_traces(path, excluded_folders, filename_list):
                                 'filename': filename,
                                 # 'path': file_path,
                                 # 'content': data
-                                'description' : data["fields"]["description"]
+                                'creation_time': data["fields"]["created"],
+                                'bug_report': data
+                                # 'description' : data["fields"]["description"]
                             })
 
                 # except Exception as e:
