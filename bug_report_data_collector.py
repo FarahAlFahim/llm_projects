@@ -7,7 +7,7 @@ from datetime import datetime
 STACK_TRACE_PATTERN = r'at\s+\S+\.\S+\s*\(.*\.java:\d*\)'
 
 # Path to the main bug reports folder of Pathidea_Data
-REPO_PATH = '/Users/fahim/Desktop/PhD/Projects/Pathidea_Data/bug_reports/Zookeeper'
+REPO_PATH = '/Users/fahim/Desktop/PhD/Projects/Pathidea_Data/bug_reports/ActiveMQ'
 
 
 
@@ -71,8 +71,8 @@ def get_bug_reports_with_stack_traces(path, excluded_folders, filename_list):
                                 # 'path': file_path,
                                 # 'content': data
                                 'creation_time': data["fields"]["created"],
-                                'bug_report': data
-                                # 'description' : data["fields"]["description"]
+                                # 'bug_report': data
+                                'description' : data["fields"]["description"]
                             })
 
                 # except Exception as e:
@@ -98,12 +98,13 @@ def main():
         print(f"Found {len(bug_reports)} JSON files with stack traces meeting criteria.")
 
         # Save the results to a text file
-        with open("bug_reports_with_stack_traces.json", "w", encoding='utf-8') as f:
+        output_path = "bug_reports_with_stack_traces.json"
+        with open(output_path, "w", encoding='utf-8') as f:
             json.dump(bug_reports, f, indent=4)
             # for report in bug_reports:
             #     f.write(f"{report['filename']} - {report['path']}\n")
         
-        print("Bug reports with stack traces saved to 'bug_reports_with_stack_traces.json'.")
+        print(f"Bug reports with stack traces saved to '{output_path}'.")
     else:
         print('No JSON files with stack traces found.')
 

@@ -41,7 +41,7 @@ chain = LLMChain(llm=llm, prompt=prompt)
 
 
 # Read stack traces from JSON file
-with open("stack_traces.json", "r") as file:
+with open("stack_traces/ActiveMQ.json", "r") as file:
     stack_trace_data = json.load(file)
 
 # Prepare the output format
@@ -49,7 +49,7 @@ output_data = []
 
 for entry in stack_trace_data:
     filename = entry['filename']
-    creation_time = entry['created']
+    creation_time = entry['creation_time']
     stack_trace = entry['stack_trace']
     
     # Generate bug report
@@ -76,7 +76,7 @@ for entry in stack_trace_data:
     })
 
 # Write the generated bug reports to a new JSON file
-with open("generated_bug_reports.json", "w") as outfile:
+with open("llm_generated_bug_reports/ActiveMQ.json", "w") as outfile:
     json.dump(output_data, outfile, indent=4)
 
 print("Bug reports have been generated and saved to 'generated_bug_reports.json'")
