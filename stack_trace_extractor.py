@@ -57,7 +57,7 @@ for entry in stack_trace_data:
     })
 
 # Write the generated bug reports to a new JSON file
-output_file = "stack_traces/Hive.json"
+output_file = "stack_traces/YARN.json"
 with open(f"{output_file}", "w") as outfile:
     json.dump(output_data, outfile, indent=4)
 

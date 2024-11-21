@@ -7,7 +7,7 @@ from datetime import datetime
 STACK_TRACE_PATTERN = r'at\s+\S+\.\S+\s*\(.*\.java:\d*\)'
 
 # Path to the main bug reports folder of Pathidea_Data
-REPO_PATH = '/Users/fahim/Desktop/PhD/Projects/Pathidea_Data/bug_reports/ActiveMQ'
+REPO_PATH = '/Users/fahim/Desktop/PhD/Projects/Pathidea_Data/bug_reports/YARN'
 
 
 
