@@ -1,34 +1,64 @@
+# prompt templating and chaining
+from langchain import PromptTemplate
+from langchain_core.prompts import PromptTemplate
+from langchain.chat_models import ChatOpenAI
+from langchain.chains import LLMChain
 import json
-import re
 
-# Define a regex pattern to capture stack traces (adjust the pattern if needed)
-# stack_trace_pattern = r'(?:\tat\s+[\w\.]+\(.*?\))+'
-stack_trace_pattern = r'at\s+\S+\.\S+\s*\(.*\.java:\d*\)'
 
-# Load the bug reports JSON file
-input_file = "bug_reports_with_stack_traces.json"
-output_file = "output_stack_traces.json"
 
-# Read the input file
-with open(input_file, 'r') as f:
-    bug_reports = json.load(f)
+# template
+template = '''You are a system log analyzer. Your task is to extract all stack traces from the input text provided. 
 
-# Process the bug reports and extract stack traces
+A stack trace typically starts with an exception type (e.g., `Exception`, `Error`, or `Caused by:`) followed by lines starting with `at` that represent method calls and their file/line number information.
+
+Extract stack traces in plain text.
+
+Input text:
+{log_data}
+
+'''
+
+
+
+
+prompt = PromptTemplate.from_template(template)
+llm = ChatOpenAI(model='gpt-4o-mini', temperature = 0)
+
+chain = LLMChain(llm=llm, prompt=prompt)
+
+
+
+# Read stack traces from JSON file
+with open("bug_reports_with_stack_traces.json", "r") as file:
+    stack_trace_data = json.load(file)
+
+# Prepare the output format
 output_data = []
-for report in bug_reports:
-    description = report.get("description", "")
-    stack_traces = re.findall(stack_trace_pattern, description, re.DOTALL)
-    stack_trace = "\n".join(stack_traces) if stack_traces else None
+
+for entry in stack_trace_data:
+    filename = entry['filename']
+    creation_time = entry['creation_time']
+    log_data = entry['description']
     
+    # Generate bug report
+    stack_trace = chain.run(log_data)
+    # print("--------------------------------------------------------------------")
+    # print(stack_trace)
+    # print("--------------------------------------------------------------------")
+
+
+    
+    # Add to output data
     output_data.append({
-        "filename": report["filename"],
-        "creation_time": report["creation_time"],
-        "stack_trace": stack_trace,
-        "description": report['description']
+        'filename': filename,
+        'creation_time': creation_time,
+        'stack_trace': stack_trace
     })
 
-# Save the extracted stack traces to the output file
-with open(output_file, 'w') as f:
-    json.dump(output_data, f, indent=4)
+# Write the generated bug reports to a new JSON file
+output_file = "stack_traces/Hive.json"
+with open(f"{output_file}", "w") as outfile:
+    json.dump(output_data, outfile, indent=4)
 
-print(f"Stack traces extracted and saved to {output_file}")
+print(f"Stack traces have been generated and saved to '{output_file}'")
