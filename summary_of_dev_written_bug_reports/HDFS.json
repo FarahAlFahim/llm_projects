@@ -1,0 +1,2179 @@
+[
+    {
+        "filename": "HDFS-4558.json",
+        "creation_time": "2013-03-06T11:10:08.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-4558",
+            "Title": "start balancer failed with NPE",
+            "Description": "The balancer fails to start due to a NullPointerException.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.namenode.BlockPlacementPolicy.getInstance(BlockPlacementPolicy.java:165)",
+                "at org.apache.hadoop.hdfs.server.balancer.Balancer.checkReplicationPolicyCompatibility(Balancer.java:799)",
+                "at org.apache.hadoop.hdfs.server.balancer.Balancer.<init>(Balancer.java:808)",
+                "at org.apache.hadoop.hdfs.server.balancer.Balancer.main(Balancer.java:831)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The balancer should start without errors.",
+            "ObservedBehavior": "The balancer fails to start and throws a NullPointerException.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-13039.json",
+        "creation_time": "2018-01-19T18:52:12.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-13039",
+            "Title": "StripedBlockReader#createBlockReader leaks socket on IOException",
+            "Description": "When running EC on one cluster, DataNode has millions of CLOSE_WAIT connections, preventing it from opening any file or socket.",
+            "StackTrace": [
+                "java.io.IOException: Too many open files",
+                "at sun.nio.ch.ServerSocketChannelImpl.accept0(Native Method)",
+                "at sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:422)",
+                "at sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:250)",
+                "at io.netty.channel.socket.nio.NioServerSocketChannel.doReadMessages(NioServerSocketChannel.java:135)",
+                "at io.netty.channel.nio.AbstractNioMessageChannel$NioMessageUnsafe.read(AbstractNioMessageChannel.java:75)",
+                "at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:563)",
+                "at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:504)",
+                "at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:418)",
+                "at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:390)",
+                "at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:742)",
+                "at java.lang.Thread.run(Thread.java:748)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "DataNode should be able to open files and sockets without reaching the limit of open files.",
+            "ObservedBehavior": "DataNode cannot open any file or socket due to excessive CLOSE_WAIT connections.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-13023.json",
+        "creation_time": "2018-01-16T20:27:39.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-13023",
+            "Title": "Journal Sync does not work on a secure cluster",
+            "Description": "The journal synchronization fails with an authorization exception when attempting to sync with the journal on a secure cluster.",
+            "StackTrace": [
+                "2018-01-10 01:15:40,583 ERROR server.JournalNodeSyncer (JournalNodeSyncer.java:syncWithJournalAtIndex(259)) - Could not sync with Journal at xxx/xxx:8485",
+                "com.google.protobuf.ServiceException: org.apache.hadoop.ipc.RemoteException(org.apache.hadoop.security.authorize.AuthorizationException): User nn/xxx (auth:PROXY) via jn/xxx (auth:KERBEROS) is not authorized for protocol interface org.apache.hadoop.hdfs.qjournal.protocol.QJournalProtocol: this service is only accessible by nn/xxx@EXAMPLE.COM",
+                "at org.apache.hadoop.ipc.ProtobufRpcEngine$Invoker.invoke(ProtobufRpcEngine.java:242)",
+                "at org.apache.hadoop.ipc.ProtobufRpcEngine$Invoker.invoke(ProtobufRpcEngine.java:116)",
+                "at com.sun.proxy.$Proxy16.getEditLogManifest(Unknown Source)",
+                "at org.apache.hadoop.hdfs.qjournal.server.JournalNodeSyncer.syncWithJournalAtIndex(JournalNodeSyncer.java:254)",
+                "at org.apache.hadoop.hdfs.qjournal.server.JournalNodeSyncer.syncJournals(JournalNodeSyncer.java:230)",
+                "at org.apache.hadoop.hdfs.qjournal.server.JournalNodeSyncer.lambda$startSyncJournalsDaemon$0(JournalNodeSyncer.java:190)",
+                "at java.lang.Thread.run(Thread.java:748)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The journal should sync successfully without authorization errors.",
+            "ObservedBehavior": "The journal synchronization fails with an authorization exception.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-3157.json",
+        "creation_time": "2012-03-28T14:35:53.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-3157",
+            "Title": "Error in deleting block is keep on coming from DN even after the block report and directory scanning has happened",
+            "Description": "An error occurs when trying to delete a block from a DataNode, even after a block report and directory scanning have been performed.",
+            "StackTrace": [
+                "java.io.IOException: Error in deleting blocks.",
+                "at org.apache.hadoop.hdfs.server.datanode.FSDataset.invalidate(FSDataset.java:2061)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPOfferService.processCommandFromActive(BPOfferService.java:581)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPOfferService.processCommandFromActor(BPOfferService.java:545)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPServiceActor.processCommand(BPServiceActor.java:690)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPServiceActor.offerService(BPServiceActor.java:522)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPServiceActor.run(BPServiceActor.java:662)",
+                "at java.lang.Thread.run(Thread.java:619)"
+            ],
+            "StepsToReproduce": [
+                "1. Write one file 'a.txt' with sync (not closed).",
+                "2. Delete the blocks in one of the datanodes (e.g., DN1) from rbw to which replication happened.",
+                "3. Close the file."
+            ],
+            "ExpectedBehavior": "The block should be deleted without errors after the block report and directory scanning.",
+            "ObservedBehavior": "An IOException occurs indicating an error in deleting blocks, with a warning that BlockInfo is not found in volumeMap.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-4850.json",
+        "creation_time": "2013-05-25T00:18:15.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-4850",
+            "Title": "fix OfflineImageViewer to work on fsimages with empty files or snapshots",
+            "Description": "The OfflineImageViewer encounters a NegativeArraySizeException when processing fsimages that contain empty files or snapshots.",
+            "StackTrace": [
+                "Exception in thread \"main\" java.lang.NegativeArraySizeException",
+                "at org.apache.hadoop.io.Text.readString(Text.java:458)",
+                "at org.apache.hadoop.hdfs.tools.offlineImageViewer.ImageLoaderCurrent.processPermission(ImageLoaderCurrent.java:370)",
+                "at org.apache.hadoop.hdfs.tools.offlineImageViewer.ImageLoaderCurrent.processINode(ImageLoaderCurrent.java:671)",
+                "at org.apache.hadoop.hdfs.tools.offlineImageViewer.ImageLoaderCurrent.processChildren(ImageLoaderCurrent.java:557)",
+                "at org.apache.hadoop.hdfs.tools.offlineImageViewer.ImageLoaderCurrent.processDirectoryWithSnapshot(ImageLoaderCurrent.java:464)",
+                "at org.apache.hadoop.hdfs.tools.offlineImageViewer.ImageLoaderCurrent.processDirectoryWithSnapshot(ImageLoaderCurrent.java:470)",
+                "at org.apache.hadoop.hdfs.tools.offlineImageViewer.ImageLoaderCurrent.processLocalNameINodesWithSnapshot(ImageLoaderCurrent.java:444)",
+                "at org.apache.hadoop.hdfs.tools.offlineImageViewer.ImageLoaderCurrent.processINodes(ImageLoaderCurrent.java:398)",
+                "at org.apache.hadoop.hdfs.tools.offlineImageViewer.ImageLoaderCurrent.loadImage(ImageLoaderCurrent.java:199)",
+                "at org.apache.hadoop.hdfs.tools.offlineImageViewer.OfflineImageViewer.go(OfflineImageViewer.java:136)",
+                "at org.apache.hadoop.hdfs.tools.offlineImageViewer.OfflineImageViewer.main(OfflineImageViewer.java:260)"
+            ],
+            "StepsToReproduce": [
+                "Deploy hadoop-trunk HDFS and create /user/schu/",
+                "Force a checkpoint and fetch the fsimage.",
+                "Run the OfflineImageViewer on the fsimage.",
+                "Create an empty file /user/schu/testFile1.",
+                "Force another checkpoint and fetch the fsimage again.",
+                "Rerun the OfflineImageViewer on the new fsimage."
+            ],
+            "ExpectedBehavior": "The OfflineImageViewer should successfully load fsimages containing empty files or snapshots without errors.",
+            "ObservedBehavior": "The OfflineImageViewer fails with a NegativeArraySizeException when trying to load the fsimage after creating an empty file.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-3415.json",
+        "creation_time": "2012-05-13T13:44:43.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-3415",
+            "Title": "During NameNode starting up, it may pick wrong storage directory inspector when the layout versions of the storage directories are different",
+            "Description": "The NameNode encounters a NullPointerException during startup when the layout versions of the storage directories are inconsistent.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.namenode.NNStorage.getStorageFile(NNStorage.java:686)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImagePreTransactionalStorageInspector.getEditsInStorageDir(FSImagePreTransactionalStorageInspector.java:243)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImagePreTransactionalStorageInspector.getLatestEditsFiles(FSImagePreTransactionalStorageInspector.java:261)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImagePreTransactionalStorageInspector.getEditLogStreams(FSImagePreTransactionalStorageInspector.java:276)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.loadFSImage(FSImage.java:596)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.recoverTransitionRead(FSImage.java:247)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.loadFSImage(FSNamesystem.java:498)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.loadNamesystem(NameNode.java:368)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.initialize(NameNode.java:402)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.<init>(NameNode.java:564)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.<init>(NameNode.java:545)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.createNameNode(NameNode.java:1093)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.main(NameNode.java:1151)"
+            ],
+            "StepsToReproduce": [
+                "Start Namenode and datanode by configuring three storage directories for namenode.",
+                "Write 10 files.",
+                "Edit the version file of one of the storage directories and set the layout version to 123, which is different from the default (-40).",
+                "Stop the namenode.",
+                "Start the Namenode."
+            ],
+            "ExpectedBehavior": "The NameNode should start without errors and correctly identify the storage directory.",
+            "ObservedBehavior": "The NameNode throws a NullPointerException during startup due to inconsistent layout versions.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-2245.json",
+        "creation_time": "2011-08-10T22:55:33.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-2245",
+            "Title": "BlockManager.chooseTarget(..) throws NPE",
+            "Description": "The BlockManager.chooseTarget method throws a NullPointerException when attempting to add a block.",
+            "StackTrace": [
+                "java.io.IOException: java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.chooseTarget(BlockManager.java:1225)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.getAdditionalBlock(FSNamesystem.java:1455)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.addBlock(NameNode.java:786)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should successfully add a block without throwing an exception.",
+            "ObservedBehavior": "A NullPointerException is thrown when trying to add a block.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-10320.json",
+        "creation_time": "2016-04-20T23:02:09.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-10320",
+            "Title": "Rack failures may result in NN terminate",
+            "Description": "If there're rack failures which end up leaving only 1 rack available, BlockPlacementPolicyDefault#chooseRandom may get InvalidTopologyException when calling NetworkTopology#chooseRandom, which then throws all the way out to BlockManager's ReplicationMonitor thread and terminate the NN.",
+            "StackTrace": [
+                "org.apache.hadoop.net.NetworkTopology$InvalidTopologyException: Failed to find datanode (scope=\"\" excludedScope=\"/rack_a5\").",
+                "at org.apache.hadoop.net.NetworkTopology.chooseRandom(NetworkTopology.java:729)",
+                "at org.apache.hadoop.net.NetworkTopology.chooseRandom(NetworkTopology.java:694)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault.chooseRandom(BlockPlacementPolicyDefault.java:635)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault.chooseRemoteRack(BlockPlacementPolicyDefault.java:580)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault.chooseTarget(BlockPlacementPolicyDefault.java:348)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault.chooseTarget(BlockPlacementPolicyDefault.java:214)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault.chooseTarget(BlockPlacementPolicyDefault.java:111)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager$ReplicationWork.chooseTargets(BlockManager.java:3746)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager$ReplicationWork.access$200(BlockManager.java:3711)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeReplicationWorkForBlocks(BlockManager.java:1400)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeReplicationWork(BlockManager.java:1306)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeDatanodeWork(BlockManager.java:3682)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager$ReplicationMonitor.run(BlockManager.java:3634)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should handle rack failures gracefully without terminating the NameNode.",
+            "ObservedBehavior": "The NameNode terminates due to an InvalidTopologyException when there is only one available rack.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-4201.json",
+        "creation_time": "2012-11-16T21:28:57.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-4201",
+            "Title": "NPE in BPServiceActor#sendHeartBeat",
+            "Description": "A NullPointerException (NPE) occurs in the BPServiceActor's sendHeartBeat method, likely due to a null value in dn or dn.getFSDataset() caused by configuration or local directory failure.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.datanode.BPServiceActor.sendHeartBeat(BPServiceActor.java:434)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPServiceActor.offerService(BPServiceActor.java:520)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPServiceActor.run(BPServiceActor.java:673)",
+                "at java.lang.Thread.run(Thread.java:722)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should successfully send heartbeats without encountering a NullPointerException.",
+            "ObservedBehavior": "A NullPointerException is thrown, causing the heartbeat service to fail.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-6904.json",
+        "creation_time": "2014-08-21T10:17:21.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-6904",
+            "Title": "YARN unable to renew delegation token fetched via webhdfs due to incorrect service port",
+            "Description": "YARN is unable to renew delegation tokens obtained via the WebHDFS REST API due to a mismatch in the service port for the token kind.",
+            "StackTrace": [
+                "java.io.IOException: Failed to renew token: Kind: WEBHDFS delegation, Service: NameNodeIP:8020, Ident: (WEBHDFS delegation token 2222 for hrt_qa)",
+                "at org.apache.hadoop.yarn.server.resourcemanager.security.DelegationTokenRenewer.handleAppSubmitEvent(DelegationTokenRenewer.java:394)",
+                "at org.apache.hadoop.hdfs.web.WebHdfsFileSystem.validateResponse(WebHdfsFileSystem.java:331)",
+                "Caused by: java.io.IOException: Unexpected HTTP response: code=-1 != 200, op=RENEWDELEGATIONTOKEN, message=null",
+                "Caused by: java.io.IOException: The error stream is null."
+            ],
+            "StepsToReproduce": [
+                "1. User creates a delegation token using the WebHDFS REST API",
+                "2. User passes this token to YARN as part of app submission via the YARN REST API",
+                "3. YARN attempts to renew the delegation token"
+            ],
+            "ExpectedBehavior": "YARN should successfully renew the delegation token obtained via the WebHDFS REST API.",
+            "ObservedBehavior": "YARN fails to renew the delegation token due to an incorrect service port being used.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-13721.json",
+        "creation_time": "2018-07-05T20:11:57.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-13721",
+            "Title": "NPE in DataNode due to uninitialized DiskBalancer",
+            "Description": "A NullPointerException occurs in DataNode when attempting to get the DiskBalancerStatus during startup.",
+            "StackTrace": [
+                "javax.management.RuntimeMBeanException: java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.getDiskBalancerStatus(DataNode.java:3146)",
+                "at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.getAttribute(DefaultMBeanServerInterceptor.java:651)",
+                "at org.apache.hadoop.jmx.JMXJsonServlet.writeAttribute(JMXJsonServlet.java:338)",
+                "at org.apache.hadoop.jmx.JMXJsonServlet.doGet(JMXJsonServlet.java:210)"
+            ],
+            "StepsToReproduce": [
+                "Restart the DataNode service",
+                "Attempt to access the DiskBalancerStatus via JMX"
+            ],
+            "ExpectedBehavior": "The DiskBalancerStatus should be returned without exceptions.",
+            "ObservedBehavior": "A NullPointerException is thrown, preventing the status from being retrieved.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-7180.json",
+        "creation_time": "2014-10-02T03:07:04.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-7180",
+            "Title": "NFSv3 gateway frequently gets stuck due to GC",
+            "Description": "The NFSv3 daemon frequently gets stuck while HDFS continues to function normally. This issue occurs after prolonged operation, specifically after around one day of running and several hundreds of GBs of data uploaded.",
+            "StackTrace": [
+                "java.io.IOException: Bad response ERROR for block BP-1960069741-10.0.3.170-1410430543652:blk_1074363564_623643 from datanode 10.0.3.176:50010",
+                "at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer$ResponseProcessor.run(DFSOutputStream.java:828)"
+            ],
+            "StepsToReproduce": [
+                "Start and mount the NFSv3 gateway on one node in the Hadoop cluster.",
+                "Upload data using rsync for an extended period (e.g., one day).",
+                "Monitor the NFSv3 daemon and check for responsiveness."
+            ],
+            "ExpectedBehavior": "The NFSv3 daemon should remain responsive and allow for normal operations such as listing directories and checking disk usage.",
+            "ObservedBehavior": "The NFSv3 daemon becomes unresponsive, and commands like 'ls' and 'df -hT' hang indefinitely.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-6102.json",
+        "creation_time": "2014-03-13T18:27:36.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-6102",
+            "Title": "Lower the default maximum items per directory to fix PB fsimage loading",
+            "Description": "The system encounters an error when trying to load a very large fsimage due to exceeding the maximum size limit for Protocol Buffers messages.",
+            "StackTrace": [
+                "com.google.protobuf.InvalidProtocolBufferException: Protocol message was too large. May be malicious. Use CodedInputStream.setSizeLimit() to increase the size limit.",
+                "at com.google.protobuf.InvalidProtocolBufferException.sizeLimitExceeded(InvalidProtocolBufferException.java:110)",
+                "at com.google.protobuf.CodedInputStream.refillBuffer(CodedInputStream.java:755)",
+                "at com.google.protobuf.CodedInputStream.readRawByte(CodedInputStream.java:769)",
+                "at com.google.protobuf.CodedInputStream.readRawVarint64(CodedInputStream.java:462)",
+                "at com.google.protobuf.CodedInputStream.readUInt64(CodedInputStream.java:188)",
+                "at org.apache.hadoop.hdfs.server.namenode.FsImageProto$INodeDirectorySection$DirEntry.<init>(FsImageProto.java:9839)"
+            ],
+            "StepsToReproduce": [
+                "Create a large number of directories in a single directory to increase the fsimage size.",
+                "Attempt to load the fsimage."
+            ],
+            "ExpectedBehavior": "The fsimage should load successfully without exceeding size limits.",
+            "ObservedBehavior": "The system throws an error indicating that the Protocol Buffer message is too large.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-6250.json",
+        "creation_time": "2014-04-16T16:14:32.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-6250",
+            "Title": "TestBalancerWithNodeGroup.testBalancerWithRackLocality fails",
+            "Description": "The test TestBalancerWithNodeGroup.testBalancerWithRackLocality fails due to an assertion error.",
+            "StackTrace": [
+                "java.lang.AssertionError: expected:<1800> but was:<1810>",
+                "at org.junit.Assert.fail(Assert.java:93)",
+                "at org.junit.Assert.failNotEquals(Assert.java:647)",
+                "at org.junit.Assert.assertEquals(Assert.java:128)",
+                "at org.junit.Assert.assertEquals(Assert.java:147)",
+                "at org.apache.hadoop.hdfs.server.balancer.TestBalancerWithNodeGroup.testBalancerWithRackLocality(TestBalancerWithNodeGroup.java:253)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The test should pass with the expected value of 1800.",
+            "ObservedBehavior": "The test fails with an actual value of 1810.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-11377.json",
+        "creation_time": "2017-01-26T23:40:53.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-11377",
+            "Title": "Balancer hung due to no available mover threads",
+            "Description": "When running balancer on a large cluster with more than 3000 Datanodes, it might hang due to 'No mover threads available'. The stack trace indicates it is waiting indefinitely.",
+            "StackTrace": [
+                "\"main\" #1 prio=5 os_prio=0 tid=0x00007ff6cc014800 nid=0x6b2c waiting on condition [0x00007ff6d1bad000]",
+                "java.lang.Thread.State: TIMED_WAITING (sleeping)",
+                "at java.lang.Thread.sleep(Native Method)",
+                "at org.apache.hadoop.hdfs.server.balancer.Dispatcher.waitForMoveCompletion(Dispatcher.java:1043)",
+                "at org.apache.hadoop.hdfs.server.balancer.Dispatcher.dispatchBlockMoves(Dispatcher.java:1017)",
+                "at org.apache.hadoop.hdfs.server.balancer.Dispatcher.dispatchAndCheckContinue(Dispatcher.java:981)",
+                "at org.apache.hadoop.hdfs.server.balancer.Balancer.runOneIteration(Balancer.java:611)",
+                "at org.apache.hadoop.hdfs.server.balancer.Balancer.run(Balancer.java:663)",
+                "at org.apache.hadoop.hdfs.server.balancer.Balancer$Cli.run(Balancer.java:776)",
+                "at org.apache.hadoop.util.ToolRunner.run(ToolRunner.java:76)",
+                "at org.apache.hadoop.hdfs.server.balancer.Balancer.main(Balancer.java:905)"
+            ],
+            "StepsToReproduce": [
+                "Run balancer on a cluster with more than 3000 Datanodes."
+            ],
+            "ExpectedBehavior": "The balancer should complete its operation without hanging.",
+            "ObservedBehavior": "The balancer hangs indefinitely due to a lack of available mover threads.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-6753.json",
+        "creation_time": "2014-07-25T11:36:43.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-6753",
+            "Title": "Initialize checkDisk when DirectoryScanner not able to get files list for scanning",
+            "Description": "The DataNode does not shut down when all configured volumes fail due to permission issues or disk full conditions.",
+            "StackTrace": [
+                "2014-07-21 14:10:52,814 ERROR org.apache.hadoop.hdfs.server.datanode.DataNode: XX1.XX1.XX1.XX1:50010:DataXceiver error processing WRITE_BLOCK operation src: /XX2.XX2.XX2.XX2:10106 dst: /XX1.XX1.XX1.XX1:50010",
+                "org.apache.hadoop.util.DiskChecker$DiskOutOfSpaceException: Out of space: The volume with the most available space (=4096 B) is less than the block size (=134217728 B).",
+                "at org.apache.hadoop.hdfs.server.datanode.fsdataset.RoundRobinVolumeChoosingPolicy.chooseVolume(RoundRobinVolumeChoosingPolicy.java:60)",
+                "2014-07-21 14:13:00,180 WARN org.apache.hadoop.hdfs.server.datanode.DirectoryScanner: Exception occurred while compiling report:",
+                "java.io.IOException: Invalid directory or I/O error occurred for dir: /mnt/tmp_Datanode/current/BP-1384489961-XX2.XX2.XX2.XX2-845784615183/current/finalized",
+                "at org.apache.hadoop.fs.FileUtil.listFiles(FileUtil.java:1164)",
+                "at org.apache.hadoop.hdfs.server.datanode.DirectoryScanner$ReportCompiler.compileReport(DirectoryScanner.java:596)"
+            ],
+            "StepsToReproduce": [
+                "Step 1: Change the permissions of /mnt/tmp_Datanode to root",
+                "Step 2: Perform write operations (DN detects that all Volume configured is failed and gets shutdown)",
+                "Step 1: Make /mnt/tmp_Datanode disk full and change the permissions to root",
+                "Step 2: Perform client write operations (disk full exception is thrown, but Datanode is not getting shutdown)"
+            ],
+            "ExpectedBehavior": "Datanode should shut down when all configured volumes fail.",
+            "ObservedBehavior": "Datanode does not shut down even when all configured volumes are failed due to permission issues or disk full conditions.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-3443.json",
+        "creation_time": "2012-05-18T11:30:50.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-3443",
+            "Title": "Fix NPE when namenode transition to active during startup by adding checkNNStartup() in NameNodeRpcServer",
+            "Description": "A NullPointerException (NPE) occurs when the editLogTailer is initialized during the failover process of the NameNode.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.startActiveServices(FSNamesystem.java:602)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode$NameNodeHAContext.startActiveServices(NameNode.java:1287)",
+                "at org.apache.hadoop.hdfs.server.namenode.ha.ActiveState.enterState(ActiveState.java:61)",
+                "at org.apache.hadoop.hdfs.server.namenode.ha.HAState.setStateInternal(HAState.java:63)",
+                "at org.apache.hadoop.hdfs.server.namenode.ha.StandbyState.setState(StandbyState.java:49)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.transitionToActive(NameNode.java:1219)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNodeRpcServer.transitionToActive(NameNodeRpcServer.java:978)",
+                "at org.apache.hadoop.ha.protocolPB.HAServiceProtocolServerSideTranslatorPB.transitionToActive(HAServiceProtocolServerSideTranslatorPB.java:107)"
+            ],
+            "StepsToReproduce": [
+                "Start NameNode (NN)",
+                "Start NN standby services.",
+                "Before initializing editLogTailer, start ZKFC and allow active services to start."
+            ],
+            "ExpectedBehavior": "The NameNode should transition to active state without throwing a NullPointerException.",
+            "ObservedBehavior": "A NullPointerException is thrown during the transition to active state.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-11479.json",
+        "creation_time": "2017-03-01T11:08:07.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-11479",
+            "Title": "Socket re-use address option should be used in SimpleUdpServer",
+            "Description": "Nfs gateway restart can fail due to a bind error in SimpleUdpServer. The re-use address option should be used to allow socket binding when in TIME_WAIT state.",
+            "StackTrace": [
+                "2017-02-28 04:19:53,495 FATAL mount.MountdBase (MountdBase.java:startUDPServer(66)) - Failed to start the UDP server.",
+                "org.jboss.netty.channel.ChannelException: Failed to bind to: 0.0.0.0/0.0.0.0:4242",
+                "at org.jboss.netty.bootstrap.ConnectionlessBootstrap.bind(ConnectionlessBootstrap.java:204)",
+                "at org.apache.hadoop.oncrpc.SimpleUdpServer.run(SimpleUdpServer.java:68)",
+                "at org.apache.hadoop.mount.MountdBase.startUDPServer(MountdBase.java:64)",
+                "Caused by: java.net.BindException: Address already in use",
+                "at sun.nio.ch.Net.bind0(Native Method)",
+                "at sun.nio.ch.Net.bind(Net.java:433)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The Nfs gateway should restart successfully without bind errors.",
+            "ObservedBehavior": "The Nfs gateway fails to restart due to a bind error indicating the address is already in use.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-8055.json",
+        "creation_time": "2015-04-02T23:21:55.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-8055",
+            "Title": "NullPointerException when topology script is missing.",
+            "Description": "Reports indicate that the NameNode can throw a NullPointerException when the topology script is absent. This issue aims to investigate potential improvements in validation logic and provide a clearer error message.",
+            "StackTrace": [
+                "org.apache.hadoop.ipc.RemoteException(java.lang.NullPointerException): java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager.sortLocatedBlocks(DatanodeManager.java:359)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.getBlockLocations(FSNamesystem.java:1789)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNodeRpcServer.getBlockLocations(NameNodeRpcServer.java:542)",
+                "at org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolServerSideTranslatorPB.getBlockLocations(ClientNamenodeProtocolServerSideTranslatorPB.java:362)",
+                "at org.apache.hadoop.ipc.ProtobufRpcEngine$Server$ProtoBufRpcInvoker.call(ProtobufRpcEngine.java:619)",
+                "at org.apache.hadoop.ipc.RPC$Server.call(RPC.java:962)",
+                "at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:2039)",
+                "at java.security.AccessController.doPrivileged(Native Method)",
+                "at javax.security.auth.Subject.doAs(Subject.java:415)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should validate the presence of the topology script and provide an informative error message if it is missing.",
+            "ObservedBehavior": "A NullPointerException is thrown, leading to a failure in processing.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-6533.json",
+        "creation_time": "2014-06-14T16:15:02.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-6533",
+            "Title": "TestBPOfferService#testBasicFunctionality test fails intermittently",
+            "Description": "The test org.apache.hadoop.hdfs.server.datanode.TestBPOfferService.testBasicFunctionality fails intermittently on the build server, although it passes when run locally.",
+            "StackTrace": [
+                "org.mockito.exceptions.verification.WantedButNotInvoked: Wanted but not invoked: datanodeProtocolClientSideTranslatorPB.registerDatanode(<any>);",
+                "-> at org.apache.hadoop.hdfs.server.datanode.TestBPOfferService.testBasicFunctionality(TestBPOfferService.java:175)",
+                "Actually, there were zero interactions with this mock."
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The test should successfully invoke the registerDatanode method.",
+            "ObservedBehavior": "The test fails with a message indicating that the registerDatanode method was not invoked.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-10609.json",
+        "creation_time": "2016-07-11T17:14:39.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-10609",
+            "Title": "Uncaught InvalidEncryptionKeyException during pipeline recovery may abort downstream applications",
+            "Description": "The system fails to handle InvalidEncryptionKeyException during pipeline recovery, leading to aborting operations in downstream applications like SOLR.",
+            "StackTrace": [
+                "org.apache.hadoop.hdfs.protocol.datatransfer.InvalidEncryptionKeyException: Can't re-compute encryption key for nonce, since the required block key (keyID=557709482) doesn't exist. Current key: 1350592619",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.sasl.DataTransferSaslUtil.readSaslMessageAndNegotiatedCipherOption(DataTransferSaslUtil.java:417)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.sasl.SaslDataTransferClient.doSaslHandshake(SaslDataTransferClient.java:474)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.sasl.SaslDataTransferClient.getEncryptedStreams(SaslDataTransferClient.java:299)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.sasl.SaslDataTransferClient.send(SaslDataTransferClient.java:242)",
+                "at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.transfer(DFSOutputStream.java:1308)",
+                "at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.run(DFSOutputStream.java:632)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should catch InvalidEncryptionKeyException during pipeline recovery and retry the operation without aborting downstream applications.",
+            "ObservedBehavior": "The exception is not handled properly, causing downstream applications like SOLR to abort their operations.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-2310.json",
+        "creation_time": "2011-09-05T15:31:00.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-2310",
+            "Title": "TestBackupNode fails since HADOOP-7524 went in.",
+            "Description": "Logs indicate an error due to the JournalProtocol not being registered with the server.",
+            "StackTrace": [
+                "java.io.IOException: java.io.IOException: Unknown protocol: org.apache.hadoop.hdfs.server.protocol.JournalProtocol",
+                "at org.apache.hadoop.ipc.WritableRpcEngine$Server.call(WritableRpcEngine.java:622)",
+                "at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:1489)",
+                "at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:1485)",
+                "at java.security.AccessController.doPrivileged(Native Method)",
+                "at javax.security.auth.Subject.doAs(Subject.java:396)",
+                "at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1135)",
+                "at org.apache.hadoop.ipc.Server$Handler.run(Server.java:1483)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The JournalProtocol should be registered and functioning correctly.",
+            "ObservedBehavior": "An IOException occurs indicating an unknown protocol when attempting to start a log segment.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-3385.json",
+        "creation_time": "2012-05-08T12:45:31.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-3385",
+            "Title": "ClassCastException when trying to append a file",
+            "Description": "A ClassCastException occurs when attempting to append a file in HDFS.",
+            "StackTrace": [
+                "java.lang.ClassCastException: org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo cannot be cast to org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.recoverLeaseInternal(FSNamesystem.java:1787)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.startFileInternal(FSNamesystem.java:1584)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.appendFile(FSNamesystem.java:1824)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNodeRpcServer.append(NameNodeRpcServer.java:425)",
+                "at org.apache.hadoop.hdfs.DFSClient.callAppend(DFSClient.java:1150)",
+                "at org.apache.hadoop.hdfs.DFSClient.append(DFSClient.java:1189)",
+                "at org.apache.hadoop.hdfs.DFSClient.append(DFSClient.java:1177)",
+                "at org.apache.hadoop.hdfs.DistributedFileSystem.append(DistributedFileSystem.java:221)",
+                "at org.apache.hadoop.hdfs.DistributedFileSystem.append(DistributedFileSystem.java:1)",
+                "at org.apache.hadoop.fs.FileSystem.append(FileSystem.java:981)",
+                "at org.apache.hadoop.hdfs.server.datanode.DeleteMe.main(DeleteMe.java:26)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The file should be appended successfully without any exceptions.",
+            "ObservedBehavior": "A ClassCastException is thrown, preventing the file from being appended.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-4006.json",
+        "creation_time": "2012-10-04T22:05:14.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-4006",
+            "Title": "TestCheckpoint#testSecondaryHasVeryOutOfDateImage occasionally fails due to unexpected exit",
+            "Description": "The test fails intermittently due to a NullPointerException (NPE) during checkpointing, which conflicts with explicit checkpoints performed by the tests.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode.doCheckpoint(SecondaryNameNode.java:480)",
+                "at org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode.doWork(SecondaryNameNode.java:331)",
+                "at org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode$2.run(SecondaryNameNode.java:298)",
+                "at org.apache.hadoop.security.SecurityUtil.doAsLoginUserOrFatal(SecurityUtil.java:452)",
+                "at org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode.run(SecondaryNameNode.java:294)",
+                "at java.lang.Thread.run(Thread.java:662)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The checkpointing process should complete without errors, allowing the test to pass.",
+            "ObservedBehavior": "The test fails due to an unexpected exit caused by a NullPointerException during the checkpointing process.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-6715.json",
+        "creation_time": "2014-07-21T21:26:25.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-6715",
+            "Title": "webhdfs wont fail over when it gets java.io.IOException: Namenode is in startup mode",
+            "Description": "The issue occurs during HA testing when running a MapReduce job with the webhdfs file system, leading to a failure due to the Namenode being in startup mode.",
+            "StackTrace": [
+                "java.io.IOException: Namenode is in startup mode",
+                "at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)",
+                "at sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:57)",
+                "at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)",
+                "at java.lang.reflect.Constructor.newInstance(Constructor.java:525)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The webhdfs should fail over gracefully without causing job failures.",
+            "ObservedBehavior": "The job fails with an IOException indicating that the Namenode is in startup mode.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-2392.json",
+        "creation_time": "2011-09-30T20:29:09.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-2392",
+            "Title": "Dist with hftp is failing again",
+            "Description": "The DistCp command using hftp is failing with an IOException, indicating that no files were copied.",
+            "StackTrace": [
+                "java.io.IOException: Copied: 0 Skipped: 0 Failed: 1",
+                "at org.apache.hadoop.tools.DistCp$CopyFilesMapper.close(DistCp.java:582)",
+                "at org.apache.hadoop.mapred.MapRunner.run(MapRunner.java:57)",
+                "at org.apache.hadoop.mapred.MapTask.runOldMapper(MapTask.java:436)",
+                "at org.apache.hadoop.mapred.MapTask.run(MapTask.java:372)",
+                "at org.apache.hadoop.mapred.Child$4.run(Child.java:255)",
+                "at java.security.AccessController.doPrivileged(Native Method)",
+                "at javax.security.auth.Subject.doAs(Subject.java:396)",
+                "at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1059)",
+                "at org.apache.hadoop.mapred.Child.main(Child.java:249)"
+            ],
+            "StepsToReproduce": [
+                "Run the command: hadoop distcp hftp://<NN Hostname>:50070/user/hadoopqa/input1/part-00000 /user/hadoopqa/out3"
+            ],
+            "ExpectedBehavior": "The files should be copied successfully from the source to the destination.",
+            "ObservedBehavior": "The command fails with an IOException, indicating that no files were copied.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-11472.json",
+        "creation_time": "2017-02-28T18:39:13.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-11472",
+            "Title": "Fix inconsistent replica size after a data pipeline failure",
+            "Description": "A case was observed where a replica's on-disk length is less than the acknowledged length, breaking the assumption in recovery code.",
+            "StackTrace": [
+                "java.io.IOException: THIS IS NOT SUPPOSED TO HAPPEN: getBytesOnDisk() < getVisibleLength(), rip=ReplicaBeingWritten, blk_2526438952_1101394519586, RBW",
+                "at org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsDatasetImpl.initReplicaRecovery(FsDatasetImpl.java:2284)",
+                "at org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsDatasetImpl.initReplicaRecovery(FsDatasetImpl.java:2260)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.initReplicaRecovery(DataNode.java:2566)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.callInitReplicaRecovery(DataNode.java:2577)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.recoverBlock(DataNode.java:2645)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.access$400(DataNode.java:245)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode$5.run(DataNode.java:2551)",
+                "at java.lang.Thread.run(Thread.java:745)",
+                "java.nio.channels.ClosedByInterruptException",
+                "at java.nio.channels.spi.AbstractInterruptibleChannel.end(AbstractInterruptibleChannel.java:202)",
+                "at sun.nio.ch.FileChannelImpl.position(FileChannelImpl.java:269)",
+                "at org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsDatasetImpl.adjustCrcChannelPosition(FsDatasetImpl.java:1484)",
+                "at org.apache.hadoop.hdfs.server.datanode.BlockReceiver.adjustCrcFilePosition(BlockReceiver.java:994)",
+                "at org.apache.hadoop.hdfs.server.datanode.BlockReceiver.receivePacket(BlockReceiver.java:670)",
+                "at org.apache.hadoop.hdfs.server.datanode.BlockReceiver.receiveBlock(BlockReceiver.java:857)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.writeBlock(DataXceiver.java:797)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.Receiver.opWriteBlock(Receiver.java:169)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.Receiver.processOp(Receiver.java:106)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.run(DataXceiver.java:244)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The on-disk length of a replica should match or exceed the acknowledged length.",
+            "ObservedBehavior": "The on-disk length of a replica is less than the acknowledged length, leading to recovery code failures.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-10760.json",
+        "creation_time": "2016-08-12T08:29:24.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-10760",
+            "Title": "DataXceiver#run() should not log InvalidToken exception as an error",
+            "Description": "DataXceiver#run() logs InvalidToken exception as an error when a client has an expired token. This is misleading as it is not a server error.",
+            "StackTrace": [
+                "at org.apache.hadoop.hdfs.security.token.block.BlockTokenSecretManager.checkAccess(BlockTokenSecretManager.java:280)",
+                "at org.apache.hadoop.hdfs.security.token.block.BlockTokenSecretManager.checkAccess(BlockTokenSecretManager.java:301)",
+                "at org.apache.hadoop.hdfs.security.token.block.BlockPoolTokenSecretManager.checkAccess(BlockPoolTokenSecretManager.java:97)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.checkAccess(DataXceiver.java:1236)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.readBlock(DataXceiver.java:481)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.Receiver.opReadBlock(Receiver.java:116)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.Receiver.processOp(Receiver.java:71)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.run(DataXceiver.java:242)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "StepsToReproduce": [
+                "Client uses an expired token.",
+                "Client refetches a new token.",
+                "Observe the logs for the DataXceiver."
+            ],
+            "ExpectedBehavior": "InvalidToken exception should be logged as a warning, not an error.",
+            "ObservedBehavior": "InvalidToken exception is logged as an error, misleadingly indicating a server error.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-13635.json",
+        "creation_time": "2018-05-29T19:54:50.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-13635",
+            "Title": "Incorrect message when block is not found",
+            "Description": "When a client opens a file, it incorrectly throws a 'Cannot append to a non-existent replica' message if the block is not found on the DataNode. The expected behavior is to state 'block is not found'.",
+            "StackTrace": [
+                "org.apache.hadoop.hdfs.server.datanode.ReplicaNotFoundException: Cannot append to a non-existent replica BP-725378529-10.236.236.8-1410027444173:13276792346",
+                "at org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsDatasetImpl.getReplicaInfo(FsDatasetImpl.java:792)",
+                "at org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsDatasetImpl.getReplicaVisibleLength(FsDatasetImpl.java:2588)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.getReplicaVisibleLength(DataNode.java:2756)",
+                "at org.apache.hadoop.hdfs.protocolPB.ClientDatanodeProtocolServerSideTranslatorPB.getReplicaVisibleLength(ClientDatanodeProtocolServerSideTranslatorPB.java:107)",
+                "at org.apache.hadoop.hdfs.protocol.proto.ClientDatanodeProtocolProtos$ClientDatanodeProtocolService$2.callBlockingMethod(ClientDatanodeProtocolProtos.java:17873)",
+                "at org.apache.hadoop.ipc.ProtobufRpcEngine$Server$ProtoBufRpcInvoker.call(ProtobufRpcEngine.java:617)",
+                "at org.apache.hadoop.ipc.RPC$Server.call(RPC.java:1073)",
+                "at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:2217)",
+                "at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:2213)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should state 'block is not found' when a block is not present.",
+            "ObservedBehavior": "The system throws an incorrect message: 'Cannot append to a non-existent replica'.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-11608.json",
+        "creation_time": "2017-03-31T17:37:20.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-11608",
+            "Title": "HDFS write crashed with block size greater than 2 GB",
+            "Description": "HDFS client throws an out of memory exception when writing a file larger than 2 GB with a block size greater than 2 GB. This leads to IOException from DataNode and subsequent errors.",
+            "StackTrace": [
+                "java.io.IOException: Incorrect value for packet payload size: 2147483128",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.PacketReceiver.doRead(PacketReceiver.java:159)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.PacketReceiver.receiveNextPacket(PacketReceiver.java:109)",
+                "at org.apache.hadoop.hdfs.server.datanode.BlockReceiver.receivePacket(BlockReceiver.java:502)",
+                "at org.apache.hadoop.hdfs.server.datanode.BlockReceiver.receiveBlock(BlockReceiver.java:898)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.writeBlock(DataXceiver.java:806)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.Receiver.opWriteBlock(Receiver.java:137)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.Receiver.processOp(Receiver.java:74)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.run(DataXceiver.java:251)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "StepsToReproduce": [
+                "Attempt to write a 3 GB file using a block size greater than 2 GB."
+            ],
+            "ExpectedBehavior": "The HDFS client should handle large file writes without throwing exceptions.",
+            "ObservedBehavior": "The HDFS client throws an out of memory exception and the DataNode reports an IOException.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-12638.json",
+        "creation_time": "2017-10-11T11:29:04.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-12638",
+            "Title": "Delete copy-on-truncate block along with the original block, when deleting a file being truncated",
+            "Description": "Active NamNode exit due to NPE, BlockCollection passed in when creating ReplicationWork is null.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.ReplicationWork.chooseTargets(ReplicationWork.java:55)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeReplicationWorkForBlocks(BlockManager.java:1532)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeReplicationWork(BlockManager.java:1491)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeDatanodeWork(BlockManager.java:3792)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager$ReplicationMonitor.run(BlockManager.java:3744)",
+                "at java.lang.Thread.run(Thread.java:834)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should handle replication work without encountering a NullPointerException.",
+            "ObservedBehavior": "The system crashes with a NullPointerException when BlockCollection is null.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-12383.json",
+        "creation_time": "2017-08-31T20:43:50.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-12383",
+            "Title": "Re-encryption updater should handle canceled tasks better",
+            "Description": "The re-encryption updater exited due to an exception, causing subsequent tasks to no longer execute.",
+            "StackTrace": [
+                "java.util.concurrent.CancellationException",
+                "at java.util.concurrent.FutureTask.report(FutureTask.java:121)",
+                "at java.util.concurrent.FutureTask.get(FutureTask.java:192)",
+                "at org.apache.hadoop.hdfs.server.namenode.ReencryptionUpdater.takeAndProcessTasks(ReencryptionUpdater.java:404)",
+                "at org.apache.hadoop.hdfs.server.namenode.ReencryptionUpdater.run(ReencryptionUpdater.java:250)",
+                "at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The updater should handle canceled tasks without exiting.",
+            "ObservedBehavior": "The updater thread exits when a cancellation exception occurs.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-5322.json",
+        "creation_time": "2013-10-07T22:52:54.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-5322",
+            "Title": "HDFS delegation token not found in cache errors seen on secure HA clusters",
+            "Description": "While running HA tests, issues were observed where HDFS delegation tokens were not found in the cache, causing jobs to fail.",
+            "StackTrace": [
+                "at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1491)",
+                "at org.apache.hadoop.mapred.YarnChild.main(YarnChild.java:157)",
+                "at org.apache.hadoop.ipc.Client.call(Client.java:1347)",
+                "at org.apache.hadoop.ipc.Client.call(Client.java:1300)",
+                "at org.apache.hadoop.ipc.ProtobufRpcEngine$Invoker.invoke(ProtobufRpcEngine.java:206)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "HDFS delegation tokens should be found in the cache, allowing jobs to run successfully.",
+            "ObservedBehavior": "Jobs fail with errors indicating that the HDFS delegation token cannot be found in the cache.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-11741.json",
+        "creation_time": "2017-05-02T17:57:25.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-11741",
+            "Title": "Long running balancer may fail due to expired DataEncryptionKey",
+            "Description": "A long running balancer may fail despite using keytab, because KeyManager returns an expired DataEncryptionKey, leading to an InvalidEncryptionKeyException.",
+            "StackTrace": [
+                "org.apache.hadoop.hdfs.protocol.datatransfer.InvalidEncryptionKeyException: Can't re-compute encryption key for nonce, since the required block key (keyID=1005215027) doesn't exist. Current key: 1005215030",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.sasl.DataTransferSaslUtil.readSaslMessageAndNegotiatedCipherOption(DataTransferSaslUtil.java:417)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.sasl.SaslDataTransferClient.doSaslHandshake(SaslDataTransferClient.java:474)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.sasl.SaslDataTransferClient.getEncryptedStreams(SaslDataTransferClient.java:299)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.sasl.SaslDataTransferClient.send(SaslDataTransferClient.java:242)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.sasl.SaslDataTransferClient.checkTrustAndSend(SaslDataTransferClient.java:211)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.sasl.SaslDataTransferClient.socketSend(SaslDataTransferClient.java:183)",
+                "at org.apache.hadoop.hdfs.server.balancer.Dispatcher$PendingMove.dispatch(Dispatcher.java:311)",
+                "at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "StepsToReproduce": [
+                "Run the balancer for an extended period (20-30 hours) with Kerberos authentication and data transfer encryption enabled.",
+                "Ensure that the Kerberos ticket and block token expiration times are set to 10 hours."
+            ],
+            "ExpectedBehavior": "The balancer should continue to function without failure, even after extended operation times.",
+            "ObservedBehavior": "The balancer fails with an InvalidEncryptionKeyException due to the use of an expired DataEncryptionKey.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-3936.json",
+        "creation_time": "2012-09-14T05:35:12.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-3936",
+            "Title": "MiniDFSCluster shutdown races with BlocksMap usage",
+            "Description": "The issue arises when the MiniDFSCluster shutdown process races with the BlocksMap usage, leading to unexpected exits during tests.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlocksMap.getBlockCollection(BlocksMap.java:101)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeReplicationWorkForBlocks(BlockManager.java:1132)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeReplicationWork(BlockManager.java:1107)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeDatanodeWork(BlockManager.java:3061)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager$ReplicationMonitor.run(BlockManager.java:3023)",
+                "at java.lang.Thread.run(Thread.java:662)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The MiniDFSCluster should shut down without causing any unexpected exits or exceptions.",
+            "ObservedBehavior": "The shutdown process results in a NullPointerException, causing the test to exit unexpectedly.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-6348.json",
+        "creation_time": "2014-05-07T12:34:54.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-6348",
+            "Title": "SecondaryNameNode not terminating properly on runtime exceptions",
+            "Description": "The Secondary Namenode process remains alive when a RuntimeException occurs during startup due to incorrect configuration, preventing JVM from exiting.",
+            "StackTrace": [
+                "java.lang.RuntimeException: java.lang.RuntimeException: java.lang.ClassNotFoundException: Class com.huawei.hadoop.hdfs.server.blockmanagement.MyBlockPlacementPolicy not found",
+                "at org.apache.hadoop.conf.Configuration.getClass(Configuration.java:1900)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicy.getInstance(BlockPlacementPolicy.java:199)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.<init>(BlockManager.java:256)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.<init>(FSNamesystem.java:635)",
+                "at org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode.initialize(SecondaryNameNode.java:260)",
+                "at org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode.<init>(SecondaryNameNode.java:205)",
+                "at org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode.main(SecondaryNameNode.java:695)",
+                "Caused by: java.lang.RuntimeException: java.lang.ClassNotFoundException: Class com.huawei.hadoop.hdfs.server.blockmanagement.MyBlockPlacementPolicy not found",
+                "at org.apache.hadoop.conf.Configuration.getClass(Configuration.java:1868)",
+                "at org.apache.hadoop.conf.Configuration.getClass(Configuration.java:1892)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The Secondary Namenode should terminate properly when a RuntimeException occurs.",
+            "ObservedBehavior": "The Secondary Namenode process remains alive, preventing JVM from exiting.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-7884.json",
+        "creation_time": "2015-03-04T15:47:50.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-7884",
+            "Title": "NullPointerException in BlockSender",
+            "Description": "A NullPointerException occurs in the BlockSender class during block reading operations.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.datanode.BlockSender.<init>(BlockSender.java:264)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.readBlock(DataXceiver.java:506)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.Receiver.opReadBlock(Receiver.java:116)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.Receiver.processOp(Receiver.java:71)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.run(DataXceiver.java:249)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should read blocks without throwing a NullPointerException.",
+            "ObservedBehavior": "A NullPointerException is thrown when attempting to read a block.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-7996.json",
+        "creation_time": "2015-03-26T21:19:55.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-7996",
+            "Title": "After swapping a volume, BlockReceiver reports ReplicaNotFoundException",
+            "Description": "When removing a disk from an actively writing DataNode, the BlockReceiver throws ReplicaNotFoundException because the replicas are removed from memory.",
+            "StackTrace": [
+                "org.apache.hadoop.hdfs.server.datanode.ReplicaNotFoundException: Cannot append to a non-existent replica BP-51301509-10.20.202.114-1427296597742:blk_1073742979_2160",
+                "at org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsDatasetImpl.getReplicaInfo(FsDatasetImpl.java:615)",
+                "at org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsDatasetImpl.finalizeBlock(FsDatasetImpl.java:1362)",
+                "at org.apache.hadoop.hdfs.server.datanode.BlockReceiver$PacketResponder.finalizeBlock(BlockReceiver.java:1281)",
+                "at org.apache.hadoop.hdfs.server.datanode.BlockReceiver$PacketResponder.run(BlockReceiver.java:1241)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "StepsToReproduce": [
+                "Remove a disk from an actively writing DataNode."
+            ],
+            "ExpectedBehavior": "The BlockReceiver should handle the removal of the disk without throwing an exception.",
+            "ObservedBehavior": "The BlockReceiver throws ReplicaNotFoundException when trying to append to a non-existent replica.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-4302.json",
+        "creation_time": "2012-12-11T19:44:59.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-4302",
+            "Title": "Precondition in EditLogFileInputStream's length() method is checked too early in NameNode startup, causing fatal exception",
+            "Description": "When bringing up a namenode in standby mode with DEBUG enabled, the namenode encounters a fatal exception due to a precondition check in the EditLogFileInputStream's length() method being executed before the input stream's advertised size is initialized.",
+            "StackTrace": [
+                "java.lang.IllegalStateException: must get input stream before length is available",
+                "at com.google.common.base.Preconditions.checkState(Preconditions.java:145)",
+                "at org.apache.hadoop.hdfs.server.namenode.EditLogFileInputStream$URLLog.length(EditLogFileInputStream.java:405)",
+                "at org.apache.hadoop.hdfs.server.namenode.EditLogFileInputStream.length(EditLogFileInputStream.java:258)",
+                "at org.apache.hadoop.hdfs.server.namenode.RedundantEditLogInputStream.length(RedundantEditLogInputStream.java:256)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLogLoader.loadEditRecords(FSEditLogLoader.java:125)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLogLoader.loadFSEdits(FSEditLogLoader.java:88)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.loadEdits(FSImage.java:697)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.loadFSImage(FSImage.java:642)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.loadNamesystem(NameNode.java:400)"
+            ],
+            "StepsToReproduce": [
+                "Enable DEBUG logging for namenode.",
+                "Bring up the namenode in standby mode."
+            ],
+            "ExpectedBehavior": "The namenode should start up without encountering fatal exceptions.",
+            "ObservedBehavior": "The namenode shuts down with a fatal exception due to an uninitialized input stream size.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-11849.json",
+        "creation_time": "2017-05-18T11:31:48.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-11849",
+            "Title": "JournalNode startup failure exception should be logged in log file",
+            "Description": "JournalNode failed to start due to a Kerberos login failure, but the exception is not recorded in the log file.",
+            "StackTrace": [
+                "Exception in thread \"main\" java.io.IOException: Login failure for xxx/yyyy@ZZZZ.COM from keytab dummy.keytab: javax.security.auth.login.LoginException: host1",
+                "at org.apache.hadoop.security.UserGroupInformation.loginUserFromKeytab(UserGroupInformation.java:994)",
+                "at org.apache.hadoop.security.SecurityUtil.login(SecurityUtil.java:281)",
+                "at org.apache.hadoop.hdfs.qjournal.server.JournalNode.start(JournalNode.java:153)",
+                "at org.apache.hadoop.hdfs.qjournal.server.JournalNode.run(JournalNode.java:132)",
+                "at org.apache.hadoop.util.ToolRunner.run(ToolRunner.java:70)",
+                "at org.apache.hadoop.util.ToolRunner.run(ToolRunner.java:84)",
+                "at org.apache.hadoop.hdfs.qjournal.server.JournalNode.main(JournalNode.java:318)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The JournalNode should start successfully and log any exceptions encountered during startup.",
+            "ObservedBehavior": "The JournalNode fails to start due to a Kerberos login issue, and the exception is not logged.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-4841.json",
+        "creation_time": "2013-05-22T17:01:36.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-4841",
+            "Title": "FsShell commands using secure webhdfs fail ClientFinalizer shutdown hook",
+            "Description": "When issuing FsShell commands using the webhdfs:// URI with security enabled, a warning is generated indicating that the ShutdownHook 'ClientFinalizer' failed.",
+            "StackTrace": [
+                "java.lang.IllegalStateException: Shutdown in progress, cannot add a shutdownHook",
+                "at org.apache.hadoop.util.ShutdownHookManager.addShutdownHook(ShutdownHookManager.java:152)",
+                "at org.apache.hadoop.fs.FileSystem$Cache.getInternal(FileSystem.java:2400)",
+                "at org.apache.hadoop.fs.FileSystem$Cache.get(FileSystem.java:2372)",
+                "at org.apache.hadoop.fs.FileSystem.get(FileSystem.java:352)",
+                "at org.apache.hadoop.hdfs.web.WebHdfsFileSystem$DtRenewer.getWebHdfs(WebHdfsFileSystem.java:1001)",
+                "at org.apache.hadoop.hdfs.web.WebHdfsFileSystem$DtRenewer.cancel(WebHdfsFileSystem.java:1013)",
+                "at org.apache.hadoop.security.token.Token.cancel(Token.java:382)",
+                "at org.apache.hadoop.fs.DelegationTokenRenewer$RenewAction.cancel(DelegationTokenRenewer.java:152)",
+                "at org.apache.hadoop.fs.DelegationTokenRenewer$RenewAction.access$200(DelegationTokenRenewer.java:58)",
+                "at org.apache.hadoop.fs.DelegationTokenRenewer.removeRenewAction(DelegationTokenRenewer.java:241)",
+                "at org.apache.hadoop.hdfs.web.WebHdfsFileSystem.close(WebHdfsFileSystem.java:822)",
+                "at org.apache.hadoop.fs.FileSystem$Cache.closeAll(FileSystem.java:2446)",
+                "at org.apache.hadoop.fs.FileSystem$Cache$ClientFinalizer.run(FileSystem.java:2463)",
+                "at org.apache.hadoop.util.ShutdownHookManager$1.run(ShutdownHookManager.java:54)"
+            ],
+            "StepsToReproduce": [
+                "Run FsShell commands using the webhdfs:// URI with security enabled.",
+                "Observe the warning message regarding the ShutdownHook 'ClientFinalizer' failure."
+            ],
+            "ExpectedBehavior": "The FsShell command should execute without warnings when security is enabled.",
+            "ObservedBehavior": "The command completes but generates a warning about the ShutdownHook 'ClientFinalizer' failing.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-3384.json",
+        "creation_time": "2012-05-08T09:01:10.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-3384",
+            "Title": "DataStreamer thread should be closed immediatly when failed to setup a PipelineForAppendOrRecovery",
+            "Description": "The DataStreamer thread fails to close immediately when it cannot set up a pipeline for appending or recovery, leading to exceptions.",
+            "StackTrace": [
+                "java.io.EOFException: Premature EOF: no length prefix available",
+                "at org.apache.hadoop.hdfs.protocol.HdfsProtoUtil.vintPrefixed(HdfsProtoUtil.java:162)",
+                "at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.createBlockOutputStream(DFSOutputStream.java:1039)",
+                "at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.setupPipelineForAppendOrRecovery(DFSOutputStream.java:939)",
+                "at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.run(DFSOutputStream.java:461)",
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.run(DFSOutputStream.java:510)",
+                "java.io.IOException: All datanodes 10.18.40.20:50010 are bad. Aborting...",
+                "at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.setupPipelineForAppendOrRecovery(DFSOutputStream.java:908)"
+            ],
+            "StepsToReproduce": [
+                "Write a file",
+                "Corrupt the block manually",
+                "Call append"
+            ],
+            "ExpectedBehavior": "The DataStreamer thread should close immediately upon failure to set up a pipeline for append or recovery.",
+            "ObservedBehavior": "The DataStreamer thread does not close immediately, resulting in exceptions and warnings.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-5657.json",
+        "creation_time": "2013-12-11T21:59:46.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-5657",
+            "Title": "race condition causes writeback state error in NFS gateway",
+            "Description": "A race condition between NFS gateway writeback executor thread and new write handler thread can cause writeback state check failure.",
+            "StackTrace": [
+                "2013-11-26 10:34:07,871 ERROR nfs3.AsyncDataService (AsyncDataService.java:run(136)) - Asyn data service got error:java.lang.IllegalStateException: The openFileCtx has false async status",
+                "at com.google.common.base.Preconditions.checkState(Preconditions.java:145)",
+                "at org.apache.hadoop.hdfs.nfs.nfs3.OpenFileCtx.executeWriteBack(OpenFileCtx.java:890)",
+                "at org.apache.hadoop.hdfs.nfs.nfs3.AsyncDataService$WriteBackTask.run(AsyncDataService.java:134)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)",
+                "at java.lang.Thread.run(Thread.java:662)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The writeback state should be correctly maintained without errors.",
+            "ObservedBehavior": "An error occurs indicating that the openFileCtx has false async status.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-11827.json",
+        "creation_time": "2017-05-16T06:28:49.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-11827",
+            "Title": "NPE is thrown when log level changed in BlockPlacementPolicyDefault#chooseRandom() method",
+            "Description": "A NullPointerException occurs when changing the log level of BlockPlacementPolicy using the 'hadoop daemonlog' command.",
+            "StackTrace": [
+                "2017-05-16 13:36:51,053 ERROR org.apache.hadoop.hdfs.server.blockmanagement.BlockManager: ReplicationMonitor thread received Runtime exception.",
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault.chooseRandom(BlockPlacementPolicyDefault.java:666)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault.chooseRemoteRack(BlockPlacementPolicyDefault.java:607)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault.chooseTarget(BlockPlacementPolicyDefault.java:375)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault.chooseTarget(BlockPlacementPolicyDefault.java:446)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault.chooseTarget(BlockPlacementPolicyDefault.java:446)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault.chooseTarget(BlockPlacementPolicyDefault.java:240)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault.chooseTarget(BlockPlacementPolicyDefault.java:119)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyWithMultiDC.chooseTargetInternal(BlockPlacementPolicyWithMultiDC.java:263)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyWithMultiDC.chooseTarget(BlockPlacementPolicyWithMultiDC.java:214)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager$ReplicationWork.chooseTargets(BlockManager.java:3836)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager$ReplicationWork.access$200(BlockManager.java:3801)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeReplicationWorkForBlocks(BlockManager.java:1394)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeReplicationWork(BlockManager.java:1300)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeDatanodeWork(BlockManager.java:3764)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager$ReplicationMonitor.run(BlockManager.java:3711)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "StepsToReproduce": [
+                "Change the log level of BlockPlacementPolicy using the 'hadoop daemonlog' command."
+            ],
+            "ExpectedBehavior": "The system should handle log level changes without throwing exceptions.",
+            "ObservedBehavior": "A NullPointerException is thrown, causing the ReplicationMonitor thread to fail.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-6804.json",
+        "creation_time": "2014-08-01T05:37:23.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-6804",
+            "Title": "Add test for race condition between transferring block and appending block causes \"Unexpected checksum mismatch exception\"",
+            "Description": "The datanode logs indicate a checksum error during block transmission, leading to a false report of corruption on the source datanode.",
+            "StackTrace": [
+                "java.io.IOException: Terminating due to a checksum error.",
+                "java.io.IOException: Unexpected checksum mismatch while writing BP-2072804351-192.168.2.104-1406008383435:blk_1073741997_9248 from /192.168.2.101:39495",
+                "at org.apache.hadoop.hdfs.server.datanode.BlockReceiver.receivePacket(BlockReceiver.java:536)",
+                "at org.apache.hadoop.hdfs.server.datanode.BlockReceiver.receiveBlock(BlockReceiver.java:703)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.writeBlock(DataXceiver.java:575)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.Receiver.opWriteBlock(Receiver.java:115)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.Receiver.processOp(Receiver.java:68)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.run(DataXceiver.java:221)",
+                "at java.lang.Thread.run(Thread.java:744)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The block should be transmitted without checksum errors.",
+            "ObservedBehavior": "The destination datanode reports a checksum mismatch, marking the replica on the source datanode as corrupt, despite it being valid.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-5843.json",
+        "creation_time": "2014-01-28T06:05:16.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-5843",
+            "Title": "DFSClient.getFileChecksum() throws IOException if checksum is disabled",
+            "Description": "When a file is created with checksum disabled, calling FileSystem.getFileChecksum() results in an IOException.",
+            "StackTrace": [
+                "java.io.IOException: Fail to get block MD5 for BP-341493254-192.168.1.10-1390888724459:blk_1073741825_1001",
+                "at org.apache.hadoop.hdfs.DFSClient.getFileChecksum(DFSClient.java:1965)",
+                "at org.apache.hadoop.hdfs.DFSClient.getFileChecksum(DFSClient.java:1771)",
+                "at org.apache.hadoop.hdfs.DistributedFileSystem$21.doCall(DistributedFileSystem.java:1186)",
+                "at org.apache.hadoop.hdfs.DistributedFileSystem$21.doCall(DistributedFileSystem.java:1)",
+                "at org.apache.hadoop.fs.FileSystemLinkResolver.resolve(FileSystemLinkResolver.java:81)",
+                "at org.apache.hadoop.hdfs.DistributedFileSystem.getFileChecksum(DistributedFileSystem.java:1194)",
+                "java.lang.ArithmeticException: / by zero",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.blockChecksum(DataXceiver.java:658)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.Receiver.opBlockChecksum(Receiver.java:169)",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.Receiver.processOp(Receiver.java:77)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.run(DataXceiver.java:221)",
+                "at java.lang.Thread.run(Thread.java:695)"
+            ],
+            "StepsToReproduce": [
+                "Create a file with checksum disabled using ChecksumOpt.disabled()",
+                "Call FileSystem.getFileChecksum() on the created file"
+            ],
+            "ExpectedBehavior": "The system should return the file checksum without throwing an exception.",
+            "ObservedBehavior": "An IOException is thrown indicating failure to get block MD5.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-8070.json",
+        "creation_time": "2015-04-06T19:57:58.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-8070",
+            "Title": "Pre-HDFS-7915 DFSClient cannot use short circuit on post-HDFS-7915 DataNode",
+            "Description": "HDFS ShortCircuitShm layer keeps the task locked up during multi-threaded split-generation, potentially due to compatibility issues between different versions of DataNode and Client.",
+            "StackTrace": [
+                "java.io.IOException: ERROR_INVALID: there is no shared memory segment registered with shmId a86ee34576d93c4964005d90b0d97c38",
+                "at org.apache.hadoop.hdfs.shortcircuit.ShortCircuitCache$SlotReleaser.run(ShortCircuitCache.java:208)",
+                "at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)",
+                "at java.util.concurrent.FutureTask.run(FutureTask.java:266)",
+                "at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)",
+                "at java.lang.Thread.run(Thread.java:745)",
+                "java.nio.channels.ClosedChannelException",
+                "at org.apache.hadoop.util.CloseableReferenceCount.reference(CloseableReferenceCount.java:57)",
+                "at org.apache.hadoop.net.unix.DomainSocket.shutdown(DomainSocket.java:387)",
+                "at org.apache.hadoop.hdfs.shortcircuit.DfsClientShmManager$EndpointShmManager.shutdown(DfsClientShmManager.java:378)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The DFSClient should be able to use short circuit access without locking issues.",
+            "ObservedBehavior": "The task is locked up during multi-threaded split-generation due to failure in releasing short-circuit shared memory slots.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-1085.json",
+        "creation_time": "2010-04-06T22:49:40.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-1085",
+            "Title": "hftp read failing silently",
+            "Description": "When performing a massive distcp through hftp, many tasks fail due to file size mismatches, indicating that the read operation did not fail, but the resulting file was smaller than expected.",
+            "StackTrace": [
+                "java.io.IOException: File size not matched: copied 193855488 bytes (184.9m) to tmpfile (=hdfs://omehost.com:8020/somepath/part-00032) but expected 1710327403 bytes (1.6g) from hftp://someotherhost/somepath/part-00032",
+                "at org.apache.hadoop.tools.DistCp$CopyFilesMapper.copy(DistCp.java:435)",
+                "at org.apache.hadoop.tools.DistCp$CopyFilesMapper.map(DistCp.java:543)",
+                "at org.apache.hadoop.tools.DistCp$CopyFilesMapper.map(DistCp.java:310)",
+                "at org.apache.hadoop.mapred.MapRunner.run(MapRunner.java:50)",
+                "at org.apache.hadoop.mapred.MapTask.runOldMapper(MapTask.java:358)",
+                "at org.apache.hadoop.mapred.MapTask.run(MapTask.java:307)",
+                "at org.apache.hadoop.mapred.Child.main(Child.java:159)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The file should be copied successfully with the correct size matching the expected bytes.",
+            "ObservedBehavior": "The file copy fails with a size mismatch error, resulting in a truncated file.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-12339.json",
+        "creation_time": "2017-08-23T03:16:49.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-12339",
+            "Title": "NFS Gateway on Shutdown Gives Unregistration Failure. Does Not Unregister with rpcbind Portmapper",
+            "Description": "When stopping NFS Gateway, an error is thrown indicating unregistration failure with the rpcbind portmapper.",
+            "StackTrace": [
+                "2017-08-17 18:09:16,529 ERROR org.apache.hadoop.oncrpc.RpcProgram: Unregistration failure with localhost:2049, portmap entry: (PortmapMapping-100003:3:6:2049)",
+                "2017-08-17 18:09:16,531 WARN org.apache.hadoop.util.ShutdownHookManager: ShutdownHook 'NfsShutdownHook' failed, java.lang.RuntimeException: Unregistration failure",
+                "java.lang.RuntimeException: Unregistration failure",
+                "Caused by: java.net.SocketException: Socket is closed",
+                "at java.net.DatagramSocket.send(DatagramSocket.java:641)",
+                "at org.apache.hadoop.oncrpc.SimpleUdpClient.run(SimpleUdpClient.java:62)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The NFS Gateway should unregister successfully with the rpcbind portmapper upon shutdown.",
+            "ObservedBehavior": "The NFS Gateway fails to unregister, resulting in an unregistration failure error.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-6520.json",
+        "creation_time": "2014-06-12T02:32:29.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-6520",
+            "Title": "hdfs fsck -move passes invalid length value when creating BlockReader",
+            "Description": "An error occurs when running 'fsck -move' after corrupting a block in HDFS, leading to an IOException.",
+            "StackTrace": [
+                "java.io.IOException: Expected empty end-of-read packet! Header: PacketHeader with packetLen=66048 header data: offsetInBlock: 65536",
+                "at org.apache.hadoop.hdfs.RemoteBlockReader2.readTrailingEmptyPacket(RemoteBlockReader2.java:259)",
+                "at org.apache.hadoop.hdfs.RemoteBlockReader2.readNextPacket(RemoteBlockReader2.java:220)",
+                "at org.apache.hadoop.hdfs.RemoteBlockReader2.read(RemoteBlockReader2.java:138)",
+                "at org.apache.hadoop.hdfs.server.namenode.NamenodeFsck.copyBlock(NamenodeFsck.java:649)",
+                "at org.apache.hadoop.hdfs.server.namenode.NamenodeFsck.copyBlocksToLostFound(NamenodeFsck.java:543)",
+                "at org.apache.hadoop.hdfs.server.namenode.NamenodeFsck.check(NamenodeFsck.java:460)",
+                "at org.apache.hadoop.hdfs.server.namenode.NamenodeFsck.fsck(NamenodeFsck.java:233)"
+            ],
+            "StepsToReproduce": [
+                "Set up a pseudo cluster",
+                "Copy a file to HDFS",
+                "Corrupt a block of the file",
+                "Run fsck to check the file",
+                "Run fsck -move to move the corrupted file to /lost+found"
+            ],
+            "ExpectedBehavior": "The corrupted file should be moved to /lost+found without errors.",
+            "ObservedBehavior": "An IOException occurs indicating an expected empty end-of-read packet.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-10715.json",
+        "creation_time": "2016-08-02T08:10:23.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-10715",
+            "Title": "NPE when applying AvailableSpaceBlockPlacementPolicy",
+            "Description": "The introduction of AvailableSpaceBlockPlacementPolicy in HDFS-8131 caused a NullPointerException (NPE) in certain scenarios.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.AvailableSpaceBlockPlacementPolicy.compareDataNode(AvailableSpaceBlockPlacementPolicy.java:95)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.AvailableSpaceBlockPlacementPolicy.chooseDataNode(AvailableSpaceBlockPlacementPolicy.java:80)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault.chooseRandom(BlockPlacementPolicyDefault.java:691)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.chooseTarget4NewBlock(BlockManager.java:1606)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.getAdditionalBlock(FSNamesystem.java:3315)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNodeRpcServer.addBlock(NameNodeRpcServer.java:679)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should handle block placement without throwing a NullPointerException.",
+            "ObservedBehavior": "A NullPointerException is thrown when the AvailableSpaceBlockPlacementPolicy is applied.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-3332.json",
+        "creation_time": "2012-04-27T04:42:38.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-3332",
+            "Title": "NullPointerException in DN when directoryscanner is trying to report bad blocks",
+            "Description": "A NullPointerException occurs in the DataNode when the DirectoryScanner attempts to report bad blocks after a block corruption.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.protocol.DatanodeID.<init>(DatanodeID.java:66)",
+                "at org.apache.hadoop.hdfs.protocol.DatanodeInfo.<init>(DatanodeInfo.java:87)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPServiceActor.reportBadBlocks(BPServiceActor.java:238)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPOfferService.reportBadBlocks(BPOfferService.java:187)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.reportBadBlocks(DataNode.java:559)",
+                "at org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsDatasetImpl.checkAndUpdate(FsDatasetImpl.java:1377)",
+                "at org.apache.hadoop.hdfs.server.datanode.DirectoryScanner.reconcile(DirectoryScanner.java:318)",
+                "at org.apache.hadoop.hdfs.server.datanode.DirectoryScanner.run(DirectoryScanner.java:284)"
+            ],
+            "StepsToReproduce": [
+                "Start 1 NameNode (NN) and 1 DataNode (DN) with HA configuration.",
+                "Corrupt a block in the DataNode.",
+                "Observe the logs during the block reporting process."
+            ],
+            "ExpectedBehavior": "The DataNode should successfully report bad blocks without throwing an exception.",
+            "ObservedBehavior": "A NullPointerException is thrown during the reporting of bad blocks.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-6130.json",
+        "creation_time": "2014-03-20T07:15:47.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-6130",
+            "Title": "NPE when upgrading namenode from fsimages older than -32",
+            "Description": "An NPE occurs when attempting to upgrade a namenode from an older fsimage (0.20.2-cdh3u1) with HA enabled, specifically during the command 'hdfs namenode -initializeSharedEdits'.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.namenode.FSDirectory.isReservedName(FSDirectory.java:2984)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode$Loader.addToParent(FSImageFormatPBINode.java:205)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImageFormatPBINode$Loader.loadINodeDirectorySection(FSImageFormatPBINode.java:162)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImageFormatProtobuf$Loader.loadInternal(FSImageFormatProtobuf.java:243)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImageFormatProtobuf$Loader.load(FSImageFormatProtobuf.java:168)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.loadFSImage(FSImage.java:895)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.initializeSharedEdits(NameNode.java:912)"
+            ],
+            "StepsToReproduce": [
+                "Upgrade an old cluster (0.20.2-cdh3u1) to trunk instance.",
+                "Enable HA configuration.",
+                "Run the command 'hdfs namenode -initializeSharedEdits'."
+            ],
+            "ExpectedBehavior": "The namenode should initialize shared edits without throwing an exception.",
+            "ObservedBehavior": "A NullPointerException is thrown, causing the initialization to fail.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-2827.json",
+        "creation_time": "2012-01-23T09:34:51.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-2827",
+            "Title": "Cannot save namespace after renaming a directory above a file with an open lease",
+            "Description": "Checkpointing fails when renaming a directory that contains a file with an open lease.",
+            "StackTrace": [
+                "2012-01-23 15:03:14,204 ERROR namenode.FSImage (FSImage.java:run(795)) - Unable to save image for E:\\HDFS-1623\\hadoop-hdfs-project\\hadoop-hdfs\\build\\test\\data\\dfs\\name3",
+                "java.io.IOException: saveLeases found path /test1/est/abc.txt but no matching entry in namespace.[/test1/est/abc.txt]",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.saveFilesUnderConstruction(FSNamesystem.java:4336)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImageFormat$Saver.save(FSImageFormat.java:588)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.saveFSImage(FSImage.java:761)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage$FSImageSaver.run(FSImage$FSImageSaver.java:789)",
+                "at java.lang.Thread.run(Unknown Source)"
+            ],
+            "StepsToReproduce": [
+                "Execute fs.mkdirs(new Path('/test1'));",
+                "Create a file with fs.create(new Path('/test/abc.txt')); // don't close",
+                "Rename the directory with fs.rename(new Path('/test/'), new Path('/test1/'));"
+            ],
+            "ExpectedBehavior": "The namespace should save successfully after renaming the directory.",
+            "ObservedBehavior": "Checkpointing fails with an IOException indicating a missing entry in the namespace.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-11056.json",
+        "creation_time": "2016-10-25T23:00:33.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-11056",
+            "Title": "Concurrent append and read operations lead to checksum error",
+            "Description": "When two clients perform concurrent operations on the same file, one appending and the other reading, a checksum error occurs in the data read.",
+            "StackTrace": [
+                "java.lang.RuntimeException: org.apache.hadoop.fs.ChecksumException: Checksum CRC32C not matched for file /tmp/bar.txt at position 0: expected=C893FEDE but computed=69322F90, algorithm=PureJavaCrc32C",
+                "at org.apache.hadoop.util.DataChecksum.throwChecksumException(DataChecksum.java:407)",
+                "at org.apache.hadoop.util.DataChecksum.verifyChunked(DataChecksum.java:351)",
+                "at org.apache.hadoop.hdfs.client.impl.BlockReaderRemote.readNextPacket(BlockReaderRemote.java:216)",
+                "at org.apache.hadoop.hdfs.client.impl.BlockReaderRemote.read(BlockReaderRemote.java:144)",
+                "at org.apache.hadoop.hdfs.DFSInputStream.readBuffer(DFSInputStream.java:704)",
+                "at java.io.DataInputStream.read(DataInputStream.java:149)"
+            ],
+            "StepsToReproduce": [
+                "Open and append to a file continuously from one client.",
+                "Open and read from the same file continuously from another client."
+            ],
+            "ExpectedBehavior": "The reader should read the correct checksum that matches the data before the update.",
+            "ObservedBehavior": "The reader eventually encounters a checksum error in the data read.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-6825.json",
+        "creation_time": "2014-08-06T01:31:34.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-6825",
+            "Title": "Edit log corruption due to delayed block removal",
+            "Description": "A FileNotFoundException occurs when trying to update disk space for a deleted file, leading to edit log corruption.",
+            "StackTrace": [
+                "java.io.FileNotFoundException: Path not found: /solr/hierarchy/core_node1/data/tlog/tlog.xyz",
+                "at org.apache.hadoop.hdfs.server.namenode.FSDirectory.updateSpaceConsumed(FSDirectory.java:1807)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.commitOrCompleteLastBlock(FSNamesystem.java:3975)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.closeFileCommitBlocks(FSNamesystem.java:4178)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.commitBlockSynchronization(FSNamesystem.java:4146)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNodeRpcServer.commitBlockSynchronization(NameNodeRpcServer.java:662)",
+                "at org.apache.hadoop.hdfs.protocolPB.DatanodeProtocolServerSideTranslatorPB.commitBlockSynchronization(DatanodeProtocolServerSideTranslatorPB.java:270)",
+                "at org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos$DatanodeProtocolService$2.callBlockingMethod(DatanodeProtocolProtos.java:28073)",
+                "at org.apache.hadoop.ipc.ProtobufRpcEngine$Server$ProtoBufRpcInvoker.call(ProtobufRpcEngine.java:585)",
+                "at org.apache.hadoop.ipc.RPC$Server.call(RPC.java:1026)",
+                "at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:1986)"
+            ],
+            "StepsToReproduce": [
+                "Create a file at /solr/hierarchy/core_node1/data/tlog/tlog.xyz",
+                "Attempt to append to the file after the lease has expired",
+                "Delete the file while there are still pending blocks",
+                "Call commitBlockSynchronization()"
+            ],
+            "ExpectedBehavior": "The system should handle file deletions and pending blocks without throwing exceptions.",
+            "ObservedBehavior": "A FileNotFoundException is thrown, leading to edit log corruption.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-5710.json",
+        "creation_time": "2014-01-01T04:06:03.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-5710",
+            "Title": "FSDirectory#getFullPathName should check inodes against null",
+            "Description": "A NullPointerException occurs in FSDirectory#getFullPathName when getRelativePathINodes() returns null without a null check.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.namenode.FSDirectory.getFullPathName(FSDirectory.java:1871)",
+                "at org.apache.hadoop.hdfs.server.namenode.INode.getFullPathName(INode.java:482)",
+                "at org.apache.hadoop.hdfs.server.namenode.INodeFile.getName(INodeFile.java:316)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicy.chooseTarget(BlockPlacementPolicy.java:118)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeReplicationWorkForBlocks(BlockManager.java:1259)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeReplicationWork(BlockManager.java:1167)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.computeDatanodeWork(BlockManager.java:3158)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager$ReplicationMonitor.run(BlockManager.java:3112)",
+                "at java.lang.Thread.run(Thread.java:724)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should handle null inodes gracefully without throwing a NullPointerException.",
+            "ObservedBehavior": "A NullPointerException is thrown when getRelativePathINodes() returns null.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-3555.json",
+        "creation_time": "2012-06-20T17:36:48.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-3555",
+            "Title": "idle client socket triggers DN ERROR log (should be INFO or DEBUG)",
+            "Description": "Datanode service is logging java.net.SocketTimeoutException at ERROR level. This message indicates that the datanode is not able to send data to the client because the client has stopped reading. This message is not really a cause for alarm and should be INFO level.",
+            "StackTrace": [
+                "java.net.SocketTimeoutException: 480000 millis timeout while waiting for channel to be ready for write. ch : java.nio.channels.SocketChannel[connected local=/10.10.120.67:50010 remote=/10.10.120.67:59282]",
+                "at org.apache.hadoop.net.SocketIOWithTimeout.waitForIO(SocketIOWithTimeout.java:246)",
+                "at org.apache.hadoop.net.SocketOutputStream.waitForWritable(SocketOutputStream.java:159)",
+                "at org.apache.hadoop.net.SocketOutputStream.transferToFully(SocketOutputStream.java:198)",
+                "at org.apache.hadoop.hdfs.server.datanode.BlockSender.sendChunks(BlockSender.java:397)",
+                "at org.apache.hadoop.hdfs.server.datanode.BlockSender.sendBlock(BlockSender.java:493)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.readBlock(DataXceiver.java:267)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.run(DataXceiver.java:163)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The datanode should log the socket timeout as INFO or DEBUG level instead of ERROR.",
+            "ObservedBehavior": "The datanode logs a java.net.SocketTimeoutException at ERROR level.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-10962.json",
+        "creation_time": "2016-10-05T04:31:45.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-10962",
+            "Title": "TestRequestHedgingProxyProvider is flaky",
+            "Description": "This test fails occasionally with an error indicating that a method was expected to be invoked but was not.",
+            "StackTrace": [
+                "org.mockito.exceptions.verification.WantedButNotInvoked: Wanted but not invoked: namenodeProtocols.getStats();",
+                "-> at org.apache.hadoop.hdfs.server.namenode.ha.TestRequestHedgingProxyProvider.testHedgingWhenOneFails(TestRequestHedgingProxyProvider.java:78)",
+                "Actually, there were zero interactions with this mock."
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The method namenodeProtocols.getStats() should be invoked during the test.",
+            "ObservedBehavior": "The method was not invoked, leading to a failure in the test.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-12363.json",
+        "creation_time": "2017-08-28T05:34:21.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-12363",
+            "Title": "Possible NPE in BlockManager$StorageInfoDefragmenter#scanAndCompactStorages",
+            "Description": "The NameNode encountered a NullPointerException (NPE) during operation, leading to a crash.",
+            "StackTrace": [
+                "ERROR org.apache.hadoop.hdfs.server.blockmanagement.BlockManager: Thread received Runtime exception.",
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager$StorageInfoDefragmenter.scanAndCompactStorages(BlockManager.java:3897)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager$StorageInfoDefragmenter.run(BlockManager.java:3852)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The NameNode should operate without encountering a NullPointerException.",
+            "ObservedBehavior": "The NameNode crashes with a NullPointerException during the execution of the BlockManager's storage compaction.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-7916.json",
+        "creation_time": "2015-03-11T10:40:00.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-7916",
+            "Title": "'reportBadBlocks' from datanodes to standby Node BPServiceActor goes for infinite loop",
+            "Description": "If any bad block is found, the BPSA for StandbyNode will repeatedly attempt to report it, leading to an infinite loop.",
+            "StackTrace": [
+                "org.apache.hadoop.hdfs.server.datanode.BPServiceActorActionException: Failed to report bad block BP-1384821822-10.224.54.68-1422634566395:blk_1079544278_5812006 to namenode:",
+                "at org.apache.hadoop.hdfs.server.datanode.ReportBadBlockAction.reportTo(ReportBadBlockAction.java:63)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPServiceActor.processQueueMessages(BPServiceActor.java:1020)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPServiceActor.offerService(BPServiceActor.java:762)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPServiceActor.run(BPServiceActor.java:856)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should report bad blocks without entering an infinite loop.",
+            "ObservedBehavior": "The system enters an infinite loop when attempting to report bad blocks to the namenode.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-9549.json",
+        "creation_time": "2015-12-11T16:25:08.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-9549",
+            "Title": "TestCacheDirectives#testExceedsCapacity is flaky",
+            "Description": "The test TestCacheDirectives.testExceedsCapacity fails frequently in Jenkins due to a pending cached list not being empty.",
+            "StackTrace": [
+                "java.lang.AssertionError: Pending cached list of 127.0.0.1:54134 is not empty, [{blockId=1073741841, replication=1, mark=true}]",
+                "\tat org.junit.Assert.fail(Assert.java:88)",
+                "\tat org.junit.Assert.assertTrue(Assert.java:41)",
+                "\tat org.apache.hadoop.hdfs.server.namenode.TestCacheDirectives.checkPendingCachedEmpty(TestCacheDirectives.java:1479)",
+                "\tat org.apache.hadoop.hdfs.server.namenode.TestCacheDirectives.testExceedsCapacity(TestCacheDirectives.java:1502)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The pending cached list should be empty after the test execution.",
+            "ObservedBehavior": "The pending cached list is not empty, causing the test to fail.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-11164.json",
+        "creation_time": "2016-11-22T05:58:03.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-11164",
+            "Title": "Mover should avoid unnecessary retries if the block is pinned",
+            "Description": "When the mover attempts to move a pinned block to another datanode, it encounters an IOException and marks the movement as failure. The mover continues to retry the operation unnecessarily due to block pinning.",
+            "StackTrace": [
+                "java.io.IOException: Got error, status=ERROR, status message Not able to copy block 1073741825 to /127.0.0.1:19826 because it's pinned",
+                "at org.apache.hadoop.hdfs.protocol.datatransfer.DataTransferProtoUtil.checkBlockOpStatus(DataTransferProtoUtil.java:118)",
+                "at org.apache.hadoop.hdfs.server.balancer.Dispatcher$PendingMove.receiveResponse(Dispatcher.java:417)",
+                "at org.apache.hadoop.hdfs.server.balancer.Dispatcher$PendingMove.dispatch(Dispatcher.java:358)",
+                "at org.apache.hadoop.hdfs.server.balancer.Dispatcher$PendingMove.access$5(Dispatcher.java:322)",
+                "at org.apache.hadoop.hdfs.server.balancer.Dispatcher$1.run(Dispatcher.java:1075)",
+                "at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "StepsToReproduce": [
+                "Attempt to move a pinned block to another datanode."
+            ],
+            "ExpectedBehavior": "The mover should not attempt to retry moving pinned blocks.",
+            "ObservedBehavior": "The mover continues to retry moving pinned blocks, resulting in repeated failure messages.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-5291.json",
+        "creation_time": "2013-10-02T23:52:02.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-5291",
+            "Title": "Clients need to retry when Active NN is in SafeMode",
+            "Description": "In our test, we saw NN immediately went into safemode after transitioning to active state. This can cause HBase region server to timeout and kill itself. We should allow clients to retry when HA is enabled and ANN is in SafeMode.",
+            "StackTrace": [
+                "java.lang.InterruptedException: sleep interrupted",
+                "at java.lang.Thread.sleep(Native Method)",
+                "at org.apache.hadoop.hdfs.server.namenode.ha.EditLogTailer$EditLogTailerThread.doWork(EditLogTailer.java:334)",
+                "at org.apache.hadoop.hdfs.server.namenode.ha.EditLogTailer$EditLogTailerThread.access$200(EditLogTailer.java:279)",
+                "at org.apache.hadoop.hdfs.server.namenode.ha.EditLogTailer$EditLogTailerThread$1.run(EditLogTailer.java:296)",
+                "at java.security.AccessController.doPrivileged(Native Method)",
+                "at javax.security.auth.Subject.doAs(Subject.java:356)",
+                "at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1463)",
+                "at org.apache.hadoop.security.SecurityUtil.doAsLoginUserOrFatal(SecurityUtil.java:454)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "Clients should be able to retry operations when the Active NameNode is in SafeMode.",
+            "ObservedBehavior": "The Active NameNode goes into SafeMode immediately after transitioning to active state, causing HBase region server to timeout and kill itself.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-12836.json",
+        "creation_time": "2017-11-17T20:26:32.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-12836",
+            "Title": "startTxId could be greater than endTxId when tailing in-progress edit log",
+            "Description": "When {{dfs.ha.tail-edits.in-progress}} is true, the edit log tailer may encounter an error if {{remoteLog.getStartTxId()}} is greater than {{endTxId}}.",
+            "StackTrace": [
+                "org.apache.hadoop.hdfs.server.namenode.RedundantEditLogInputStream$PrematureEOFException: got premature end-of-file at txid 86; expected file to go up to 85",
+                "at org.apache.hadoop.hdfs.server.namenode.RedundantEditLogInputStream.nextOp(RedundantEditLogInputStream.java:197)",
+                "at org.apache.hadoop.hdfs.server.namenode.EditLogInputStream.readOp(EditLogInputStream.java:85)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLogLoader.loadEditRecords(FSEditLogLoader.java:205)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.loadEdits(FSImage.java:882)",
+                "at org.apache.hadoop.hdfs.server.namenode.ha.EditLogTailer.doTailEdits(EditLogTailer.java:293)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The edit log tailer should correctly process in-progress edit log segments without errors.",
+            "ObservedBehavior": "An error occurs when the start transaction ID is greater than the end transaction ID, leading to a premature end-of-file exception.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-8113.json",
+        "creation_time": "2015-04-09T11:29:31.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-8113",
+            "Title": "Add check for null BlockCollection pointers in BlockInfoContiguous structures",
+            "Description": "The copy constructor for BlockInfoContiguous can throw a NullPointerException if the 'bc' field is null, leading to DataNodes failing during block reports with NameNode.",
+            "StackTrace": [
+                "org.apache.hadoop.ipc.RemoteException(java.lang.NullPointerException): java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo.(BlockInfo.java:80)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager$BlockToMarkCorrupt.(BlockManager.java:1696)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.checkReplicaCorrupt(BlockManager.java:2185)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.processReportedBlock(BlockManager.java:2047)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.reportDiff(BlockManager.java:1950)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.processReport(BlockManager.java:1823)",
+                "at org.apache.hadoop.hdfs.server.blockmanagement.BlockManager.processReport(BlockManager.java:1750)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNodeRpcServer.blockReport(NameNodeRpcServer.java:1069)",
+                "at org.apache.hadoop.hdfs.protocolPB.DatanodeProtocolServerSideTranslatorPB.blockReport(DatanodeProtocolServerSideTranslatorPB.java:152)",
+                "at org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos$DatanodeProtocolService$2.callBlockingMethod(DatanodeProtocolProtos.java:26382)",
+                "at org.apache.hadoop.ipc.ProtobufRpcEngine$Server$ProtoBufRpcInvoker.call(ProtobufRpcEngine.java:587)",
+                "at org.apache.hadoop.ipc.RPC$Server.call(RPC.java:1026)",
+                "at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:2013)",
+                "at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:2009)",
+                "at java.security.AccessController.doPrivileged(Native Method)",
+                "at javax.security.auth.Subject.doAs(Subject.java:415)",
+                "at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1623)",
+                "at org.apache.hadoop.ipc.Server$Handler.run(Server.java:2007)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should handle null BlockCollection pointers gracefully without throwing exceptions.",
+            "ObservedBehavior": "NullPointerException is thrown, causing DataNodes to fail during block reports.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-10512.json",
+        "creation_time": "2016-06-09T14:34:04.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-10512",
+            "Title": "VolumeScanner may terminate due to NPE in DataNode.reportBadBlocks",
+            "Description": "VolumeScanner may terminate due to unexpected NullPointerException thrown in DataNode.reportBadBlocks(). This issue was observed in a production CDH 5.5.1 cluster and persists in upstream trunk.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.reportBadBlocks(DataNode.java:1018)",
+                "at org.apache.hadoop.hdfs.server.datanode.VolumeScanner$ScanResultHandler.handle(VolumeScanner.java:287)",
+                "at org.apache.hadoop.hdfs.server.datanode.VolumeScanner.scanBlock(VolumeScanner.java:443)",
+                "at org.apache.hadoop.hdfs.server.datanode.VolumeScanner.runLoop(VolumeScanner.java:547)",
+                "at org.apache.hadoop.hdfs.server.datanode.VolumeScanner.run(VolumeScanner.java:621)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "VolumeScanner should report bad blocks without terminating unexpectedly.",
+            "ObservedBehavior": "VolumeScanner exits due to a NullPointerException.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-10729.json",
+        "creation_time": "2016-08-08T02:36:05.000+0000",
+        "bug_report": {
+            "BugID": "12995526",
+            "Title": "Improve log message for edit loading failures caused by FS limit checks.",
+            "Description": "The Standby NameNode crashes due to a NullPointerException (NPE) when loading edits, specifically when the maximum number of items per directory is exceeded.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.namenode.FSDirectory.getFileEncryptionInfo(FSDirectory.java:2914)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSDirectory.createFileStatus(FSDirectory.java:2469)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLogLoader.applyEditLogOp(FSEditLogLoader.java:375)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLogLoader.loadEditRecords(FSEditLogLoader.java:230)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLogLoader.loadFSEdits(FSEditLogLoader.java:139)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.loadEdits(FSImage.java:829)",
+                "at org.apache.hadoop.hdfs.server.namenode.ha.EditLogTailer.doTailEdits(EditLogTailer.java:232)"
+            ],
+            "StepsToReproduce": [
+                "Load edits into the Standby NameNode.",
+                "Ensure the number of items in the directory exceeds the limit."
+            ],
+            "ExpectedBehavior": "The Standby NameNode should handle the loading of edits without crashing.",
+            "ObservedBehavior": "The Standby NameNode crashes with a NullPointerException when the directory item limit is exceeded.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-13040.json",
+        "creation_time": "2018-01-19T19:47:02.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-13040",
+            "Title": "Kerberized inotify client fails despite kinit properly",
+            "Description": "The inotify client fails to operate correctly even when valid Kerberos credentials are present, particularly after the Namenodes have been running longer than the Kerberos ticket lifetime.",
+            "StackTrace": [
+                "org.apache.hadoop.hdfs.server.namenode.RedundantEditLogInputStream.nextOp(RedundantEditLogInputStream.java:213)",
+                "org.apache.hadoop.hdfs.server.namenode.EditLogInputStream.readOp(EditLogInputStream.java:85)",
+                "org.apache.hadoop.hdfs.server.namenode.NameNodeRpcServer.readOp(NameNodeRpcServer.java:1701)",
+                "org.apache.hadoop.hdfs.server.namenode.NameNodeRpcServer.getEditsFromTxid(NameNodeRpcServer.java:1763)",
+                "org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolServerSideTranslatorPB.getEditsFromTxid(ClientNamenodeProtocolServerSideTranslatorPB.java:1490)",
+                "org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos$ClientNamenodeProtocol$2.callBlockingMethod(ClientNamenodeProtocolProtos.java)"
+            ],
+            "StepsToReproduce": [
+                "Start Namenodes with valid Kerberos credentials.",
+                "Wait for the Namenodes to run longer than the Kerberos ticket lifetime.",
+                "Attempt to use the inotify client."
+            ],
+            "ExpectedBehavior": "The inotify client should successfully retrieve edits from the Namenodes without failure.",
+            "ObservedBehavior": "The inotify client fails with a RemoteException indicating issues with reading journal entries due to expired Kerberos tickets.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-3374.json",
+        "creation_time": "2012-05-04T22:08:19.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-3374",
+            "Title": "hdfs' TestDelegationToken fails intermittently with a race condition",
+            "Description": "The testcase is failing because the MiniDFSCluster is shutdown before the secret manager can change the key, which calls system.exit with no edit streams available.",
+            "StackTrace": [
+                "2012-05-04 15:03:51,521 WARN  common.Storage (FSImage.java:updateRemovedDirs(224)) - Removing storage dir /home/horton/src/hadoop/build/test/data/dfs/name1",
+                "2012-05-04 15:03:51,522 FATAL namenode.FSNamesystem (FSEditLog.java:fatalExit(388)) - No edit streams are accessible",
+                "java.lang.Exception: No edit streams are accessible",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLog.fatalExit(FSEditLog.java:388)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLog.exitIfNoStreams(FSEditLog.java:407)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLog.removeEditsAndStorageDir(FSEditLog.java:432)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLog.removeEditsStreamsAndStorageDirs(FSEditLog.java:468)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLog.logSync(FSEditLog.java:1028)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.logUpdateMasterKey(FSNamesystem.java:5641)",
+                "at org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenSecretManager.logUpdateMasterKey(DelegationTokenSecretManager.java:286)",
+                "at org.apache.hadoop.security.token.delegation.AbstractDelegationTokenSecretManager.updateCurrentKey(AbstractDelegationTokenSecretManager.java:150)",
+                "at org.apache.hadoop.security.token.delegation.AbstractDelegationTokenSecretManager.rollMasterKey(AbstractDelegationTokenSecretManager.java:174)",
+                "at org.apache.hadoop.security.token.delegation.AbstractDelegationTokenSecretManager$ExpiredTokenRemover.run(AbstractDelegationTokenSecretManager.java:385)",
+                "at java.lang.Thread.run(Thread.java:662)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should not call system.exit when edit streams are not available.",
+            "ObservedBehavior": "The system calls system.exit, leading to a failure in the test case.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-2359.json",
+        "creation_time": "2011-09-23T00:20:53.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-2359",
+            "Title": "NPE found in Datanode log while Disk failed during different HDFS operation",
+            "Description": "A NullPointerException occurs in the Datanode log when three disks fail during a distcp operation in an HDFS cluster.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.hdfs.server.datanode.DataBlockScanner$LogFileHandler.appendLine(DataBlockScanner.java:788)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataBlockScanner.updateScanStatusInternal(DataBlockScanner.java:365)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataBlockScanner.verifiedByClient(DataBlockScanner.java:308)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.readBlock(DataXceiver.java:205)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataXceiver.run(DataXceiver.java:99)",
+                "at java.lang.Thread.run(Thread.java:619)"
+            ],
+            "StepsToReproduce": [
+                "Set up a cluster of 4 Datanodes, each with 12 disks.",
+                "Configure hdfs-site.xml with 'dfs.datanode.failed.volumes.tolerated=3'.",
+                "Run a distcp command while simultaneously changing the permissions of three disks to 000."
+            ],
+            "ExpectedBehavior": "The distcp job should complete successfully without any exceptions in the Datanode logs.",
+            "ObservedBehavior": "The distcp job completes, but NullPointerExceptions are logged in the Datanode.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-10986.json",
+        "creation_time": "2016-10-08T00:50:36.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-10986",
+            "Title": "DFSAdmin should log detailed error message if any",
+            "Description": "Certain subcommands in DFSAdmin swallow IOException and provide limited error messages, making it difficult for users to diagnose issues.",
+            "StackTrace": [
+                "java.net.ConnectException: Connection refused",
+                "\tat sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)",
+                "\tat sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:717)",
+                "\tat org.apache.hadoop.hdfs.tools.DFSAdmin.run(DFSAdmin.java:2073)",
+                "\tat org.apache.hadoop.util.ToolRunner.run(ToolRunner.java:76)",
+                "\tat org.apache.hadoop.util.ToolRunner.run(ToolRunner.java:90)",
+                "\tat org.apache.hadoop.hdfs.tools.DFSAdmin.main(DFSAdmin.java:2225)"
+            ],
+            "StepsToReproduce": [
+                "$ hdfs dfsadmin -getBalancerBandwidth 127.0.0.1:9866",
+                "$ hdfs dfsadmin -getDatanodeInfo localhost:9866",
+                "$ hdfs dfsadmin -evictWriters 127.0.0.1:9866"
+            ],
+            "ExpectedBehavior": "Detailed error messages should be logged when exceptions occur.",
+            "ObservedBehavior": "Limited error messages are displayed, and exceptions are not logged properly.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-6455.json",
+        "creation_time": "2014-05-28T18:01:15.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-6455",
+            "Title": "NFS: Exception should be added in NFS log for invalid separator in nfs.exports.allowed.hosts",
+            "Description": "The error for invalid separator in dfs.nfs.exports.allowed.hosts property should be added in the NFS log file instead of the nfs.out file.",
+            "StackTrace": [
+                "Exception in thread \"main\" java.lang.IllegalArgumentException: Incorrectly formatted line 'host1 ro:host2 rw'",
+                "at org.apache.hadoop.nfs.NfsExports.getMatch(NfsExports.java:356)",
+                "at org.apache.hadoop.nfs.NfsExports.<init>(NfsExports.java:151)",
+                "at org.apache.hadoop.nfs.NfsExports.getInstance(NfsExports.java:54)",
+                "at org.apache.hadoop.hdfs.nfs.nfs3.RpcProgramNfs3.<init>(RpcProgramNfs3.java:176)",
+                "at org.apache.hadoop.hdfs.nfs.nfs3.Nfs3.<init>(Nfs3.java:43)",
+                "at org.apache.hadoop.hdfs.nfs.nfs3.Nfs3.main(Nfs3.java:59)"
+            ],
+            "StepsToReproduce": [
+                "1. Pass invalid separator in dfs.nfs.exports.allowed.hosts",
+                "   <property><name>dfs.nfs.exports.allowed.hosts</name><value>host1  ro:host2 rw</value></property>",
+                "2. Restart NFS server."
+            ],
+            "ExpectedBehavior": "NFS should log an error message in the NFS log file when an invalid entry is provided.",
+            "ObservedBehavior": "NFS server fails to start and prints an exception to the console, but does not log the error in the NFS log file.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-2882.json",
+        "creation_time": "2012-02-02T18:11:20.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-2882",
+            "Title": "DN continues to start up, even if block pool fails to initialize",
+            "Description": "A DataNode (DN) starts up even when it is completely out of space on one of its drives, leading to initialization failure for the block pool.",
+            "StackTrace": [
+                "2012-02-02 09:56:50,499 FATAL org.apache.hadoop.hdfs.server.datanode.DataNode: Initialization failed for block pool Block pool BP-448349972-172.29.5.192-1323816762969 (storage id DS-507718931-172.29.5.194-11072-1297842002148)",
+                "java.io.IOException: Mkdirs failed to create /data/1/scratch/todd/styx-datadir/current/BP-448349972-172.29.5.192-1323816762969/tmp",
+                "at org.apache.hadoop.hdfs.server.datanode.FSDataset$BlockPoolSlice.<init>(FSDataset.java:335)"
+            ],
+            "StepsToReproduce": [
+                "Start a DataNode on a machine that is completely out of space on one of its drives."
+            ],
+            "ExpectedBehavior": "The DataNode should not start if it cannot initialize the block pool.",
+            "ObservedBehavior": "The DataNode continues to run and generates NullPointerExceptions (NPEs) when attempting to perform block reports.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-5185.json",
+        "creation_time": "2013-09-11T14:38:23.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-5185",
+            "Title": "DN fails to startup if one of the data dir is full",
+            "Description": "DataNode fails to startup if one of the data dirs configured is out of space, resulting in an IOException.",
+            "StackTrace": [
+                "java.io.IOException: Mkdirs failed to create /opt/nish/data/current/BP-123456-1234567/tmp",
+                "at org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.BlockPoolSlice.<init>(BlockPoolSlice.java:105)",
+                "at org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsVolumeImpl.addBlockPool(FsVolumeImpl.java:216)",
+                "at org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsVolumeList.addBlockPool(FsVolumeList.java:155)",
+                "at org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsDatasetImpl.addBlockPool(FsDatasetImpl.java:1593)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.initBlockPool(DataNode.java:834)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPOfferService.verifyAndSetNamespaceInfo(BPOfferService.java:311)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPServiceActor.connectToNNAndHandshake(BPServiceActor.java:217)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPServiceActor.run(BPServiceActor.java:660)",
+                "at java.lang.Thread.run(Thread.java:662)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The DataNode should continue to start-up with other data dirs available.",
+            "ObservedBehavior": "The DataNode fails to start-up due to a full data directory, throwing an IOException.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-13164.json",
+        "creation_time": "2018-02-17T00:40:21.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-13164",
+            "Title": "File not closed if streamer fail with DSQuotaExceededException",
+            "Description": "When the disk space quota is exceeded during file creation, the file remains in an open-for-write status, potentially leading to resource leaks.",
+            "StackTrace": [
+                "org.apache.hadoop.hdfs.protocol.DSQuotaExceededException: The DiskSpace quota of /DIR is exceeded: quota = 2000000 B = 1.91 MB but diskspace consumed = 404139552 B = 385.42 MB",
+                "at org.apache.hadoop.hdfs.server.namenode.DirectoryWithQuotaFeature.verifyDiskspaceQuota(DirectoryWithQuotaFeature.java:149)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSDirectory.updateCount(FSDirectory.java:1991)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.getAdditionalBlock(FSNamesystem.java:3484)",
+                "at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.run(DFSOutputStream.java:788)"
+            ],
+            "StepsToReproduce": [
+                "Create a file in a directory where the disk space quota is exceeded.",
+                "Attempt to write to the file, triggering a DSQuotaExceededException.",
+                "Close the file stream."
+            ],
+            "ExpectedBehavior": "The file should be properly closed, and no open-for-write status should remain.",
+            "ObservedBehavior": "The file remains in an open-for-write status, leading to potential resource leaks.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-11508.json",
+        "creation_time": "2017-03-07T04:55:50.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-11508",
+            "Title": "Fix bind failure in SimpleTCPServer & Portmap where bind fails because socket is in TIME_WAIT state",
+            "Description": "Bind can fail in SimpleTCPServer & Portmap because socket is in TIME_WAIT state. Socket options should be changed here to use the setReuseAddress option.",
+            "StackTrace": [
+                "org.jboss.netty.channel.ChannelException: Failed to bind to: 0.0.0.0/0.0.0.0:4242",
+                "at org.jboss.netty.bootstrap.ServerBootstrap.bind(ServerBootstrap.java:272)",
+                "at org.apache.hadoop.oncrpc.SimpleTcpServer.run(SimpleTcpServer.java:86)",
+                "at org.apache.hadoop.mount.MountdBase.startTCPServer(MountdBase.java:83)",
+                "Caused by: java.net.BindException: Address already in use",
+                "at sun.nio.ch.Net.bind0(Native Method)",
+                "at sun.nio.ch.Net.bind(Net.java:433)",
+                "at sun.nio.ch.ServerSocketChannelImpl.bind(ServerSocketChannelImpl.java:223)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The TCP server should start successfully without binding issues.",
+            "ObservedBehavior": "The TCP server fails to start due to a bind exception indicating the address is already in use.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-2991.json",
+        "creation_time": "2012-02-23T02:06:51.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-2991",
+            "Title": "failure to load edits: ClassCastException",
+            "Description": "During scale testing, an IOException occurred while replaying the edit log, caused by a ClassCastException when attempting to cast an INodeFile to INodeFileUnderConstruction.",
+            "StackTrace": [
+                "java.io.IOException: Error replaying edit log at offset 1354251",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLogLoader.loadEditRecords(FSEditLogLoader.java:418)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLogLoader.loadFSEdits(FSEditLogLoader.java:93)",
+                "Caused by: java.lang.ClassCastException: org.apache.hadoop.hdfs.server.namenode.INodeFile cannot be cast to org.apache.hadoop.hdfs.server.namenode.INodeFileUnderConstruction",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLogLoader.loadEditRecords(FSEditLogLoader.java:213)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should successfully load edit logs without throwing exceptions.",
+            "ObservedBehavior": "An IOException occurs due to a ClassCastException when loading edit logs.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-4404.json",
+        "creation_time": "2013-01-15T01:43:17.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-4404",
+            "Title": "Create file failure when the machine of first attempted NameNode is down",
+            "Description": "The system fails to create a file when the first attempted NameNode is down, resulting in a socket timeout exception.",
+            "StackTrace": [
+                "java.net.SocketTimeoutException: 10000 millis timeout while waiting for channel to be ready for connect. ch : java.nio.channels.SocketChannel[connection-pending remote=/160.161.0.155:8020]",
+                "at org.apache.hadoop.net.SocketIOWithTimeout.connect(SocketIOWithTimeout.java:213)",
+                "at org.apache.hadoop.net.NetUtils.connect(NetUtils.java:524)",
+                "at org.apache.hadoop.ipc.Client$Connection.setupConnection(Client.java:474)",
+                "at org.apache.hadoop.ipc.Client.getConnection(Client.java:1286)",
+                "at org.apache.hadoop.ipc.Client.call(Client.java:1156)",
+                "at org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolTranslatorPB.create(ClientNamenodeProtocolTranslatorPB.java:187)",
+                "at test.TestLease.main(TestLease.java:45)"
+            ],
+            "StepsToReproduce": [
+                "Set up a test environment with multiple NameNodes.",
+                "Shut down the first attempted NameNode.",
+                "Attempt to create a file in HDFS."
+            ],
+            "ExpectedBehavior": "The system should handle the failure of the first NameNode gracefully and attempt to connect to the next available NameNode.",
+            "ObservedBehavior": "The system throws a SocketTimeoutException and fails to create the file.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-8276.json",
+        "creation_time": "2015-04-28T10:11:35.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-8276",
+            "Title": "LazyPersistFileScrubber should be disabled if scrubber interval configured zero",
+            "Description": "Namenode startup fails if the scrubber interval is configured to zero, leading to an IllegalArgumentException.",
+            "StackTrace": [
+                "2015-04-27 23:47:31,744 ERROR org.apache.hadoop.hdfs.server.namenode.FSNamesystem: FSNamesystem initialization failed.",
+                "java.lang.IllegalArgumentException: dfs.namenode.lazypersist.file.scrub.interval.sec must be non-zero.",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.<init>(FSNamesystem.java:828)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The scrubber should be disabled when the scrub interval is set to zero.",
+            "ObservedBehavior": "Namenode fails to start with an error indicating the scrub interval must be non-zero.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-12369.json",
+        "creation_time": "2017-08-28T22:56:02.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-12369",
+            "Title": "Edit log corruption due to hard lease recovery of not-closed file which has snapshots",
+            "Description": "The NameNode fails to start due to a FileNotFoundException caused by an unclosed file that has snapshots, leading to edit log corruption.",
+            "StackTrace": [
+                "java.io.FileNotFoundException: File does not exist: /home/Events/CancellationSurvey_MySQL/2015/12/31/.part-00000.9nlJ3M",
+                "at org.apache.hadoop.hdfs.server.namenode.INodeFile.valueOf(INodeFile.java:66)",
+                "at org.apache.hadoop.hdfs.server.namenode.INodeFile.valueOf(INodeFile.java:56)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLogLoader.applyEditLogOp(FSEditLogLoader.java:429)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLogLoader.loadEditRecords(FSEditLogLoader.java:232)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLogLoader.loadFSEdits(FSEditLogLoader.java:141)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.loadEdits(FSImage.java:897)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.loadFSImage(FSImage.java:750)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.recoverTransitionRead(FSImage.java:318)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.loadFSImage(FSNamesystem.java:1125)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.loadFromDisk(FSNamesystem.java:789)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.loadNamesystem(NameNode.java:614)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.initialize(NameNode.java:676)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.<init>(NameNode.java:844)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.<init>(NameNode.java:823)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.createNameNode(NameNode.java:1547)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.main(NameNode.java:1615)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The NameNode should start successfully without any exceptions.",
+            "ObservedBehavior": "The NameNode fails to start with a FileNotFoundException due to an unclosed file.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-6462.json",
+        "creation_time": "2014-05-29T00:19:03.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-6462",
+            "Title": "NFS: fsstat request fails with the secure hdfs",
+            "Description": "Fsstat fails in secure environment with an error related to Kerberos credentials.",
+            "StackTrace": [
+                "javax.security.sasl.SaslException: GSS initiate failed [Caused by GSSException: No valid credentials provided (Mechanism level: Failed to find any Kerberos tgt)]",
+                "java.io.IOException: Failed on local exception: java.io.IOException: javax.security.sasl.SaslException: GSS initiate failed [Caused by GSSException: No valid credentials provided (Mechanism level: Failed to find any Kerberos tgt)]",
+                "at org.apache.hadoop.net.NetUtils.wrapException(NetUtils.java:764)",
+                "at org.apache.hadoop.ipc.Client.call(Client.java:1414)",
+                "at org.apache.hadoop.hdfs.nfs.nfs3.RpcProgramNfs3.fsstat(RpcProgramNfs3.java:1659)"
+            ],
+            "StepsToReproduce": [
+                "Create user named UserB and UserA",
+                "Create group named GroupB",
+                "Add root and UserB users to GroupB, ensuring UserA is not in GroupB",
+                "Set properties in hdfs-site.xml and core-site.xml as specified",
+                "Start NFS server as UserA",
+                "Mount NFS as root user",
+                "Run command: df /tmp/tmp_mnt/"
+            ],
+            "ExpectedBehavior": "The fsstat command should return file system statistics without errors.",
+            "ObservedBehavior": "The command fails with an Input/output error and logs indicate a Kerberos credential issue.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-5425.json",
+        "creation_time": "2013-10-25T06:53:28.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-5425",
+            "Title": "Renaming underconstruction file with snapshots can make NN failure on restart",
+            "Description": "The NameNode shuts down with an exception when performing snapshot operations like createSnapshot or renameSnapshot after a restart.",
+            "StackTrace": [
+                "java.lang.IllegalStateException",
+                "at com.google.common.base.Preconditions.checkState(Preconditions.java:133)",
+                "at org.apache.hadoop.hdfs.server.namenode.snapshot.INodeDirectoryWithSnapshot$ChildrenDiff.replace(INodeDirectoryWithSnapshot.java:82)",
+                "at org.apache.hadoop.hdfs.server.namenode.snapshot.INodeDirectoryWithSnapshot$ChildrenDiff.access$700(INodeDirectoryWithSnapshot.java:62)",
+                "at org.apache.hadoop.hdfs.server.namenode.snapshot.INodeDirectoryWithSnapshot$DirectoryDiffList.replaceChild(INodeDirectoryWithSnapshot.java:397)",
+                "at org.apache.hadoop.hdfs.server.namenode.snapshot.INodeDirectoryWithSnapshot$DirectoryDiffList.access$900(INodeDirectoryWithSnapshot.java:376)",
+                "at org.apache.hadoop.hdfs.server.namenode.snapshot.INodeDirectoryWithSnapshot.replaceChild(INodeDirectoryWithSnapshot.java:598)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSDirectory.unprotectedReplaceINodeFile(FSDirectory.java:1548)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSDirectory.replaceINodeFile(FSDirectory.java:1537)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImageFormat$Loader.loadFilesUnderConstruction(FSImageFormat$Loader.java:855)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImageFormat$Loader.load(FSImageFormat$Loader.java:350)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.loadFSImage(FSImage.java:910)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.loadFSImage(FSImage.java:899)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.loadFSImageFile(FSImage.java:751)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.loadFSImage(FSImage.java:720)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.recoverTransitionRead(FSImage.java:266)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.loadFSImage(FSNamesystem.java:784)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.loadFromDisk(FSNamesystem.java:563)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.loadNamesystem(NameNode.java:422)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.initialize(NameNode.java:472)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.<init>(NameNode.java:670)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.<init>(NameNode.java:655)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.createNameNode(NameNode.java:1245)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.main(NameNode.java:1311)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The NameNode should successfully handle snapshot operations without shutting down.",
+            "ObservedBehavior": "The NameNode fails to restart and shuts down with an IllegalStateException.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-13145.json",
+        "creation_time": "2018-02-13T19:22:56.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-13145",
+            "Title": "SBN crash when transition to ANN with in-progress edit tailing enabled",
+            "Description": "When edit log tailing is enabled, a crash occurs in the Standby NameNode (SBN) during the transition to Active NameNode (ANN) if the ANN crashes in between sending batches.",
+            "StackTrace": [
+                "java.lang.IllegalStateException: Cannot start writing at txid 24312595802 when there is a stream available for read: ......",
+                "at org.apache.hadoop.hdfs.server.namenode.FSEditLog.openForWrite(FSEditLog.java:329)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.startActiveServices(FSNamesystem.java:1196)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode$NameNodeHAContext.startActiveServices(NameNode.java:1839)",
+                "at org.apache.hadoop.hdfs.server.namenode.ha.ActiveState.enterState(ActiveState.java:61)",
+                "at org.apache.hadoop.hdfs.server.namenode.ha.HAState.setStateInternal(HAState.java:64)",
+                "at org.apache.hadoop.hdfs.server.namenode.ha.StandbyState.setState(StandbyState.java:49)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.transitionToActive(NameNode.java:1707)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNodeRpcServer.transitionToActive(NameNodeRpcServer.java:1622)",
+                "at org.apache.hadoop.ha.protocolPB.HAServiceProtocolServerSideTranslatorPB.transitionToActive(HAServiceProtocolServerSideTranslatorPB.java:107)"
+            ],
+            "StepsToReproduce": [
+                "Enable in-progress edit log tailing.",
+                "Trigger a crash in the Active NameNode (ANN).",
+                "Observe the Standby NameNode (SBN) during the transition to ANN."
+            ],
+            "ExpectedBehavior": "The Standby NameNode should transition to Active without crashing.",
+            "ObservedBehavior": "The Standby NameNode crashes with an IllegalStateException during the transition.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-8807.json",
+        "creation_time": "2015-07-22T20:45:55.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-8807",
+            "Title": "dfs.datanode.data.dir does not handle spaces between storageType and URI correctly",
+            "Description": "Adding a space between the storage type and file URI causes datanodes to fail during startup due to a parsing error.",
+            "StackTrace": [
+                "2015-07-22 13:34:36,812 FATAL org.apache.hadoop.hdfs.server.datanode.DataNode: Exception in secureMain",
+                "java.lang.IllegalArgumentException: java.net.URISyntaxException: Illegal character in scheme name at index 0:  file://tmp/hadoop-aengineer/disk1/dfs/data",
+                "at org.apache.hadoop.fs.Path.initialize(Path.java:204)",
+                "at org.apache.hadoop.fs.Path.<init>(Path.java:170)",
+                "at org.apache.hadoop.hdfs.server.datanode.StorageLocation.parse(StorageLocation.java:97)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.getStorageLocations(DataNode.java:2314)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.instantiateDataNode(DataNode.java:2298)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.createDataNode(DataNode.java:2349)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.secureMain(DataNode.java:2529)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.main(DataNode.java:2553)",
+                "Caused by: java.net.URISyntaxException: Illegal character in scheme name at index 0:  file://tmp/hadoop-aengineer/disk1/dfs/data"
+            ],
+            "StepsToReproduce": [
+                "Add a space between the storage type and file URI in the configuration.",
+                "Start the datanode."
+            ],
+            "ExpectedBehavior": "Datanodes should start successfully without any parsing errors.",
+            "ObservedBehavior": "Datanodes fail to start with a parsing error due to an illegal character in the URI.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "HDFS-3436.json",
+        "creation_time": "2012-05-17T10:36:31.000+0000",
+        "bug_report": {
+            "BugID": "HDFS-3436",
+            "Title": "adding new datanode to existing pipeline fails in case of Append/Recovery",
+            "Description": "When attempting to append to a file in a Hadoop cluster with a stopped DataNode, the operation fails due to issues with adding a new DataNode to the existing pipeline.",
+            "StackTrace": [
+                "java.io.IOException: Bad connect ack with firstBadLink as *******:50010",
+                "at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.createBlockOutputStream(DFSOutputStream.java:1053)",
+                "at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.setupPipelineForAppendOrRecovery(DFSOutputStream.java:943)",
+                "java.io.EOFException: Premature EOF: no length prefix available",
+                "at org.apache.hadoop.hdfs.protocol.HdfsProtoUtil.vintPrefixed(HdfsProtoUtil.java:162)",
+                "at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.transfer(DFSOutputStream.java:866)",
+                "java.io.IOException: BP-2001850558-xx.xx.xx.xx-1337249347060:blk_-8165642083860293107_1002 is neither a RBW nor a Finalized",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.transferReplicaForPipelineRecovery(DataNode.java:2038)"
+            ],
+            "StepsToReproduce": [
+                "1. Set up a cluster with 4 DataNodes.",
+                "2. Write a file to 3 DataNodes (DN1 -> DN2 -> DN3).",
+                "3. Stop DN3.",
+                "4. Attempt to append to the file."
+            ],
+            "ExpectedBehavior": "The append operation should succeed by adding a new DataNode to the existing pipeline.",
+            "ObservedBehavior": "The append operation fails due to exceptions related to DataNode connectivity and block state.",
+            "Resolution": "Fixed"
+        }
+    }
+]

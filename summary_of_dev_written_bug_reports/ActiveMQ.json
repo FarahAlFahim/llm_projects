@@ -1,0 +1,1067 @@
+[
+    {
+        "filename": "AMQ-6548.json",
+        "creation_time": "2016-12-21T12:04:12.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-6548",
+            "Title": "Commit messages on exception",
+            "Description": "At ear stop jsm connection consumes messages, although there occurred exception.",
+            "StackTrace": [
+                "2016-12-15 16:12:58,831 ERROR [org.jboss.as.ejb3.invocation.processInvocation] (default-threads - 23) WFLYEJB0034: EJB Invocation failed on component test.test.mdb for method public void test.test.onMessage(javax.jms.Message): org.jboss.as.ejb3.component.EJBComponentUnavailableException: WFLYEJB0421: Invocation cannot proceed as component is shutting down",
+                "at org.jboss.as.ejb3.component.interceptors.ShutDownInterceptorFactory$1.processInvocation(ShutDownInterceptorFactory.java:59)",
+                "at org.jboss.invocation.InterceptorContext.proceed(InterceptorContext.java:340)",
+                "at org.jboss.as.ejb3.deployment.processors.EjbSuspendInterceptor.processInvocation(EjbSuspendInterceptor.java:53)",
+                "at org.jboss.invocation.InterceptorContext.proceed(InterceptorContext.java:340)",
+                "at org.jboss.as.ejb3.component.interceptors.LoggingInterceptor.processInvocation(LoggingInterceptor.java:66)",
+                "at org.jboss.invocation.InterceptorContext.proceed(InterceptorContext.java:340)",
+                "at org.jboss.as.ee.component.NamespaceContextInterceptor.processInvocation(NamespaceContextInterceptor.java:50)",
+                "at org.jboss.invocation.InterceptorContext.proceed(InterceptorContext.java:340)",
+                "at org.jboss.as.ejb3.component.interceptors.AdditionalSetupInterceptor.processInvocation(AdditionalSetupInterceptor.java:54)",
+                "at org.jboss.invocation.InterceptorContext.proceed(InterceptorContext.java:340)",
+                "at org.jboss.as.ejb3.component.messagedriven.MessageDrivenComponentDescription$5$1.processInvocation(MessageDrivenComponentDescription.java:213)",
+                "at org.jboss.invocation.InterceptorContext.proceed(InterceptorContext.java:340)",
+                "at org.jboss.invocation.ContextClassLoaderInterceptor.processInvocation(ContextClassLoaderInterceptor.java:64)",
+                "at org.jboss.invocation.InterceptorContext.proceed(InterceptorContext.java:340)",
+                "at org.jboss.invocation.InterceptorContext.run(InterceptorContext.java:356)",
+                "at org.wildfly.security.manager.WildFlySecurityManager.doChecked(WildFlySecurityManager.java:634)",
+                "at org.jboss.invocation.AccessCheckingInterceptor.processInvocation(AccessCheckingInterceptor.java:61)",
+                "at org.jboss.invocation.InterceptorContext.proceed(InterceptorContext.java:340)",
+                "at org.jboss.invocation.InterceptorContext.run(InterceptorContext.java:356)",
+                "at org.jboss.invocation.PrivilegedWithCombinerInterceptor.processInvocation(PrivilegedWithCombinerInterceptor.java:80)",
+                "at org.jboss.invocation.InterceptorContext.proceed(InterceptorContext.java:340)",
+                "at org.jboss.invocation.ChainedInterceptor.processInvocation(ChainedInterceptor.java:61)",
+                "at org.jboss.as.ee.component.ViewService$View.invoke(ViewService.java:195)",
+                "at org.jboss.as.ee.component.ViewDescription$1.processInvocation(ViewDescription.java:185)",
+                "at org.jboss.invocation.InterceptorContext.proceed(InterceptorContext.java:340)",
+                "at org.jboss.invocation.ChainedInterceptor.processInvocation(ChainedInterceptor.java:61)",
+                "at org.jboss.as.ee.component.ProxyInvocationHandler.invoke(ProxyInvocationHandler.java:73)",
+                "at test.test$$$view19.onMessage(Unknown Source)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)",
+                "at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)",
+                "at java.lang.reflect.Method.invoke(Method.java:498)",
+                "at org.jboss.as.ejb3.inflow.MessageEndpointInvocationHandler.doInvoke(MessageEndpointInvocationHandler.java:139)",
+                "at org.jboss.as.ejb3.inflow.AbstractInvocationHandler.invoke(AbstractInvocationHandler.java:73)",
+                "at test.test$$$endpoint12.onMessage(Unknown Source)",
+                "at org.apache.activemq.ra.MessageEndpointProxy$MessageEndpointAlive.onMessage(MessageEndpointProxy.java:123)",
+                "at org.apache.activemq.ra.MessageEndpointProxy.onMessage(MessageEndpointProxy.java:64)",
+                "at org.apache.activemq.ActiveMQSession.run(ActiveMQSession.java:1041)",
+                "at org.apache.activemq.ra.ServerSessionImpl.run(ServerSessionImpl.java:169)",
+                "at org.jboss.jca.core.workmanager.WorkWrapper.run(WorkWrapper.java:226)",
+                "at org.jboss.threads.SimpleDirectExecutor.execute(SimpleDirectExecutor.java:33)",
+                "at org.jboss.threads.QueueExecutor.runTask(QueueExecutor.java:808)",
+                "at org.jboss.threads.QueueExecutor.access$100(QueueExecutor.java:45)",
+                "at org.jboss.threads.QueueExecutor$Worker.run(QueueExecutor.java:828)",
+                "at java.lang.Thread.run(Thread.java:745)",
+                "at org.jboss.threads.JBossThread.run(JBossThread.java:320)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should not consume messages when the component is shutting down.",
+            "ObservedBehavior": "The system consumes messages despite the component being in a shutting down state.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-3434.json",
+        "creation_time": "2011-08-03T09:15:05.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-3434",
+            "Title": "Contention in PLIist creation results in NPE on load - FilePendingMessageCursor",
+            "Description": "Occasional occurrence of a NullPointerException when loading the DiskList in FilePendingMessageCursor.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.kahadb.index.ListIndex.loadNode(ListIndex.java:203)",
+                "at org.apache.kahadb.index.ListIndex.load(ListIndex.java:75)",
+                "at org.apache.activemq.store.kahadb.plist.PListStore$1.execute(PListStore.java:219)",
+                "at org.apache.kahadb.page.Transaction.execute(Transaction.java:729)",
+                "at org.apache.activemq.store.kahadb.plist.PListStore.getPList(PListStore.java:216)",
+                "at org.apache.activemq.broker.region.cursors.FilePendingMessageCursor.getDiskList(FilePendingMessageCursor.java:454)",
+                "at org.apache.activemq.broker.region.cursors.FilePendingMessageCursor.flushToDisk(FilePendingMessageCursor.java:432)",
+                "at org.apache.activemq.broker.region.cursors.FilePendingMessageCursor.tryAddMessageLast(FilePendingMessageCursor.java:217)",
+                "at org.apache.activemq.broker.region.cursors.FilePendingMessageCursor.addMessageLast(FilePendingMessageCursor.java:193)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should load the DiskList without throwing a NullPointerException.",
+            "ObservedBehavior": "A NullPointerException is thrown when attempting to load the DiskList.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-3443.json",
+        "creation_time": "2011-08-09T17:46:14.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-3443",
+            "Title": "Checkpoint contention with large transaction write using temp file",
+            "Description": "Unit test failure intermittently due to checkpoint contention when writing large transactions using temporary files.",
+            "StackTrace": [
+                "java.io.IOException: Cannot create recovery file. Reason: java.io.FileNotFoundException: target/testQueueTransactionalOrderWithRestart/testQueueTransactionalOrderWithRestart/KahaDB/tx-7648-1312867516460.tmp (No such file or directory)",
+                "at org.apache.kahadb.util.IOExceptionSupport.create(IOExceptionSupport.java:27)",
+                "at org.apache.kahadb.page.PageFile.writeBatch(PageFile.java:1002)",
+                "at org.apache.kahadb.page.PageFile.flush(PageFile.java:482)",
+                "at org.apache.activemq.store.kahadb.MessageDatabase.checkpointUpdate(MessageDatabase.java:1167)",
+                "at org.apache.activemq.store.kahadb.MessageDatabase$10.execute(MessageDatabase.java:728)",
+                "at org.apache.kahadb.page.Transaction.execute(Transaction.java:762)",
+                "at org.apache.activemq.store.kahadb.MessageDatabase.checkpointCleanup(MessageDatabase.java:726)",
+                "at org.apache.activemq.store.kahadb.MessageDatabase.checkpointCleanup(MessageDatabase.java:714)",
+                "at org.apache.activemq.store.kahadb.MessageDatabase$3.run(MessageDatabase.java:279)",
+                "Caused by: java.io.FileNotFoundException: target/testQueueTransactionalOrderWithRestart/testQueueTransactionalOrderWithRestart/KahaDB/tx-7648-1312867516460.tmp (No such file or directory)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should successfully create recovery files without throwing exceptions.",
+            "ObservedBehavior": "The system fails to create recovery files, resulting in an IOException and stopping the broker.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-4369.json",
+        "creation_time": "2013-03-13T13:51:31.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-4369",
+            "Title": "Default IOException handler needs to be set before Persistence adapter and network connectors are started",
+            "Description": "An IOException can occur before the default handler is installed, leading to it being ignored. The handler needs to be set earlier in the process.",
+            "StackTrace": [
+                "java.io.IOException: Input/output error",
+                "at java.io.RandomAccessFile.readBytes(Native Method)",
+                "at java.io.RandomAccessFile.read(RandomAccessFile.java:355)",
+                "at java.io.RandomAccessFile.readFully(RandomAccessFile.java:414)",
+                "at org.apache.kahadb.page.PageFile.readPage(PageFile.java:833)",
+                "at org.apache.kahadb.page.Transaction.load(Transaction.java:411)",
+                "at org.apache.activemq.store.kahadb.MessageDatabase.updateIndex(MessageDatabase.java:1212)",
+                "at org.apache.activemq.broker.region.Queue.acknowledge(Queue.java:830)",
+                "at org.apache.activemq.broker.TransportConnection.processMessageAck(TransportConnection.java:461)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The default IOException handler should be registered to handle IO exceptions appropriately.",
+            "ObservedBehavior": "An IOException occurs and is ignored due to the absence of a registered handler.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-5016.json",
+        "creation_time": "2014-02-03T16:40:26.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-5016",
+            "Title": "BitArrayBin doesn't work well with index larger than Integer.MAX_VALUE",
+            "Description": "The BitArrayBin class has an index of type long and a firstIndex of type int. When the index exceeds Integer.MAX_VALUE, the setBit() and getBit() methods return incorrect values, leading to performance issues in the ActiveMQ client.",
+            "StackTrace": [
+                "java.util.LinkedList.linkLast(LinkedList.java:140)",
+                "java.util.LinkedList.add(LinkedList.java:336)",
+                "org.apache.activemq.util.BitArrayBin.getBitArray(BitArrayBin.java:123)",
+                "org.apache.activemq.util.BitArrayBin.setBit(BitArrayBin.java:59)",
+                "org.apache.activemq.ActiveMQMessageAuditNoSync.isDuplicate(ActiveMQMessageAuditNoSync.java:160)",
+                "org.apache.activemq.ActiveMQMessageAudit.isDuplicate(ActiveMQMessageAudit.java:59)",
+                "org.apache.activemq.ConnectionAudit.isDuplicate(ConnectionAudit.java:52)",
+                "org.apache.activemq.ActiveMQConnection.isDuplicate(ActiveMQConnection.java:2291)",
+                "org.apache.activemq.ActiveMQMessageConsumer.dispatch(ActiveMQMessageConsumer.java:1223)",
+                "org.apache.activemq.ActiveMQSessionExecutor.dispatch(ActiveMQSessionExecutor.java:134)",
+                "org.apache.activemq.ActiveMQSessionExecutor.iterate(ActiveMQSessionExecutor.java:205)",
+                "org.apache.activemq.thread.PooledTaskRunner.runTask(PooledTaskRunner.java:127)",
+                "java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1110)",
+                "java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:603)",
+                "java.lang.Thread.run(Thread.java:722)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The BitArrayBin should correctly handle indices larger than Integer.MAX_VALUE without performance degradation.",
+            "ObservedBehavior": "When the index exceeds Integer.MAX_VALUE, the methods setBit() and getBit() return incorrect values, causing performance issues in the ActiveMQ client.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-4407.json",
+        "creation_time": "2013-03-26T15:41:15.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-4407",
+            "Title": "mKahaDB: PageFile is not loaded when recreating queue",
+            "Description": "When using mKahaDB, an error occurs while attempting to recreate a queue after it has been deleted through the admin interface.",
+            "StackTrace": [
+                "java.lang.IllegalStateException: PageFile is not loaded",
+                "at org.apache.activemq.store.kahadb.disk.page.PageFile.assertLoaded(PageFile.java:809)",
+                "at org.apache.activemq.store.kahadb.disk.page.PageFile.tx(PageFile.java:303)",
+                "at org.apache.activemq.store.kahadb.KahaDBStore$KahaDBMessageStore.getMessageCount(KahaDBStore.java:478)",
+                "at org.apache.activemq.store.ProxyMessageStore.getMessageCount(ProxyMessageStore.java:101)",
+                "at org.apache.activemq.broker.region.Queue.initialize(Queue.java:376)",
+                "at org.apache.activemq.broker.region.DestinationFactoryImpl.createDestination(DestinationFactoryImpl.java:87)",
+                "at org.apache.activemq.broker.region.AbstractRegion.createDestination(AbstractRegion.java:526)"
+            ],
+            "StepsToReproduce": [
+                "Create a queue using mKahaDB.",
+                "Delete the queue through the admin interface.",
+                "Attempt to recreate the queue."
+            ],
+            "ExpectedBehavior": "The queue should be recreated without errors.",
+            "ObservedBehavior": "An IllegalStateException is thrown indicating that the PageFile is not loaded.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-4221.json",
+        "creation_time": "2012-12-13T16:15:04.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-4221",
+            "Title": "NPE plist (temp) sparse removal - filependingmessagecursor with selector and expiry",
+            "Description": "A NullPointerException occurs when attempting to page in more queue messages.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.kahadb.index.ListNode.access$200(ListNode.java:37)",
+                "at org.apache.kahadb.index.ListNode$NodeMarshaller.writePayload(ListNode.java:265)",
+                "at org.apache.kahadb.index.ListNode$NodeMarshaller.writePayload(ListNode.java:255)",
+                "at org.apache.kahadb.page.Transaction.store(Transaction.java:248)",
+                "at org.apache.kahadb.index.ListIndex.storeNode(ListIndex.java:326)",
+                "at org.apache.kahadb.index.ListNode.store(ListNode.java:332)",
+                "at org.apache.kahadb.index.ListNode.access$500(ListNode.java:37)",
+                "at org.apache.kahadb.index.ListNode$ListIterator.remove(ListNode.java:227)",
+                "at org.apache.activemq.store.kahadb.plist.PList$PListIterator$1.execute(PList.java:229)",
+                "at org.apache.kahadb.page.Transaction.execute(Transaction.java:771)",
+                "at org.apache.activemq.store.kahadb.plist.PList$PListIterator.remove(PList.java:226)",
+                "at org.apache.activemq.broker.region.cursors.FilePendingMessageCursor$DiskIterator.remove(FilePendingMessageCursor.java:517)",
+                "at org.apache.activemq.broker.region.cursors.FilePendingMessageCursor.remove(FilePendingMessageCursor.java:321)",
+                "at org.apache.activemq.broker.region.Queue.doPageInForDispatch(Queue.java:1735)",
+                "at org.apache.activemq.broker.region.Queue.pageInMessages(Queue.java:1948)",
+                "at org.apache.activemq.broker.region.Queue.iterate(Queue.java:1465)",
+                "at org.apache.activemq.thread.PooledTaskRunner.runTask(PooledTaskRunner.java:122)",
+                "at org.apache.activemq.thread.PooledTaskRunner$1.run(PooledTaskRunner.java:43)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)",
+                "at java.lang.Thread.run(Thread.java:680)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should successfully page in queue messages without throwing an exception.",
+            "ObservedBehavior": "A NullPointerException is thrown when attempting to page in more queue messages.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-3622.json",
+        "creation_time": "2011-12-06T15:16:49.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-3622",
+            "Title": "NPE in LastImageSubscriptionRecoveryPolicy",
+            "Description": "A NullPointerException (NPE) occurs when starting up a subscriber with no messages available, leading to repeated logging of the error.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.activemq.broker.region.policy.LastImageSubscriptionRecoveryPolicy.browse(LastImageSubscriptionRecoveryPolicy.java:63)",
+                "at org.apache.activemq.broker.region.Topic.browse(Topic.java:564)",
+                "at org.apache.activemq.broker.region.Topic$6.run(Topic.java:659)",
+                "at org.apache.activemq.thread.SchedulerTimerTask.run(SchedulerTimerTask.java:33)",
+                "at java.util.TimerThread.mainLoop(Timer.java:512)",
+                "at java.util.TimerThread.run(Timer.java:462)"
+            ],
+            "StepsToReproduce": [
+                "Start up a subscriber when no messages are available."
+            ],
+            "ExpectedBehavior": "The subscriber should start without errors, even when no messages are available.",
+            "ObservedBehavior": "A NullPointerException is logged repeatedly every 30 seconds until a message is sent to the topic.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-6016.json",
+        "creation_time": "2015-10-21T12:55:55.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-6016",
+            "Title": "java.lang.IllegalArgumentException: Comparison method violates its general contract!",
+            "Description": "The message group balancing is based on state in the consumer that can be shared across destinations in error. Under load, this can lead to an IllegalArgumentException.",
+            "StackTrace": [
+                "java.lang.IllegalArgumentException: Comparison method violates its general contract!",
+                "at java.util.TimSort.mergeHi(TimSort.java:868)[:1.7.0_65]",
+                "at java.util.TimSort.mergeAt(TimSort.java:485)[:1.7.0_65]",
+                "at java.util.TimSort.mergeCollapse(TimSort.java:410)[:1.7.0_65]",
+                "at java.util.TimSort.sort(TimSort.java:214)[:1.7.0_65]",
+                "at java.util.TimSort.sort(TimSort.java:173)[:1.7.0_65]",
+                "at java.util.Arrays.sort(Arrays.java:659)[:1.7.0_65]",
+                "at java.util.Collections.sort(Collections.java:217)[:1.7.0_65]",
+                "at org.apache.activemq.broker.region.Queue.addToConsumerList(Queue.java:2131)[121:org.apache.activemq.activemq-osgi:5.9.0]",
+                "at org.apache.activemq.broker.region.Queue.doActualDispatch(Queue.java:2067)[121:org.apache.activemq.activemq-osgi:5.9.0]",
+                "at org.apache.activemq.broker.region.Queue.doDispatch(Queue.java:1972)[121:org.apache.activemq.activemq-osgi:5.9.0]"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should balance message groups among consumers without throwing exceptions.",
+            "ObservedBehavior": "An IllegalArgumentException is thrown under load due to a violation of the comparison method contract.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-3490.json",
+        "creation_time": "2011-09-08T20:31:57.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-3490",
+            "Title": "NPEs during message processing, using FileCursor",
+            "Description": "In a scenario where a single-consumer queue for non-persistent messages uses a file cursor to manage a backlog, bursts of messages result in NullPointerExceptions (NPEs).",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at java.io.Writer.write(Writer.java:140)",
+                "at java.io.BufferedWriter.newLine(BufferedWriter.java:225)",
+                "at java.util.Properties.writeComments(Properties.java:671)",
+                "at java.util.Properties.store0(Properties.java:805)",
+                "at java.util.Properties.store(Properties.java:796)",
+                "at org.apache.kahadb.page.PageFile.storeMetaData(PageFile.java:570)",
+                "at org.apache.kahadb.page.PageFile.load(PageFile.java:361)",
+                "at org.apache.activemq.store.kahadb.plist.PListStore.intialize(PListStore.java:285)",
+                "at org.apache.activemq.store.kahadb.plist.PListStore.getPList(PListStore.java:218)",
+                "at org.apache.activemq.broker.region.cursors.FilePendingMessageCursor.getDiskList(FilePendingMessageCursor.java:457)",
+                "at org.apache.activemq.broker.region.cursors.FilePendingMessageCursor.flushToDisk(FilePendingMessageCursor.java:435)",
+                "at org.apache.activemq.broker.region.cursors.FilePendingMessageCursor.onUsageChanged(FilePendingMessageCursor.java:388)",
+                "at org.apache.activemq.usage.Usage$1.run(Usage.java:268)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)",
+                "at java.lang.Thread.run(Thread.java:619)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should process messages without throwing NullPointerExceptions.",
+            "ObservedBehavior": "NullPointerExceptions occur during message processing when bursts of messages are sent to the queue.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-6831.json",
+        "creation_time": "2017-10-09T10:35:53.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-6831",
+            "Title": "Broker fails to start complaining about missing/corrupt journal files after upgrading to 5.15.1",
+            "Description": "The broker fails to start due to missing or corrupt journal files after an upgrade to version 5.15.1.",
+            "StackTrace": [
+                "2017-10-09 12:29:36.802 ERROR 4197 --- [pool-3-thread-1] org.deku.leoz.node.Application : java.io.IOException: Detected missing/corrupt journal files referenced by:[0:ActiveMQ.DLQ] 3 messages affected.",
+                "java.lang.Error: java.io.IOException: Detected missing/corrupt journal files referenced by:[0:ActiveMQ.DLQ] 3 messages affected.",
+                "at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1148) ~[na:1.8.0_131]",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617) ~[na:1.8.0_131]",
+                "at java.lang.Thread.run(Thread.java:748) ~[na:1.8.0_131]",
+                "Caused by: java.io.IOException: Detected missing/corrupt journal files referenced by:[0:ActiveMQ.DLQ] 3 messages affected.",
+                "at org.apache.activemq.store.kahadb.MessageDatabase.recoverIndex(MessageDatabase.java:965) ~[activemq-kahadb-store-5.15.1.jar:5.15.1]",
+                "at org.apache.activemq.store.kahadb.MessageDatabase$5.execute(MessageDatabase.java:717) ~[activemq-kahadb-store-5.15.1.jar:5.15.1]",
+                "at org.apache.activemq.store.kahadb.disk.page.Transaction.execute(Transaction.java:779) ~[activemq-kahadb-store-5.15.1.jar:5.15.1]",
+                "at org.apache.activemq.store.kahadb.MessageDatabase.recover(MessageDatabase.java:714) ~[activemq-kahadb-store-5.15.1.jar:5.15.1]",
+                "at org.apache.activemq.store.kahadb.MessageDatabase.open(MessageDatabase.java:473) ~[activemq-kahadb-store-5.15.1.jar:5.15.1]",
+                "at org.apache.activemq.store.kahadb.MessageDatabase.load(MessageDatabase.java:493) ~[activemq-kahadb-store-5.15.1.jar:5.15.1]",
+                "at org.apache.activemq.store.kahadb.MessageDatabase.doStart(MessageDatabase.java:297) ~[activemq-kahadb-store-5.15.1.jar:5.15.1]",
+                "at org.apache.activemq.store.kahadb.KahaDBStore.doStart(KahaDBStore.java:219) ~[activemq-kahadb-store-5.15.1.jar:5.15.1]",
+                "at org.apache.activemq.util.ServiceSupport.start(ServiceSupport.java:55) ~[activemq-client-5.15.1.jar:5.15.1]"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The broker should start without errors related to journal files.",
+            "ObservedBehavior": "The broker fails to start and logs errors about missing or corrupt journal files.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-5525.json",
+        "creation_time": "2015-01-19T13:47:50.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-5525",
+            "Title": "Error converting collection entry - activemq:browse karaf command via itests",
+            "Description": "The system fails to convert a command input into a collection, resulting in an exception during the execution of the activemq:browse command.",
+            "StackTrace": [
+                "java.lang.Exception: Unable to convert from [--amqurl, tcp://localhost:61616, --user, karaf, --password, karaf, -Vbody, 1421674680492] to java.util.ArrayList<java.lang.String>(error converting collection entry)",
+                "at org.apache.aries.blueprint.container.AggregateConverter.convertToCollection(AggregateConverter.java:342)",
+                "at org.apache.aries.blueprint.container.AggregateConverter.convert(AggregateConverter.java:182)",
+                "at org.apache.activemq.karaf.commands.ActiveMQCommand$ActiveMQActionPreparator.convert(ActiveMQCommand.java:143)",
+                "at org.apache.activemq.karaf.commands.ActiveMQCommand$ActiveMQActionPreparator.prepare(ActiveMQCommand.java:134)",
+                "at org.apache.felix.gogo.commands.basic.AbstractCommand.execute(AbstractCommand.java:34)",
+                "Caused by: java.lang.Exception: Unable to convert value 1421674680492 to type java.lang.String",
+                "at org.apache.aries.blueprint.container.AggregateConverter.convert(AggregateConverter.java:184)"
+            ],
+            "StepsToReproduce": [
+                "Execute the command: activemq:browse --amqurl tcp://localhost:61616 --user karaf --password karaf -Vbody 1421674680492"
+            ],
+            "ExpectedBehavior": "The command should successfully convert the input parameters and execute without errors.",
+            "ObservedBehavior": "The command fails with an exception indicating an inability to convert the input parameters into the expected collection type.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-4118.json",
+        "creation_time": "2012-10-19T22:14:13.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-4118",
+            "Title": "Index page overflow can lead to duplicate calls to free",
+            "Description": "An overflowed chain is released when it is no longer needed, but the new end page was not stored in the cache, leading to reuse of the old value and subsequent errors. Keeping the cache in sync resolves this issue.",
+            "StackTrace": [
+                "java.io.EOFException: Chunk stream does not exist, page: 1344 is marked free",
+                "at org.apache.kahadb.page.Transaction$2.readPage(Transaction.java:481)",
+                "at org.apache.kahadb.page.Transaction$2.<init>(Transaction.java:458)",
+                "at org.apache.kahadb.page.Transaction.openInputStream(Transaction.java:455)",
+                "at org.apache.kahadb.page.Transaction.load(Transaction.java:431)",
+                "at org.apache.kahadb.page.Transaction.load(Transaction.java:388)",
+                "at org.apache.kahadb.index.BTreeIndex.loadNode(BTreeIndex.java:262)",
+                "java.lang.ClassCastException: java.lang.Long cannot be cast to java.lang.String",
+                "at java.lang.String.compareTo(String.java:92)",
+                "java.lang.NullPointerException",
+                "at org.apache.kahadb.index.BTreeIndex.loadNode(BTreeIndex.java:264)"
+            ],
+            "StepsToReproduce": [
+                "Enable durable subscriptions with selectors and large backlogs.",
+                "Trigger sequence set expansion and shrinkage."
+            ],
+            "ExpectedBehavior": "The system should correctly manage the cache and avoid reusing freed pages.",
+            "ObservedBehavior": "Errors such as ClassCastException and NullPointerException occur due to improper handling of page reuse.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-4092.json",
+        "creation_time": "2012-10-04T02:56:44.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-4092",
+            "Title": "ConcurrentModificationException when using message groups",
+            "Description": "Frequent WARN messages are logged while consuming from a queue with the message groups header (JMSXGroupID) set. Disabling the message groups header eliminates these warnings.",
+            "StackTrace": [
+                "java.util.concurrent.ExecutionException: java.util.ConcurrentModificationException",
+                "at java.util.concurrent.FutureTask$Sync.innerGet(FutureTask.java:222)",
+                "at java.util.concurrent.FutureTask.get(FutureTask.java:83)",
+                "at org.apache.activemq.broker.region.Queue.doMessageSend(Queue.java:785)",
+                "at org.apache.activemq.broker.region.Queue.send(Queue.java:707)",
+                "at org.apache.activemq.broker.region.AbstractRegion.send(AbstractRegion.java:407)",
+                "at org.apache.activemq.broker.region.RegionBroker.send(RegionBroker.java:503)",
+                "at org.apache.activemq.broker.jmx.ManagedRegionBroker.send(ManagedRegionBroker.java:305)",
+                "at org.apache.activemq.broker.BrokerFilter.send(BrokerFilter.java:129)",
+                "at org.apache.activemq.broker.CompositeDestinationBroker.send(CompositeDestinationBroker.java:96)",
+                "at org.apache.activemq.broker.TransactionBroker.send(TransactionBroker.java:306)",
+                "at org.apache.activemq.broker.MutableBrokerFilter.send(MutableBrokerFilter.java:135)",
+                "at org.apache.activemq.broker.TransportConnection.processMessage(TransportConnection.java:453)",
+                "at org.apache.activemq.command.ActiveMQMessage.visit(ActiveMQMessage.java:681)",
+                "at org.apache.activemq.broker.TransportConnection.service(TransportConnection.java:292)",
+                "at org.apache.activemq.broker.TransportConnection$1.onCommand(TransportConnection.java:150)",
+                "at org.apache.activemq.transport.ResponseCorrelator.onCommand(ResponseCorrelator.java:116)",
+                "at org.apache.activemq.transport.MutexTransport.onCommand(MutexTransport.java:50)",
+                "at org.apache.activemq.transport.vm.VMTransport.iterate(VMTransport.java:231)",
+                "at org.apache.activemq.thread.PooledTaskRunner.runTask(PooledTaskRunner.java:122)",
+                "at org.apache.activemq.thread.PooledTaskRunner$1.run(PooledTaskRunner.java:43)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)",
+                "at java.lang.Thread.run(Thread.java:680)",
+                "Caused by: java.util.ConcurrentModificationException",
+                "at java.util.HashMap$HashIterator.nextEntry(HashMap.java:793)",
+                "at java.util.HashMap$KeyIterator.next(HashMap.java:828)",
+                "at org.apache.activemq.util.MarshallingSupport.marshalPrimitiveMap(MarshallingSupport.java:64)",
+                "at org.apache.activemq.command.Message.beforeMarshall(Message.java:210)",
+                "at org.apache.activemq.command.ActiveMQObjectMessage.beforeMarshall(ActiveMQObjectMessage.java:199)",
+                "at org.apache.activemq.openwire.v6.MessageMarshaller.looseMarshal(MessageMarshaller.java:277)",
+                "at org.apache.activemq.openwire.v6.ActiveMQMessageMarshaller.looseMarshal(MessageMarshaller.java:111)",
+                "at org.apache.activemq.openwire.v6.ActiveMQObjectMessageMarshaller.looseMarshal(MessageMarshaller.java:111)",
+                "at org.apache.activemq.openwire.OpenWireFormat.marshal(OpenWireFormat.java:168)",
+                "at org.apache.activemq.store.kahadb.KahaDBStore$KahaDBMessageStore.addMessage(KahaDBStore.java:429)",
+                "at org.apache.activemq.store.kahadb.KahaDBStore$StoreQueueTask.run(KahaDBStore.java:1177)"
+            ],
+            "StepsToReproduce": [
+                "Set up a queue with the message groups header (JMSXGroupID).",
+                "Consume messages with maxConcurrentConsumers set to 5."
+            ],
+            "ExpectedBehavior": "No WARN messages should be logged when consuming messages.",
+            "ObservedBehavior": "WARN messages are logged indicating a ConcurrentModificationException.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-3887.json",
+        "creation_time": "2012-06-18T16:02:55.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-3887",
+            "Title": "Occasional Null Pointer Exception during NetworkConnector connection",
+            "Description": "While starting a duplex NetworkConnector, a NullPointerException (NPE) can be observed on the receiving side, particularly when multiple brokers are connecting simultaneously.",
+            "StackTrace": [
+                "java.lang.NullPointerException: null",
+                "at org.apache.activemq.network.DemandForwardingBridgeSupport.configureMessage(DemandForwardingBridgeSupport.java:644) ~[activemq-core-5.6.0.jar:5.6.0]",
+                "at org.apache.activemq.network.DemandForwardingBridgeSupport.serviceLocalCommand(DemandForwardingBridgeSupport.java:675) ~[activemq-core-5.6.0.jar:5.6.0]",
+                "at org.apache.activemq.network.DemandForwardingBridgeSupport$1.onCommand(DemandForwardingBridgeSupport.java:139) [activemq-core-5.6.0.jar:5.6.0]",
+                "at org.apache.activemq.transport.ResponseCorrelator.onCommand(ResponseCorrelator.java:116) [activemq-core-5.6.0.jar:5.6.0]",
+                "at org.apache.activemq.transport.MutexTransport.onCommand(MutexTransport.java:50) [activemq-core-5.6.0.jar:5.6.0]",
+                "at org.apache.activemq.transport.vm.VMTransport.doDispatch(VMTransport.java:135) [activemq-core-5.6.0.jar:5.6.0]",
+                "at org.apache.activemq.broker.TransportConnection.dispatch(TransportConnection.java:1307) [activemq-core-5.6.0.jar:5.6.0]"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The NetworkConnector should establish connections without throwing exceptions.",
+            "ObservedBehavior": "A NullPointerException occurs during the connection process, particularly under high load with multiple brokers.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-6451.json",
+        "creation_time": "2016-10-03T17:09:00.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-6451",
+            "Title": "Preallocation strategy of zeros can leak file descriptors causing crash",
+            "Description": "If the preallocationStrategy is set to 'zeros', ActiveMQ can intermittently become unable to allocate direct buffer memory with the default JVM settings, leading to unhandled exceptions, empty journal files, and file descriptor leaks, ultimately causing ActiveMQ to crash.",
+            "StackTrace": [
+                "java.lang.OutOfMemoryError: Direct buffer memory",
+                "at java.nio.Bits.reserveMemory(Bits.java:693)[:1.8.0_101]",
+                "at java.nio.DirectByteBuffer.<init>(DirectByteBuffer.java:123)[:1.8.0_101]",
+                "at java.nio.ByteBuffer.allocateDirect(ByteBuffer.java:311)[:1.8.0_101]",
+                "at org.apache.activemq.store.kahadb.disk.journal.Journal.doPreallocationZeros(Journal.java:366)[activemq-kahadb-store-5.14.0.jar:5.14.0]",
+                "at org.apache.activemq.store.kahadb.disk.journal.Journal.preallocateEntireJournalDataFile(Journal.java:333)[activemq-kahadb-store-5.14.0.jar:5.14.0]"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "ActiveMQ should handle memory allocation properly without leaking file descriptors or crashing.",
+            "ObservedBehavior": "ActiveMQ crashes due to running out of file descriptors caused by unhandled OutOfMemoryError exceptions.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-3393.json",
+        "creation_time": "2011-07-05T14:31:31.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-3393",
+            "Title": "Number of established STOMP connections constantly increasing",
+            "Description": "Rapid connect/disconnect can result in dangling stomp transport connection mbeans which eventually accumulate. The issue occurs when a disconnect happens before a broker connection is fully initiated, leading to registration failures.",
+            "StackTrace": [
+                "javax.management.InstanceAlreadyExistsException: org.apache.activemq:BrokerName=xx,Type=Connection,ConnectorName=stomp,ViewType=address,Name=/xx_52170",
+                "at com.sun.jmx.mbeanserver.Repository.addMBean(Repository.java:453)",
+                "at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.internal_addObject(DefaultMBeanServerInterceptor.java:1484)",
+                "at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerDynamicMBean(DefaultMBeanServerInterceptor.java:963)",
+                "at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerObject(DefaultMBeanServerInterceptor.java:917)",
+                "at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerMBean(DefaultMBeanServerInterceptor.java:312)",
+                "at com.sun.jmx.mbeanserver.JmxMBeanServer.registerMBean(JmxMBeanServer.java:482)",
+                "at org.apache.activemq.broker.jmx.ManagementContext.registerMBean(ManagementContext.java:299)",
+                "at org.apache.activemq.broker.jmx.AnnotatedMBean.registerMBean(AnnotatedMBean.java:65)",
+                "at org.apache.activemq.broker.jmx.ManagedTransportConnection.registerMBean(ManagedTransportConnection.java:99)",
+                "at org.apache.activemq.broker.jmx.ManagedTransportConnection.<init>(ManagedTransportConnection.java:57)",
+                "at org.apache.activemq.broker.jmx.ManagedTransportConnector.createConnection(ManagedTransportConnector.java:52)",
+                "at org.apache.activemq.broker.TransportConnector$1$1.run(TransportConnector.java:216)",
+                "at java.lang.Thread.run(Thread)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should properly manage STOMP connections without accumulating dangling connections.",
+            "ObservedBehavior": "Dangling stomp transport connection mbeans accumulate, leading to registration failures.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-5815.json",
+        "creation_time": "2015-06-01T12:21:13.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-5815",
+            "Title": "Frequency IOException cast dead lock while using kahadb in high concurrency environment",
+            "Description": "When the concurrency is high (iops more than 3000/s), most of the ActiveMQ connections are blocked, preventing data transfer until a restart occurs. This issue is frequent and is accompanied by numerous IOExceptions in the logs.",
+            "StackTrace": [
+                "java.io.IOException: Input/output error",
+                "at java.io.RandomAccessFile.write(Native Method)[:1.6.0_30]",
+                "at org.apache.activemq.store.kahadb.MessageDatabase.checkpointUpdate(MessageDatabase.java:1512)[activemq-kahadb-store-5.10.0.jar:5.10.0]",
+                "at org.apache.activemq.transaction.LocalTransaction.rollback(LocalTransaction.java:94)",
+                "at org.apache.activemq.transaction.LocalTransaction.commit(LocalTransaction.java:74)",
+                "at org.apache.activemq.broker.TransactionBroker.commitTransaction(TransactionBroker.java:253)",
+                "at org.apache.activemq.store.kahadb.MessageDatabase.checkpointCleanup(MessageDatabase.java:929)[activemq-kahadb-store-5.10.0.jar:5.10.0]"
+            ],
+            "StepsToReproduce": [
+                "Increase concurrency to high levels (iops > 3000/s)",
+                "Monitor ActiveMQ connections for blocking behavior"
+            ],
+            "ExpectedBehavior": "ActiveMQ should handle high concurrency without blocking connections or causing IOExceptions.",
+            "ObservedBehavior": "Connections become blocked, preventing data transfer, and numerous IOExceptions are logged.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-5141.json",
+        "creation_time": "2014-04-11T11:31:51.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-5141",
+            "Title": "Message expiry that is done as part of a removeSubscription command should not use the clients credentials.",
+            "Description": "The broker uses the client's security context when sending expired messages to the Dead Letter Queue (DLQ), which may require all client users to have write access to the DLQ, raising security concerns.",
+            "StackTrace": [
+                "java.lang.SecurityException: User Test is not authorized to write to: queue://ActiveMQ.DLQ",
+                "at org.apache.activemq.security.AuthorizationBroker.send(AuthorizationBroker.java:197)",
+                "at org.apache.activemq.broker.MutableBrokerFilter.send(MutableBrokerFilter.java:135)",
+                "at org.apache.activemq.broker.region.RegionBroker.sendToDeadLetterQueue(RegionBroker.java:691)",
+                "at org.apache.activemq.broker.BrokerFilter.sendToDeadLetterQueue(BrokerFilter.java:262)",
+                "at org.apache.activemq.broker.region.Queue.messageExpired(Queue.java:1671)"
+            ],
+            "StepsToReproduce": [
+                "Enable security on the broker.",
+                "Send messages that will expire.",
+                "Ensure the client user does not have write access to ActiveMQ.DLQ."
+            ],
+            "ExpectedBehavior": "The broker should use its internal security context to send expired messages to the DLQ, not the client's security context.",
+            "ObservedBehavior": "The broker raises a SecurityException if the client user does not have write access to the DLQ.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-5854.json",
+        "creation_time": "2015-06-19T15:36:33.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-5854",
+            "Title": "Duplicate messages when failover is done during prepare phase of two phase commit.",
+            "Description": "The issue arises when high CPU usage causes the inactivity monitor to close connections between clients and the broker, leading to duplicate message processing during failover.",
+            "StackTrace": [
+                "org.apache.activemq.transport.InactivityIOException: Channel was inactive for too (>30000) long: tcp://***",
+                "javax.jms.JMSException: Unmatched acknowledge: MessageAck {commandId = 6665, responseRequired = false, ackType = 2, consumerId = ID:***, firstMessageId = ID:***-50800-1433109620591-1:2:31356:1:1, lastMessageId = ID:***-50800-1433109620591-1:2:31356:1:1, destination = queue://***, transactionId = XID:[1096044365,globalId=47524f55505f3030303038736572766963657472616974656d656e7431363536373030343133,branchId=47524f55505f3030303038736572766963657472616974656d656e743137343737], messageCount = 1, poisonCause = null}; Could not find Message-ID ID:***-50800-1433109620591-1:2:31356:1:1 in dispatched-list (start of ack)",
+                "org.apache.activemq.transport.AbstractInactivityMonitor.doOnewaySend(AbstractInactivityMonitor.java:297)",
+                "org.apache.activemq.ActiveMQMessageConsumer.acknowledge(ActiveMQMessageConsumer.java:1083)",
+                "org.springframework.transaction.support.AbstractPlatformTransactionManager.commit(AbstractPlatformTransactionManager.java:724)"
+            ],
+            "StepsToReproduce": [
+                "Use Spring DMLC to read a JMS message from a queue.",
+                "Produce a JMS message in an output queue and write data to the database.",
+                "Modify the configuration to induce failovers.",
+                "Add sleep in the ActiveMQMessageConsumer to simulate failover during the commit phase."
+            ],
+            "ExpectedBehavior": "Messages should be processed once without duplication, even during failover.",
+            "ObservedBehavior": "Messages are processed multiple times due to failover during the prepare phase of the commit, leading to duplicate entries in the database.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-3056.json",
+        "creation_time": "2010-11-26T14:36:24.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-3056",
+            "Title": "Exception when Redelivery ack is processed by topic subscription",
+            "Description": "An error occurs when processing a redelivery acknowledgment in the ActiveMQ topic subscription, leading to a JMSException.",
+            "StackTrace": [
+                "javax.jms.JMSException: Invalid acknowledgment: MessageAck {commandId = 29455, responseRequired = false, ackType = 3, consumerId = ID:X-2506-1289583778418-0:0:1:1, firstMessageId = ID:X09-51821-634249796434830099-1:5:1:3:313195, lastMessageId = ID:X09-51821-634249796434830099-1:5:1:3:313195, destination = topic://help.Publish.Instance1, transactionId = null, messageCount = 1}",
+                "at org.apache.activemq.broker.region.TopicSubscription.acknowledge(TopicSubscription.java:286)",
+                "at org.apache.activemq.broker.region.AbstractRegion.acknowledge(AbstractRegion.java:383)",
+                "at org.apache.activemq.broker.region.RegionBroker.acknowledge(RegionBroker.java:544)",
+                "at org.apache.activemq.broker.BrokerFilter.acknowledge(BrokerFilter.java:77)",
+                "at org.apache.activemq.broker.TransactionBroker.acknowledge(TransactionBroker.java:200)",
+                "at org.apache.activemq.broker.BrokerFilter.acknowledge(BrokerFilter.java:77)",
+                "at org.apache.activemq.broker.MutableBrokerFilter.acknowledge(MutableBrokerFilter.java:87)",
+                "at org.apache.activemq.broker.TransportConnection.processMessageAck(TransportConnection.java:469)",
+                "at org.apache.activemq.command.MessageAck.visit(MessageAck.java:214)",
+                "at org.apache.activemq.broker.TransportConnection.service(TransportConnection.java:311)",
+                "at org.apache.activemq.broker.TransportConnection$1.onCommand(TransportConnection.java:185)",
+                "at org.apache.activemq.transport.TransportFilter.onCommand(TransportFilter.java:69)",
+                "at org.apache.activemq.transport.WireFormatNegotiator.onCommand(WireFormatNegotiator.java:113)",
+                "at org.apache.activemq.transport.InactivityMonitor.onCommand(InactivityMonitor.java:228)",
+                "at org.apache.activemq.transport.TransportSupport.doConsume(TransportSupport.java:83)",
+                "at org.apache.activemq.transport.tcp.TcpTransport.doRun(TcpTransport.java:220)",
+                "at org.apache.activemq.transport.tcp.TcpTransport.run(TcpTransport.java:202)",
+                "at java.lang.Thread.run(Thread.java:619)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The acknowledgment of messages should be processed without errors.",
+            "ObservedBehavior": "A JMSException is thrown indicating an invalid acknowledgment.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-3325.json",
+        "creation_time": "2011-05-17T08:58:50.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-3325",
+            "Title": "PList temp store, chunk stream does not exist when broker under stress",
+            "Description": "Apparent concurrency issue under load on a multicore system, sporadic occurrence related to memory limits and dynamic destination creation/deletion.",
+            "StackTrace": [
+                "java.io.EOFException: Chunk stream does not exist at page: 198",
+                "at org.apache.kahadb.page.Transaction$2.readPage(Transaction.java:454)",
+                "at org.apache.kahadb.page.Transaction$2.<init>(Transaction.java:431)",
+                "at org.apache.kahadb.page.Transaction.openInputStream(Transaction.java:428)",
+                "at org.apache.kahadb.page.Transaction.load(Transaction.java:404)",
+                "at org.apache.kahadb.page.Transaction.load(Transaction.java:361)",
+                "at org.apache.activemq.store.kahadb.plist.PList.loadEntry(PList.java:468)",
+                "at org.apache.activemq.store.kahadb.plist.PList.getNext(PList.java:483)",
+                "at org.apache.activemq.store.kahadb.plist.PList$10.execute(PList.java:312)",
+                "at org.apache.kahadb.page.Transaction.execute(Transaction.java:728)",
+                "at org.apache.activemq.store.kahadb.plist.PList.getNext(PList.java:310)",
+                "at org.apache.activemq.broker.region.cursors.FilePendingMessageCursor$DiskIterator.next(FilePendingMessageCursor.java:500)",
+                "at org.apache.activemq.broker.region.cursors.FilePendingMessageCursor$DiskIterator.next(FilePendingMessageCursor.java:473)",
+                "at org.apache.activemq.broker.region.cursors.FilePendingMessageCursor.next(FilePendingMessageCursor.java:293)",
+                "at org.apache.activemq.broker.region.Queue.doPageInForDispatch(Queue.java:1714)",
+                "at org.apache.activemq.broker.region.Queue.pageInMessages(Queue.java:1932)",
+                "at org.apache.activemq.broker.region.Queue.iterate(Queue.java:1440)",
+                "at org.apache.activemq.thread.DedicatedTaskRunner.runTask(DedicatedTaskRunner.java:104)",
+                "at org.apache.activemq.thread.DedicatedTaskRunner$1.run(DedicatedTaskRunner.java:42)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The broker should handle concurrent loads without encountering EOF exceptions.",
+            "ObservedBehavior": "The broker throws an EOFException indicating that a chunk stream does not exist at a specific page when under stress.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-2963.json",
+        "creation_time": "2010-10-07T06:52:51.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-2963",
+            "Title": "JMSBridgeConnectors does not work with IBM MQ and ActiveMQ 5.4.0",
+            "Description": "An error occurs when trying to create a bridge between IBM Websphere Queue and ActiveMQ queue using JMSBridgeConnectors in ActiveMQ 5.4.0, which does not happen in version 5.2.0.",
+            "StackTrace": [
+                "com.ibm.msg.client.jms.DetailedInvalidDestinationException: JMSCMQ0005: The destination name '://IBM.TO.ACTIVEMQ' was not valid.",
+                "at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)",
+                "at sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:39)",
+                "at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:27)",
+                "at java.lang.reflect.Constructor.newInstance(Constructor.java:513)",
+                "at com.ibm.msg.client.commonservices.j2se.NLSServices.createException(NLSServices.java:313)",
+                "at com.ibm.msg.client.wmq.common.internal.WMQDestinationURIParser.setUri(WMQDestinationURIParser.java:524)",
+                "at com.ibm.msg.client.wmq.common.internal.WMQDestination.<init>(WMQDestination.java:3148)",
+                "at org.apache.activemq.ActiveMQMessageTransformation.copyProperties(ActiveMQMessageTransformation.java:206)"
+            ],
+            "StepsToReproduce": [
+                "Define a broker in activemq.xml with jmsBridgeConnectors information.",
+                "Attempt to send a message to the IBM queue 'IBM.TO.ACTIVEMQ'."
+            ],
+            "ExpectedBehavior": "Messages should be sent successfully from IBM MQ to ActiveMQ without errors.",
+            "ObservedBehavior": "An error is thrown indicating that the destination name is not valid.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-3903.json",
+        "creation_time": "2012-06-28T14:09:35.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-3903",
+            "Title": "Failed to fire fast producer advisory, reason: java.lang.NullPointerException",
+            "Description": "An exception occurs when sending a lot of messages to the queue via Webconsole with advisoryForFastProducers set to true.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.activemq.advisory.AdvisorySupport.getFastProducerAdvisoryTopic(AdvisorySupport.java:195)",
+                "at org.apache.activemq.advisory.AdvisoryBroker.fastProducer(AdvisoryBroker.java:352)",
+                "at org.apache.activemq.broker.BrokerFilter.fastProducer(BrokerFilter.java:275)",
+                "at org.apache.activemq.broker.MutableBrokerFilter.fastProducer(MutableBrokerFilter.java:286)",
+                "at org.apache.activemq.broker.region.BaseDestination.fastProducer(BaseDestination.java:512)",
+                "at org.apache.activemq.broker.region.Queue.send(Queue.java:605)",
+                "at org.apache.activemq.broker.region.AbstractRegion.send(AbstractRegion.java:407)",
+                "at org.apache.activemq.broker.region.RegionBroker.send(RegionBroker.java:503)",
+                "at org.apache.activemq.broker.jmx.ManagedRegionBroker.send(ManagedRegionBroker.java:305)",
+                "at org.apache.activemq.broker.BrokerFilter.send(BrokerFilter.java:129)",
+                "at org.apache.activemq.broker.scheduler.SchedulerBroker.send(SchedulerBroker.java:189)",
+                "at org.apache.activemq.broker.CompositeDestinationBroker.send(CompositeDestinationBroker.java:96)",
+                "at org.apache.activemq.broker.TransactionBroker.send(TransactionBroker.java:306)",
+                "at org.apache.activemq.broker.MutableBrokerFilter.send(MutableBrokerFilter.java:135)",
+                "at org.apache.activemq.broker.TransportConnection.processMessage(TransportConnection.java:453)",
+                "at org.apache.activemq.command.ActiveMQMessage.visit(ActiveMQMessage.java:681)",
+                "at org.apache.activemq.broker.TransportConnection.service(TransportConnection.java:292)",
+                "at org.apache.activemq.broker.TransportConnection$1.onCommand(TransportConnection.java:150)",
+                "at org.apache.activemq.transport.ResponseCorrelator.onCommand(ResponseCorrelator.java:116)",
+                "at org.apache.activemq.transport.MutexTransport.onCommand(MutexTransport.java:50)",
+                "at org.apache.activemq.transport.vm.VMTransport.iterate(VMTransport.java:231)",
+                "at org.apache.activemq.thread.DedicatedTaskRunner.runTask(DedicatedTaskRunner.java:98)",
+                "at org.apache.activemq.thread.DedicatedTaskRunner$1.run(DedicatedTaskRunner.java:36)"
+            ],
+            "StepsToReproduce": [
+                "Send a large number of messages to the queue via Webconsole.",
+                "Set advisoryForFastProducers to true."
+            ],
+            "ExpectedBehavior": "The system should successfully fire the fast producer advisory without exceptions.",
+            "ObservedBehavior": "A NullPointerException is thrown, preventing the advisory from firing.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-2693.json",
+        "creation_time": "2010-04-12T13:58:58.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-2693",
+            "Title": "Potential hang with failover, transactions and slow thread creation with outstanding commit",
+            "Description": "The system experiences a potential deadlock during dispatch that is blocked by an outstanding commit after failover, leading to intermittent failures in the FailoverConsumerOutstandingCommitTest.",
+            "StackTrace": [
+                "java.lang.Thread.State: RUNNABLE",
+                "at java.net.SocketOutputStream.socketWrite0(Native Method)",
+                "at org.apache.activemq.transport.tcp.TcpBufferedOutputStream.flush(TcpBufferedOutputStream.java:115)",
+                "at org.apache.activemq.broker.TransportConnection.dispatch(TransportConnection.java:1205)",
+                "at org.apache.activemq.broker.region.PrefetchSubscription.dispatch(PrefetchSubscription.java:647)",
+                "at org.apache.activemq.ActiveMQConnection.waitForTransportInterruptionProcessing(ActiveMQConnection.java:2248)",
+                "at org.apache.activemq.ActiveMQMessageConsumer.dispatch(ActiveMQMessageConsumer.java:1204)",
+                "at org.apache.activemq.ActiveMQSession.commit(ActiveMQSession.java:558)"
+            ],
+            "StepsToReproduce": [
+                "Run the FailoverConsumerOutstandingCommitTest",
+                "Simulate slow thread creation",
+                "Trigger a failover during transaction commit"
+            ],
+            "ExpectedBehavior": "The system should handle failover and transaction commits without deadlocks or hangs.",
+            "ObservedBehavior": "The system hangs due to a deadlock caused by an outstanding commit during failover.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-4643.json",
+        "creation_time": "2013-07-19T13:39:19.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-4643",
+            "Title": "JDBCPersistence DB stopped during message send with JDBCIOExceptionHandler configured; IOException/SQLException is sent back (sometimes) to the client before the transport connector is shutdown",
+            "Description": "When a producer sends a persistent message while the underlying database is shut down, the system may either send an IOException/SQLException wrapped in a JMSException back to the client or shut down the transport connector directly.",
+            "StackTrace": [
+                "javax.jms.JMSException: Database 'target/derbydb_15' not found.",
+                "at org.apache.activemq.util.JMSExceptionSupport.create(JMSExceptionSupport.java:54)",
+                "at org.apache.activemq.ActiveMQConnection.syncSendPacket(ActiveMQConnection.java:1391)",
+                "at org.apache.activemq.store.jdbc.TransactionContext.getConnection(TransactionContext.java:68)",
+                "Caused by: java.io.IOException: Database 'target/derbydb_15' not found.",
+                "at org.apache.derby.impl.jdbc.SQLExceptionFactory40.getSQLException(Unknown Source)"
+            ],
+            "StepsToReproduce": [
+                "Configure JDBCIOExceptionHandler.",
+                "Shut down the underlying database during message send."
+            ],
+            "ExpectedBehavior": "The transport connectors should shut down without reporting an IOException/SQLException to the producer.",
+            "ObservedBehavior": "An IOException/SQLException is sometimes sent back to the client before the transport connector is shut down.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-2902.json",
+        "creation_time": "2010-09-07T11:34:15.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-2902",
+            "Title": "ResourceAdapter logs confusing Exception upon pool connection disposal",
+            "Description": "After upgrading to 5.4.0, many INFO level exceptions are logged related to connection disposal, which are confusing and annoying.",
+            "StackTrace": [
+                "org.apache.activemq.transport.TransportDisposedIOException: Peer (vm://caa.embedded?waitForStart=300000&async=false#13) disposed.",
+                "at org.apache.activemq.transport.vm.VMTransport.stop(VMTransport.java:159)",
+                "at org.apache.activemq.transport.vm.VMTransportServer$1.stop(VMTransportServer.java:81)",
+                "at org.apache.activemq.transport.TransportFilter.stop(TransportFilter.java:65)",
+                "at org.apache.activemq.transport.ResponseCorrelator.stop(ResponseCorrelator.java:132)",
+                "at org.apache.activemq.util.ServiceSupport.dispose(ServiceSupport.java:43)",
+                "at org.apache.activemq.ActiveMQConnection.close(ActiveMQConnection.java:656)",
+                "at org.apache.activemq.ra.ActiveMQManagedConnection.destroy(ActiveMQManagedConnection.java:207)",
+                "at org.jboss.resource.connectionmanager.InternalManagedConnectionPool.doDestroy(InternalManagedConnectionPool.java:650)",
+                "at org.jboss.resource.connectionmanager.IdleRemover$IdleRemoverRunnable.run(IdleRemover.java:164)",
+                "at java.lang.Thread.run(Thread.java:619)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "No confusing log messages should be generated upon connection disposal.",
+            "ObservedBehavior": "INFO level exceptions are logged, indicating connection disposal, which are confusing.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-5665.json",
+        "creation_time": "2015-03-16T21:35:15.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-5665",
+            "Title": "Memory store is broken in 5.11.0 for advisories (and probably other issues as well)",
+            "Description": "Advisories fail to fire in version 5.11.0 due to a bug in MemoryTransactionStore, which is resolved by switching to persistent brokers.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.activemq.advisory.AdvisoryBroker.fireAdvisory(AdvisoryBroker.java:626)",
+                "at org.apache.activemq.advisory.AdvisoryBroker.messageDelivered(AdvisoryBroker.java:397)",
+                "at org.apache.activemq.broker.BrokerFilter.messageDelivered(BrokerFilter.java:349)",
+                "at org.apache.activemq.broker.MutableBrokerFilter.messageDelivered(MutableBrokerFilter.java:360)",
+                "at org.apache.activemq.broker.region.BaseDestination.messageDelivered(BaseDestination.java:518)",
+                "at org.apache.activemq.broker.region.Queue.messageSent(Queue.java:1806)",
+                "at org.apache.activemq.broker.region.Queue.doPendingCursorAdditions(Queue.java:794)",
+                "at org.apache.activemq.broker.region.Queue.orderedCursorAdd(Queue.java:875)",
+                "at org.apache.activemq.broker.region.Queue.doMessageSend(Queue.java:854)",
+                "at org.apache.activemq.broker.region.Queue.send(Queue.java:733)",
+                "at org.apache.activemq.broker.region.AbstractRegion.send(AbstractRegion.java:419)",
+                "at org.apache.activemq.broker.region.RegionBroker.send(RegionBroker.java:468)",
+                "at org.apache.activemq.broker.jmx.ManagedRegionBroker.send(ManagedRegionBroker.java:297)",
+                "at org.apache.activemq.broker.BrokerFilter.send(BrokerFilter.java:152)",
+                "at org.apache.activemq.broker.CompositeDestinationBroker.send(CompositeDestinationBroker.java:96)",
+                "at org.apache.activemq.broker.TransactionBroker.send(TransactionBroker.java:307)",
+                "at org.apache.activemq.broker.MutableBrokerFilter.send(MutableBrokerFilter.java:157)",
+                "at org.apache.activemq.broker.TransportConnection.processMessage(TransportConnection.java:541)",
+                "at org.apache.activemq.command.ActiveMQMessage.visit(ActiveMQMessage.java:768)",
+                "at org.apache.activemq.broker.TransportConnection.service(TransportConnection.java:334)",
+                "at org.apache.activemq.broker.TransportConnection$1.onCommand(TransportConnection.java:188)",
+                "at org.apache.activemq.transport.MutexTransport.onCommand(MutexTransport.java:50)",
+                "at org.apache.activemq.transport.WireFormatNegotiator.onCommand(WireFormatNegotiator.java:113)",
+                "at org.apache.activemq.transport.AbstractInactivityMonitor.onCommand(AbstractInactivityMonitor.java:270)",
+                "at org.apache.activemq.transport.TransportSupport.doConsume(TransportSupport.java:83)",
+                "at org.apache.activemq.transport.tcp.TcpTransport.doRun(TcpTransport.java:214)",
+                "at org.apache.activemq.transport.tcp.TcpTransport.run(TcpTransport.java:196)",
+                "at java.lang.Thread.run(Thread.java:724)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "Advisories should fire correctly without errors.",
+            "ObservedBehavior": "Advisories fail to fire due to a NullPointerException.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-3725.json",
+        "creation_time": "2012-02-17T18:57:21.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-3725",
+            "Title": "Kahadb error during SAN failover delayed write - Allow kahaDB to recover in a similar manner as the JDBC store using the IOExceptionHandler",
+            "Description": "The broker terminates when using kahaDB with a SAN during failover. The failover is seamless, but on failback, writes are blocked for 2-3 seconds, causing termination. Adding IOExceptionHandler prevents termination but leaves an invalid index.",
+            "StackTrace": [
+                "java.io.SyncFailedException: sync failed",
+                "at java.io.FileDescriptor.sync(Native Method)",
+                "at org.apache.kahadb.journal.DataFileAppender.processQueue(DataFileAppender.java:382)",
+                "at org.apache.kahadb.journal.DataFileAppender$2.run(DataFileAppender.java:203)",
+                "java.io.FileNotFoundException: /Volumes/NAS-01/data/kahadb/db-1.log (No such file or directory)",
+                "at java.io.RandomAccessFile.open(Native Method)",
+                "at java.io.RandomAccessFile.<init>(RandomAccessFile.java:216)",
+                "at org.apache.kahadb.journal.DataFile.openRandomAccessFile(DataFile.java:70)",
+                "java.io.IOException: Input/output error",
+                "at java.io.RandomAccessFile.write(Native Method)"
+            ],
+            "StepsToReproduce": [
+                "Use kahaDB with a SAN.",
+                "Trigger a failover on the SAN.",
+                "Observe the broker's behavior during failback."
+            ],
+            "ExpectedBehavior": "The broker should handle failover and failback without termination and maintain a valid index.",
+            "ObservedBehavior": "The broker terminates during failback due to blocked writes, and an invalid index is retained.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-3085.json",
+        "creation_time": "2010-12-15T12:18:12.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-3085",
+            "Title": "IndexOutOfBoundsException on FailoverTransport.updateURIs after: already known: java.net.UnknownHostException",
+            "Description": "The broker returned hosts that are not resolvable on the client, causing the update logic in the failover transport to fail. Disabling update works around this issue.",
+            "StackTrace": [
+                "java.io.IOException: Unexpected error occurred",
+                "at org.apache.activemq.transport.tcp.TcpTransport.run(TcpTransport.java:208) ~[activemq-core-5.4.1.jar:5.4.1-fuse-01-00]",
+                "Caused by: java.lang.IndexOutOfBoundsException: Index: 12, Size: 11",
+                "at java.util.concurrent.CopyOnWriteArrayList.add(CopyOnWriteArrayList.java:409) ~[na:1.6.0_12]",
+                "at org.apache.activemq.transport.failover.FailoverTransport.add(FailoverTransport.java:613) ~[activemq-core-5.4.1.jar:5.4.1-fuse-01-00]",
+                "at org.apache.activemq.transport.failover.FailoverTransport.updateURIs(FailoverTransport.java:1046) ~[activemq-core-5.4.1.jar:5.4.1-fuse-01-00]"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should handle unknown hosts gracefully without throwing an IndexOutOfBoundsException.",
+            "ObservedBehavior": "An IndexOutOfBoundsException is thrown when the failover transport attempts to update URIs with unresolved hosts.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-3504.json",
+        "creation_time": "2011-09-19T14:33:49.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-3504",
+            "Title": "NullPointerException on websocket connection",
+            "Description": "When connecting from Chrome or Firefox 6 over websockets, a NullPointerException occurs. This does not happen on Firefox 5 or Safari, suggesting a compatibility issue with the websocket implementation.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.activemq.transport.ws.StompServlet.doGet(StompServlet.java:51)",
+                "at javax.servlet.http.HttpServlet.service(HttpServlet.java:693)",
+                "at org.eclipse.jetty.websocket.WebSocketServlet.service(WebSocketServlet.java:73)",
+                "at javax.servlet.http.HttpServlet.service(HttpServlet.java:806)",
+                "at org.eclipse.jetty.servlet.ServletHolder.handle(ServletHolder.java:527)",
+                "at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:423)",
+                "at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:223)",
+                "at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:930)",
+                "at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:358)",
+                "at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:183)",
+                "at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:866)",
+                "at org.eclipse.jetty.server.ScopedHandler.handle(ScopedHandler.java:117)",
+                "at org.eclipse.jetty.server.HandlerWrapper.handle(HandlerWrapper.java:113)",
+                "at org.eclipse.jetty.server.Server.handle(Server.java:351)",
+                "at org.eclipse.jetty.server.HttpConnection.handleRequest(HttpConnection.java:594)",
+                "at org.eclipse.jetty.server.HttpConnection$RequestHandler.headerComplete(HttpConnection.java:1042)",
+                "at org.eclipse.jetty.http.HttpParser.parseNext(HttpParser.java:549)",
+                "at org.eclipse.jetty.http.HttpParser.parseAvailable(HttpParser.java:211)",
+                "at org.eclipse.jetty.server.HttpConnection.handle(HttpConnection.java:424)",
+                "at org.eclipse.jetty.server.bio.SocketConnector$ConnectorEndPoint.run(SocketConnector.java:241)",
+                "at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:436)",
+                "at java.lang.Thread.run(Thread.java:680)"
+            ],
+            "StepsToReproduce": [
+                "Connect to the server using Chrome or Firefox 6 over websockets."
+            ],
+            "ExpectedBehavior": "The websocket connection should be established without errors.",
+            "ObservedBehavior": "A NullPointerException is thrown, preventing the connection.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-6707.json",
+        "creation_time": "2017-06-19T11:29:47.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-6707",
+            "Title": "JDBC XA: Could not remove prepared transaction state from message",
+            "Description": "When ActiveMQ 5.14.5 is configured with JDBC persistence storage (Postgres), an error occurs intermittently related to transaction commits.",
+            "StackTrace": [
+                "javax.transaction.xa.XAException: STORE COMMIT FAILED: Transaction rolled back xaErrorCode:104",
+                "at org.apache.activemq.TransactionContext.toXAException(TransactionContext.java:793)",
+                "at org.apache.activemq.TransactionContext.commit(TransactionContext.java:622)",
+                "at org.apache.geronimo.transaction.manager.WrapperNamedXAResource.commit(WrapperNamedXAResource.java:54)",
+                "at org.apache.geronimo.transaction.manager.CommitTask.run(CommitTask.java:64)",
+                "at org.apache.geronimo.transaction.manager.TransactionImpl.commitResources(TransactionImpl.java:688)",
+                "Caused by: javax.transaction.xa.XAException: STORE COMMIT FAILED: Transaction rolled back xaErrorCode:104",
+                "at org.apache.activemq.transaction.Transaction.newXAException(Transaction.java:212)",
+                "at org.apache.activemq.transaction.XATransaction.storeCommit(XATransaction.java:93)",
+                "at org.apache.activemq.store.jdbc.adapter.DefaultJDBCAdapter.doCommitAddOp(DefaultJDBCAdapter.java:1031)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The transaction should commit successfully without errors.",
+            "ObservedBehavior": "The transaction fails to commit, resulting in an XAException.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-5384.json",
+        "creation_time": "2014-10-06T09:26:58.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-5384",
+            "Title": "Deadlock on DB connections in JDBCMessageStore.removeMessage",
+            "Description": "AMQ 5.9 gets stuck under 30-50 req/second load when using JDBC persistence, causing application hangs during performance testing due to deadlocks on DB connections.",
+            "StackTrace": [
+                "java.lang.Exception: DEBUG STACK TRACE: Overdue resource check-out stack trace.",
+                "at com.mchange.v2.resourcepool.BasicResourcePool.checkoutResource(BasicResourcePool.java:555)",
+                "at com.mchange.v2.c3p0.impl.C3P0PooledConnectionPool.checkoutAndMarkConnectionInUse(C3P0PooledConnectionPool.java:756)",
+                "at com.mchange.v2.c3p0.impl.C3P0PooledConnectionPool.checkoutPooledConnection(C3P0PooledConnectionPool.java:683)",
+                "at org.apache.activemq.store.jdbc.TransactionContext.getConnection(TransactionContext.java:58)",
+                "at org.apache.activemq.store.jdbc.TransactionContext.begin(TransactionContext.java:163)",
+                "at org.apache.activemq.store.jdbc.JDBCPersistenceAdapter.beginTransaction(JDBCPersistenceAdapter.java:510)",
+                "at org.apache.activemq.store.memory.MemoryTransactionStore$Tx.commit(MemoryTransactionStore.java:92)",
+                "at org.apache.activemq.transaction.XATransaction.commit(XATransaction.java:75)",
+                "at org.apache.activemq.broker.TransactionBroker.commitTransaction(TransactionBroker.java:253)",
+                "at org.apache.activemq.broker.TransportConnection.processCommitTransactionTwoPhase(TransportConnection.java:433)"
+            ],
+            "StepsToReproduce": [
+                "Load the application with 30-50 requests per second using JDBC persistence.",
+                "Monitor the DB connections and application behavior during performance testing."
+            ],
+            "ExpectedBehavior": "The application should handle the load without deadlocking on DB connections.",
+            "ObservedBehavior": "The application hangs due to deadlocks when all DB connections are used.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-5783.json",
+        "creation_time": "2015-05-20T08:47:56.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-5783",
+            "Title": "Failed to browse Topic: XXXXX java.io.EOFException: Chunk stream does not exist, page: y is marked free",
+            "Description": "When an offline durable subscriber is timed out, a WARNING message is logged indicating a failure to browse the topic due to an EOFException.",
+            "StackTrace": [
+                "java.io.EOFException: Chunk stream does not exist, page: 39 is marked free",
+                "at org.apache.activemq.store.kahadb.disk.page.Transaction$2.readPage(Transaction.java:470)",
+                "at org.apache.activemq.store.kahadb.disk.page.Transaction$2.<init>(Transaction.java:447)",
+                "at org.apache.activemq.store.kahadb.disk.page.Transaction.openInputStream(Transaction.java:444)",
+                "at org.apache.activemq.store.kahadb.disk.page.Transaction.load(Transaction.java:420)",
+                "at org.apache.activemq.store.kahadb.disk.page.Transaction.load(Transaction.java:377)",
+                "at org.apache.activemq.store.kahadb.disk.index.BTreeIndex.loadNode(BTreeIndex.java:266)",
+                "at org.apache.activemq.store.kahadb.disk.index.BTreeIndex.getRoot(BTreeIndex.java:174)",
+                "at org.apache.activemq.store.kahadb.disk.index.BTreeIndex.iterator(BTreeIndex.java:236)",
+                "at org.apache.activemq.store.kahadb.MessageDatabase$MessageOrderIndex$MessageOrderIterator.<init>(MessageDatabase.java:3033)",
+                "at org.apache.activemq.store.kahadb.MessageDatabase$MessageOrderIndex.iterator(MessageDatabase.java:2985)",
+                "at org.apache.activemq.store.kahadb.KahaDBStore$KahaDBMessageStore$4.execute(KahaDBStore.java:564)",
+                "at org.apache.activemq.store.kahadb.disk.page.Transaction.execute(Transaction.java:779)",
+                "at org.apache.activemq.store.kahadb.KahaDBStore$KahaDBMessageStore.recover(KahaDBStore.java:558)",
+                "at org.apache.activemq.store.ProxyTopicMessageStore.recover(ProxyTopicMessageStore.java:62)",
+                "at org.apache.activemq.broker.region.Topic.doBrowse(Topic.java:589)",
+                "at org.apache.activemq.broker.region.Topic.access$100(Topic.java:65)",
+                "at org.apache.activemq.broker.region.Topic$6.run(Topic.java:722)",
+                "at org.apache.activemq.thread.SchedulerTimerTask.run(SchedulerTimerTask.java:33)",
+                "at java.util.TimerThread.mainLoop(Timer.java:555)",
+                "at java.util.TimerThread.run(Timer.java:505)"
+            ],
+            "StepsToReproduce": null,
+            "ExpectedBehavior": "The system should successfully browse the topic without logging an EOFException.",
+            "ObservedBehavior": "A WARNING message is logged indicating a failure to browse the topic due to an EOFException.",
+            "Resolution": "Fixed"
+        }
+    },
+    {
+        "filename": "AMQ-2965.json",
+        "creation_time": "2010-10-07T20:18:59.000+0000",
+        "bug_report": {
+            "BugID": "AMQ-2965",
+            "Title": "ActiveMQ fails to start if no DNS resolution for hostname is available",
+            "Description": "ActiveMQ fails to start when configured to listen on an internal network without DNS resolution for hostnames. The issue arises due to an UnknownHostException when trying to resolve the hostname.",
+            "StackTrace": [
+                "java.net.UnknownHostException: Q01M0003: Q01M0003",
+                "at java.net.InetAddress.getLocalHost(Unknown Source)",
+                "at org.apache.activemq.util.IdGenerator.<clinit>(IdGenerator.java:52)",
+                "at org.apache.activemq.broker.region.RegionBroker.<clinit>(RegionBroker.java:75)",
+                "at org.apache.activemq.broker.BrokerService.createRegionBroker(BrokerService.java:1734)",
+                "at org.apache.activemq.broker.BrokerService.start(BrokerService.java:469)",
+                "at org.apache.activemq.console.command.StartCommand.startBroker(StartCommand.java:115)",
+                "at org.apache.activemq.console.command.AbstractCommand.execute(AbstractCommand.java:57)"
+            ],
+            "StepsToReproduce": [
+                "Install ActiveMQ on a server with two ethernet interfaces.",
+                "Configure ActiveMQ to listen only on the internal interface (172.x.x.x).",
+                "Ensure that external DNS resolution is available but internal DNS resolution is not.",
+                "Attempt to start ActiveMQ."
+            ],
+            "ExpectedBehavior": "ActiveMQ should start successfully without any hostname resolution issues.",
+            "ObservedBehavior": "ActiveMQ fails to start, throwing an UnknownHostException due to unresolved hostnames.",
+            "Resolution": "Fixed"
+        }
+    }
+]
