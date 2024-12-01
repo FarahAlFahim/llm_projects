@@ -123,7 +123,7 @@ def perform_fault_localization_single_repo(bug_reports_file, ground_truth_file, 
     for report in bug_reports:
         filename = report["filename"]
         creation_time = report["creation_time"]
-        bug_report_json = report["stack_trace"]
+        bug_report_json = report["bug_report"]
         bug_report = convert_bug_report_to_string(bug_report_json)
 
         # Get commit version and checkout
@@ -148,13 +148,13 @@ def perform_fault_localization_single_repo(bug_reports_file, ground_truth_file, 
     return evaluate_metrics(results, ground_truth, top_n_values)
 
 # Function to compare if a ranked file ends with any ground truth file
-# def match_ranked_to_ground_truth(ranked_file, ground_truth_files):
-#     # Loop over each ground truth file
-#     for ground_truth_file in ground_truth_files:
-#         # Check if the ranked file ends with the ground truth file (i.e., matches the last part)
-#         if ranked_file.endswith(ground_truth_file):
-#             return True
-#     return False
+def match_ranked_to_ground_truth(ranked_file, ground_truth_files):
+    # Loop over each ground truth file
+    for ground_truth_file in ground_truth_files:
+        # Check if the ranked file ends with the ground truth file (i.e., matches the last part)
+        if ranked_file.endswith(ground_truth_file):
+            return True
+    return False
 
 # Evaluation function for MAP, MRR, and Top N scores
 def evaluate_metrics(results, ground_truth, top_n_values):
@@ -172,9 +172,9 @@ def evaluate_metrics(results, ground_truth, top_n_values):
         relevant_within_top_n = {n: False for n in top_n_values}
 
         for rank, file in enumerate(ranked_files, start=1):
-            if file in ground_truth_files:
-            # # # Check if any ranked file ends with ground truth file (using endswith)
-            # if match_ranked_to_ground_truth(file, ground_truth_files):
+            # if file in ground_truth_files:
+            # # Check if any ranked file ends with ground truth file (using endswith)
+            if match_ranked_to_ground_truth(file, ground_truth_files):
                 relevant_found += 1
                 precision_sum += relevant_found / rank
                 if relevant_found == 1:
@@ -237,16 +237,16 @@ def process_repositories(repositories, top_n_values):
         print(f"Top-{n} Accuracy: {overall_metrics['Top@N'][n]}")
 
 # Example repository configuration and usage
-bug_report_folder = 'stack_traces'
+bug_report_folder = 'llm_enhanced_bug_reports'
 repositories = [
     {"bug_reports": f"{bug_report_folder}/Zookeeper.json", "ground_truth": "ground_truth/Zookeeper.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/zookeeper", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main", "git_branch": 'master'},
-    {"bug_reports": f"{bug_report_folder}/ActiveMQ.json", "ground_truth": "ground_truth/ActiveMQ.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/activemq", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java", "git_branch": 'main'},
-    {"bug_reports": f"{bug_report_folder}/Hadoop.json", "ground_truth": "ground_truth/Hadoop.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "git_branch": 'trunk'},
-    {"bug_reports": f"{bug_report_folder}/HDFS.json", "ground_truth": "ground_truth/HDFS.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs/src/java", "git_branch": 'trunk'},
+    # {"bug_reports": f"{bug_report_folder}/ActiveMQ.json", "ground_truth": "ground_truth/ActiveMQ.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/activemq", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java", "git_branch": 'main'},
+    # {"bug_reports": f"{bug_report_folder}/Hadoop.json", "ground_truth": "ground_truth/Hadoop.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "git_branch": 'trunk'},
+    # {"bug_reports": f"{bug_report_folder}/HDFS.json", "ground_truth": "ground_truth/HDFS.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs/src/java", "git_branch": 'trunk'},
     # {"bug_reports": f"{bug_report_folder}/Hive.json", "ground_truth": "ground_truth/Hive.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hive", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hive", "git_branch": 'master'},
-    {"bug_reports": f"{bug_report_folder}/MAPREDUCE.json", "ground_truth": "ground_truth/MAPREDUCE.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce/src/java", "git_branch": 'trunk'},
-    # {"bug_reports": f"{bug_report_folder}/Storm.json", "ground_truth": "ground_truth/Storm.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/storm", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/storm/storm-client/src/jvm", "git_branch": 'master'},
-    {"bug_reports": f"{bug_report_folder}/YARN.json", "ground_truth": "ground_truth/YARN.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java", "git_branch": 'trunk'},
+    # {"bug_reports": f"{bug_report_folder}/MAPREDUCE.json", "ground_truth": "ground_truth/MAPREDUCE.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce/src/java", "git_branch": 'trunk'},
+    # {"bug_reports": f"{bug_report_folder}/Storm.json", "ground_truth": "ground_truth/Storm.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/storm", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/storm", "git_branch": 'master'},
+    # {"bug_reports": f"{bug_report_folder}/YARN.json", "ground_truth": "ground_truth/YARN.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java", "git_branch": 'trunk'},
     # Add all 8 repositories (hdfs, mapreduce - change dir | hive - find dir | Storm - add dir)
     # /Users/fahim/Desktop/PhD/Projects/storm/storm-client/src/jvm
     # /Users/fahim/Desktop/PhD/Projects/storm/storm-server/src/main/java

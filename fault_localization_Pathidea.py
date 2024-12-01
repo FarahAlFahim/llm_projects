@@ -375,16 +375,16 @@ def process_repositories(repositories, top_n_values):
         print(f"Top-{n} Accuracy: {overall_metrics['Top@N'][n]}")
 
 # Example repository configuration
-bug_report_folder = 'llm_generated_bug_reports'
+bug_report_folder = 'summary_of_dev_written_bug_reports'
 repositories = [
     {"bug_reports": f"{bug_report_folder}/Zookeeper.json", "ground_truth": "ground_truth/Zookeeper.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/zookeeper", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main", "git_branch": 'master'},
-    {"bug_reports": f"{bug_report_folder}/ActiveMQ.json", "ground_truth": "ground_truth/ActiveMQ.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/activemq", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java", "git_branch": 'main'},
-    {"bug_reports": f"{bug_report_folder}/Hadoop.json", "ground_truth": "ground_truth/Hadoop.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "git_branch": 'trunk'},
-    {"bug_reports": f"{bug_report_folder}/HDFS.json", "ground_truth": "ground_truth/HDFS.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs/src/java", "git_branch": 'trunk'},
+    # {"bug_reports": f"{bug_report_folder}/ActiveMQ.json", "ground_truth": "ground_truth/ActiveMQ.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/activemq", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java", "git_branch": 'main'},
+    # {"bug_reports": f"{bug_report_folder}/Hadoop.json", "ground_truth": "ground_truth/Hadoop.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "git_branch": 'trunk'},
+    # {"bug_reports": f"{bug_report_folder}/HDFS.json", "ground_truth": "ground_truth/HDFS.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs/src/java", "git_branch": 'trunk'},
     # {"bug_reports": f"{bug_report_folder}/Hive.json", "ground_truth": "ground_truth/Hive.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hive", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hive", "git_branch": 'master'},
-    {"bug_reports": f"{bug_report_folder}/MAPREDUCE.json", "ground_truth": "ground_truth/MAPREDUCE.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce/src/java", "git_branch": 'trunk'},
+    # {"bug_reports": f"{bug_report_folder}/MAPREDUCE.json", "ground_truth": "ground_truth/MAPREDUCE.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce/src/java", "git_branch": 'trunk'},
     # {"bug_reports": f"{bug_report_folder}/Storm.json", "ground_truth": "ground_truth/Storm.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/storm", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/storm/storm-client/src/jvm", "git_branch": 'master'},
-    {"bug_reports": f"{bug_report_folder}/YARN.json", "ground_truth": "ground_truth/YARN.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java", "git_branch": 'trunk'},
+    # {"bug_reports": f"{bug_report_folder}/YARN.json", "ground_truth": "ground_truth/YARN.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java", "git_branch": 'trunk'},
     # Add all 8 repositories (hdfs, mapreduce - change dir | hive - find dir | Storm - add dir)
 ]
 
