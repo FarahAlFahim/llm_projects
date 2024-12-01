@@ -57,14 +57,12 @@ def checkout_to_commit(commit_version, repo_path, git_branch):
     
 
 # Convert file path to ground truth format
-def convert_to_ground_truth_format(file_path, codebase_dir):
-    relative_path = file_path.replace(codebase_dir + os.sep, "").replace(".java", "")
-    # print("################################")
-    # print("File path: ", file_path)
-    # print("codebase dir: ", codebase_dir)
-    # print(relative_path.replace(os.sep, "."))
-    # print("################################")
-    return relative_path.replace(os.sep, ".")
+def convert_to_ground_truth_format(file_path, codebase_dirs):
+    for codebase_dir in codebase_dirs:
+        if file_path.startswith(codebase_dir):
+            relative_path = file_path.replace(codebase_dir + os.sep, "").replace(".java", "")
+            return relative_path.replace(os.sep, ".")
+    return None  # Handle files that don't match any directory
 
 # Extract Stack Trace and Keywords
 def extract_stack_trace(bug_report):
@@ -78,41 +76,46 @@ def extract_keywords(bug_report):
     return keywords
 
 # Search Codebase for Possible Matches with Keywords
-def search_codebase(codebase_dir, keywords):
+def search_codebase(codebase_dirs, keywords):
+    if isinstance(codebase_dirs, str):  # Allow single directory for backward compatibility
+        codebase_dirs = [codebase_dirs]
+
     matches = defaultdict(list)
-    for root, _, files in os.walk(codebase_dir):
-        for file in files:
-            if file.endswith(".java"):
-                file_path = os.path.join(root, file)
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    for keyword in keywords:
-                        if keyword in content:
-                            matches[file_path].append(keyword)
+    for codebase_dir in codebase_dirs:
+        for root, _, files in os.walk(codebase_dir):
+            for file in files:
+                if file.endswith(".java"):
+                    file_path = os.path.join(root, file)
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                        for keyword in keywords:
+                            if keyword in content:
+                                matches[file_path].append(keyword)
     return matches
 
 # Rank Matches
-def rank_matches(matched_files, stack_trace, codebase_dir):
+def rank_matches(matched_files, stack_trace, codebase_dirs):
     file_scores = defaultdict(int)
     for file, keywords in matched_files.items():
         file_scores[file] += len(keywords)
     for class_name, file_name, line_number in stack_trace:
         package_path = os.sep.join(class_name.split('.')[:-1]) + ".java"
-        full_path = os.path.join(codebase_dir, package_path)
-        if full_path in file_scores:
-            file_scores[full_path] += 5
+        for codebase_dir in codebase_dirs:
+            full_path = os.path.join(codebase_dir, package_path)
+            if full_path in file_scores:
+                file_scores[full_path] += 5
     ranked_files = sorted(file_scores.items(), key=lambda x: x[1], reverse=True)
     return ranked_files
 
 # Transform ranked files to match ground truth format
-def transform_ranked_files(ranked_files, codebase_dir):
+def transform_ranked_files(ranked_files, codebase_dirs):
     # print('-'*40)
     # print('Ranked files: ', ranked_files)
     # print('-'*40)
-    return [convert_to_ground_truth_format(file, codebase_dir) for file, _ in ranked_files]
+    return [convert_to_ground_truth_format(file, codebase_dirs) for file, _ in ranked_files]
 
 # Perform fault localization for a single repository
-def perform_fault_localization_single_repo(bug_reports_file, ground_truth_file, repo_path, codebase_dir, git_branch, top_n_values):
+def perform_fault_localization_single_repo(bug_reports_file, ground_truth_file, repo_path, codebase_dirs, git_branch, top_n_values):
     bug_reports = load_bug_reports(bug_reports_file)
     ground_truth = load_ground_truth(ground_truth_file)
     results = []
@@ -133,11 +136,11 @@ def perform_fault_localization_single_repo(bug_reports_file, ground_truth_file, 
             keywords = extract_keywords(bug_report)
             
             # Search and rank files
-            matched_files = search_codebase(codebase_dir, keywords)
-            ranked_files = rank_matches(matched_files, stack_trace, codebase_dir)
+            matched_files = search_codebase(codebase_dirs, keywords)
+            ranked_files = rank_matches(matched_files, stack_trace, codebase_dirs)
             
             # Transform ranked files to ground truth format for comparison
-            transformed_ranked_files = transform_ranked_files(ranked_files, codebase_dir)
+            transformed_ranked_files = transform_ranked_files(ranked_files, codebase_dirs)
             results.append((filename, transformed_ranked_files))
     
     return evaluate_metrics(results, ground_truth, top_n_values)
@@ -240,16 +243,16 @@ def process_repositories(repositories, top_n_values):
         print(f"Top-{n} Accuracy: {overall_metrics['Top@N'][n]}")
 
 # Example repository configuration and usage
-bug_report_folder = 'summary_of_dev_written_bug_reports'
+bug_report_folder = 'developer_written_bug_reports'
 repositories = [
-    {"bug_reports": f"{bug_report_folder}/Zookeeper.json", "ground_truth": "ground_truth/Zookeeper.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/zookeeper", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main", "git_branch": 'master'},
-    # {"bug_reports": f"{bug_report_folder}/ActiveMQ.json", "ground_truth": "ground_truth/ActiveMQ.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/activemq", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java", "git_branch": 'main'},
-    # {"bug_reports": f"{bug_report_folder}/Hadoop.json", "ground_truth": "ground_truth/Hadoop.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "git_branch": 'trunk'},
-    # {"bug_reports": f"{bug_report_folder}/HDFS.json", "ground_truth": "ground_truth/HDFS.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs/src/java", "git_branch": 'trunk'},
-    # {"bug_reports": f"{bug_report_folder}/Hive.json", "ground_truth": "ground_truth/Hive.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hive", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hive", "git_branch": 'master'},
-    # {"bug_reports": f"{bug_report_folder}/MAPREDUCE.json", "ground_truth": "ground_truth/MAPREDUCE.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce/src/java", "git_branch": 'trunk'},
-    # {"bug_reports": f"{bug_report_folder}/Storm.json", "ground_truth": "ground_truth/Storm.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/storm", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/storm/storm-server/src/main/java", "git_branch": 'master'},
-    # {"bug_reports": f"{bug_report_folder}/YARN.json", "ground_truth": "ground_truth/YARN.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java", "git_branch": 'trunk'},
+    {"bug_reports": f"{bug_report_folder}/Zookeeper.json", "ground_truth": "ground_truth/Zookeeper.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/zookeeper", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main"], "git_branch": 'master'},
+    # {"bug_reports": f"{bug_report_folder}/ActiveMQ.json", "ground_truth": "ground_truth/ActiveMQ.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/activemq", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java"], "git_branch": 'main'},
+    # {"bug_reports": f"{bug_report_folder}/Hadoop.json", "ground_truth": "ground_truth/Hadoop.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java"], "git_branch": 'trunk'},
+    # {"bug_reports": f"{bug_report_folder}/HDFS.json", "ground_truth": "ground_truth/HDFS.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs/src/java"], "git_branch": 'trunk'},
+    # {"bug_reports": f"{bug_report_folder}/Hive.json", "ground_truth": "ground_truth/Hive.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hive", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hive"], "git_branch": 'master'},
+    # {"bug_reports": f"{bug_report_folder}/MAPREDUCE.json", "ground_truth": "ground_truth/MAPREDUCE.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce/src/java"], "git_branch": 'trunk'},
+    # {"bug_reports": f"{bug_report_folder}/Storm.json", "ground_truth": "ground_truth/Storm.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/storm", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/storm/storm-client/src/jvm"], "git_branch": 'master'},
+    # {"bug_reports": f"{bug_report_folder}/YARN.json", "ground_truth": "ground_truth/YARN.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java"], "git_branch": 'trunk'},
     # Add all 8 repositories
 ]
 

@@ -59,14 +59,17 @@ def checkout_to_commit(commit_version, repo_path, git_branch):
     subprocess.run(reset_command, shell=True, cwd=repo_path)
 
 # Convert file path to ground truth format
-def convert_to_ground_truth_format(file_path, codebase_dir):
-    relative_path = file_path.replace(codebase_dir + os.sep, "").replace(".java", "")
-    # print("################################")
-    # print("File path: ", file_path)
-    # print("codebase dir: ", codebase_dir)
-    # print(relative_path.replace(os.sep, "."))
-    # print("################################")
-    return relative_path.replace(os.sep, ".")
+def convert_to_ground_truth_format(file_path, codebase_dirs):
+    for codebase_dir in codebase_dirs:
+        if file_path.startswith(codebase_dir):
+            relative_path = file_path.replace(codebase_dir + os.sep, "").replace(".java", "")
+            # print("################################")
+            # print("File path: ", file_path)
+            # print("codebase dir: ", codebase_dir)
+            # print(relative_path.replace(os.sep, "."))
+            # print("################################")
+            return relative_path.replace(os.sep, ".")
+    return None  # Handle files that don't match any directory
 
 # Preprocess text: tokenization, stopword removal, stemming
 def preprocess_text(text):
@@ -109,47 +112,51 @@ def analyze_logs(bug_report):
     return log_scores
 
 
-def build_dynamic_call_graph(codebase_dir):
+def build_dynamic_call_graph(codebase_dirs):
+    if isinstance(codebase_dirs, str):  # Allow single directory for backward compatibility
+        codebase_dirs = [codebase_dirs]
+
     call_graph = nx.DiGraph()  # Create directed graph
 
-    # Traverse the codebase to read all Java files
-    for root, _, files in os.walk(codebase_dir):
-        for file in files:
-            if file.endswith(".java"):
-                file_path = os.path.join(root, file)
-                try:
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        content = f.read()
+    for codebase_dir in codebase_dirs:
+        # Traverse the codebase to read all Java files
+        for root, _, files in os.walk(codebase_dir):
+            for file in files:
+                if file.endswith(".java"):
+                    file_path = os.path.join(root, file)
+                    try:
+                        with open(file_path, "r", encoding="utf-8") as f:
+                            content = f.read()
 
-                        # Use regex to find method calls, e.g., "ClassName.methodName("
-                        # method_calls = re.findall(r"(\w+)\.\w+\(", content)
-                        # method_calls = re.findall(r"(\w+)\.(\w+)\(", content)
-                        # method_calls = re.findall(r"(\w+)\.(\w+)\([^\)]*\)", content)
-                        method_calls = re.findall(r"(\w+)\.(\w+)\([^\)]*\);", content)
-                        # print(f"Method Calls in {file}: {method_calls}")
-                        # print(f"File content of {file}: {content}")
+                            # Use regex to find method calls, e.g., "ClassName.methodName("
+                            # method_calls = re.findall(r"(\w+)\.\w+\(", content)
+                            # method_calls = re.findall(r"(\w+)\.(\w+)\(", content)
+                            # method_calls = re.findall(r"(\w+)\.(\w+)\([^\)]*\)", content)
+                            method_calls = re.findall(r"(\w+)\.(\w+)\([^\)]*\);", content)
+                            # print(f"Method Calls in {file}: {method_calls}")
+                            # print(f"File content of {file}: {content}")
 
-                        # Check how the edges are being added to the call graph
-                        # print("Adding edges to the call graph:")
-                        for called_class in method_calls:
-                            called_file = os.path.join(root, f"{called_class}.java")
+                            # Check how the edges are being added to the call graph
+                            # print("Adding edges to the call graph:")
+                            for called_class in method_calls:
+                                called_file = os.path.join(root, f"{called_class}.java")
 
-                            # If the called class exists as a file, add an edge to the call graph
-                            if os.path.exists(called_file):
-                                call_graph.add_edge(file_path, called_file)
-                                # print(f"Added edge from {file_path} to {called_file}")
+                                # If the called class exists as a file, add an edge to the call graph
+                                if os.path.exists(called_file):
+                                    call_graph.add_edge(file_path, called_file)
+                                    # print(f"Added edge from {file_path} to {called_file}")
 
-                except Exception as e:
-                    print(f"Error reading file {file_path}: {e}")
+                    except Exception as e:
+                        print(f"Error reading file {file_path}: {e}")
                     
     return call_graph
 
 
 
 # Reconstruct execution paths using a call graph
-def reconstruct_execution_paths(logs, source_files, codebase_dir):
+def reconstruct_execution_paths(logs, source_files, codebase_dirs):
     # Build the call graph dynamically
-    call_graph = build_dynamic_call_graph(codebase_dir)
+    call_graph = build_dynamic_call_graph(codebase_dirs)
     # print("//////////////////////////////")
     # print("Call Graph:")
     # print(call_graph.edges())
@@ -158,28 +165,29 @@ def reconstruct_execution_paths(logs, source_files, codebase_dir):
         match = re.search(r"(\w+)\.java", log)
         if match:
             file_name = match.group(1)
-            file_path = os.path.join(codebase_dir, f"{file_name}.java")
-            # file_path = os.path.abspath(file_path)  # Ensure absolute path
+            for codebase_dir in codebase_dirs:
+                file_path = os.path.join(codebase_dir, f"{file_name}.java")
+                # file_path = os.path.abspath(file_path)  # Ensure absolute path
 
-            # Debugging: Print the file path and call graph nodes
-            # print(f"Checking if {file_path} exists in the graph...")
-            # print("Call Graph Nodes:", list(call_graph.nodes()))
+                # Debugging: Print the file path and call graph nodes
+                # print(f"Checking if {file_path} exists in the graph...")
+                # print("Call Graph Nodes:", list(call_graph.nodes()))
 
-            # Initialize paths in case file is not found in the graph
-            paths = {}
+                # Initialize paths in case file is not found in the graph
+                paths = {}
 
-            if call_graph.has_node(file_path):
-                # Find all reachable nodes (shortest paths) from this file
-                # print(f"Node {file_path} found in the graph.")
-                paths = nx.single_source_shortest_path_length(call_graph, file_path)
-                print(f"Paths for {file_name}: {paths}")
-            # else:
-            #     print(f"Node {file_path} not found in the call graph.")
+                if call_graph.has_node(file_path):
+                    # Find all reachable nodes (shortest paths) from this file
+                    # print(f"Node {file_path} found in the graph.")
+                    paths = nx.single_source_shortest_path_length(call_graph, file_path)
+                    print(f"Paths for {file_name}: {paths}")
+                # else:
+                #     print(f"Node {file_path} not found in the call graph.")
 
-            # If paths exist, assign scores based on proximity
-            if paths:
-                for node, length in paths.items():
-                    path_scores[node] += 1 / (length + 1)
+                # If paths exist, assign scores based on proximity
+                if paths:
+                    for node, length in paths.items():
+                        path_scores[node] += 1 / (length + 1)
     # print("Path Scores:")
     # print(path_scores)
     # print("//////////////////////////////")
@@ -217,15 +225,15 @@ def rank_suspicious_files(suspiciousness, source_files):
 
 
 # Transform ranked files to match ground truth format
-def transform_ranked_files(ranked_files, codebase_dir):
+def transform_ranked_files(ranked_files, codebase_dirs):
     # print('-'*40)
     # print('Ranked files: ', ranked_files)
     # print('-'*40)
-    return [convert_to_ground_truth_format(file, codebase_dir) for file, _ in ranked_files]
+    return [convert_to_ground_truth_format(file, codebase_dirs) for file, _ in ranked_files]
 
 
 # Perform fault localization for a single repository
-def perform_fault_localization_single_repo(bug_reports_file, ground_truth_file, repo_path, codebase_dir, git_branch, top_n_values):
+def perform_fault_localization_single_repo(bug_reports_file, ground_truth_file, repo_path, codebase_dirs, git_branch, top_n_values):
     bug_reports = load_bug_reports(bug_reports_file)
     ground_truth = load_ground_truth(ground_truth_file)
     results = []
@@ -247,22 +255,23 @@ def perform_fault_localization_single_repo(bug_reports_file, ground_truth_file, 
             # Prepare lists for file paths and file contents
             file_paths = []
             file_contents = []
-            for root, _, files in os.walk(codebase_dir):
-                for file in files:
-                    if file.endswith(".java"):
-                        file_path = os.path.join(root, file)
-                        file_paths.append(file_path)  # Store the file path
-                        try:
-                            with open(file_path, "r", encoding="utf-8") as f:
-                                content = f.read()
-                                file_contents.append(content)  # Store the file content
-                        except Exception as e:
-                            print(f"Error reading file {file_path}: {e}")
-                            file_contents.append("")  # Add empty content if reading fails
+            for codebase_dir in codebase_dirs:
+                for root, _, files in os.walk(codebase_dir):
+                    for file in files:
+                        if file.endswith(".java"):
+                            file_path = os.path.join(root, file)
+                            file_paths.append(file_path)  # Store the file path
+                            try:
+                                with open(file_path, "r", encoding="utf-8") as f:
+                                    content = f.read()
+                                    file_contents.append(content)  # Store the file content
+                            except Exception as e:
+                                print(f"Error reading file {file_path}: {e}")
+                                file_contents.append("")  # Add empty content if reading fails
 
             # Compute scores
             vsm_scores = compute_vsm_scores(bug_report, file_contents)
-            path_scores = reconstruct_execution_paths(log_scores.keys(), file_paths, codebase_dir)
+            path_scores = reconstruct_execution_paths(log_scores.keys(), file_paths, codebase_dirs)
             suspiciousness = calculate_suspiciousness(vsm_scores, log_scores, path_scores, file_paths)
 
             # Rank files and transform
@@ -271,7 +280,7 @@ def perform_fault_localization_single_repo(bug_reports_file, ground_truth_file, 
             # for file, score in ranked_files:
             #     print(f"{file}: {score}")
             # print("--------------------- END Ranking ------------------------")
-            transformed_ranked_files = transform_ranked_files(ranked_files, codebase_dir)
+            transformed_ranked_files = transform_ranked_files(ranked_files, codebase_dirs)
             results.append((filename, transformed_ranked_files))
     
     return evaluate_metrics(results, ground_truth, top_n_values)
@@ -375,16 +384,16 @@ def process_repositories(repositories, top_n_values):
         print(f"Top-{n} Accuracy: {overall_metrics['Top@N'][n]}")
 
 # Example repository configuration
-bug_report_folder = 'summary_of_dev_written_bug_reports'
+bug_report_folder = 'developer_written_bug_reports'
 repositories = [
-    {"bug_reports": f"{bug_report_folder}/Zookeeper.json", "ground_truth": "ground_truth/Zookeeper.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/zookeeper", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main", "git_branch": 'master'},
-    # {"bug_reports": f"{bug_report_folder}/ActiveMQ.json", "ground_truth": "ground_truth/ActiveMQ.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/activemq", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java", "git_branch": 'main'},
-    # {"bug_reports": f"{bug_report_folder}/Hadoop.json", "ground_truth": "ground_truth/Hadoop.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "git_branch": 'trunk'},
-    # {"bug_reports": f"{bug_report_folder}/HDFS.json", "ground_truth": "ground_truth/HDFS.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs/src/java", "git_branch": 'trunk'},
-    # {"bug_reports": f"{bug_report_folder}/Hive.json", "ground_truth": "ground_truth/Hive.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hive", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hive", "git_branch": 'master'},
-    # {"bug_reports": f"{bug_report_folder}/MAPREDUCE.json", "ground_truth": "ground_truth/MAPREDUCE.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce/src/java", "git_branch": 'trunk'},
-    # {"bug_reports": f"{bug_report_folder}/Storm.json", "ground_truth": "ground_truth/Storm.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/storm", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/storm/storm-client/src/jvm", "git_branch": 'master'},
-    # {"bug_reports": f"{bug_report_folder}/YARN.json", "ground_truth": "ground_truth/YARN.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java", "git_branch": 'trunk'},
+    {"bug_reports": f"{bug_report_folder}/Zookeeper.json", "ground_truth": "ground_truth/Zookeeper.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/zookeeper", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main"], "git_branch": 'master'},
+    # {"bug_reports": f"{bug_report_folder}/ActiveMQ.json", "ground_truth": "ground_truth/ActiveMQ.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/activemq", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java"], "git_branch": 'main'},
+    # {"bug_reports": f"{bug_report_folder}/Hadoop.json", "ground_truth": "ground_truth/Hadoop.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java"], "git_branch": 'trunk'},
+    # {"bug_reports": f"{bug_report_folder}/HDFS.json", "ground_truth": "ground_truth/HDFS.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs/src/java"], "git_branch": 'trunk'},
+    # {"bug_reports": f"{bug_report_folder}/Hive.json", "ground_truth": "ground_truth/Hive.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hive", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hive"], "git_branch": 'master'},
+    # {"bug_reports": f"{bug_report_folder}/MAPREDUCE.json", "ground_truth": "ground_truth/MAPREDUCE.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce/src/java"], "git_branch": 'trunk'},
+    # {"bug_reports": f"{bug_report_folder}/Storm.json", "ground_truth": "ground_truth/Storm.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/storm", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/storm/storm-client/src/jvm"], "git_branch": 'master'},
+    # {"bug_reports": f"{bug_report_folder}/YARN.json", "ground_truth": "ground_truth/YARN.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java"], "git_branch": 'trunk'},
     # Add all 8 repositories (hdfs, mapreduce - change dir | hive - find dir | Storm - add dir)
 ]
 
