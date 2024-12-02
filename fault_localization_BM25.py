@@ -45,16 +45,17 @@ def get_commit_version(creation_time, repo_path, git_branch):
 # Checkout to the specific commit version
 def checkout_to_commit(commit_version, repo_path, git_branch):
     # Ensure working directory is clean (optional)
-    # subprocess.run('git stash --include-untracked', shell=True, cwd=repo_path)
+    subprocess.run('git stash --include-untracked', shell=True, cwd=repo_path)
+    # reset_command = 'git reset --hard'
+    reset_command = f'git checkout {git_branch}'
+    # if git_branch == "master":
+    #     reset_command = 'git reset --hard'
+    # else:
+    #     reset_command = f'git checkout {git_branch}'
+    subprocess.run(reset_command, shell=True, cwd=repo_path)
     checkout_command = f'git checkout {commit_version}'
     subprocess.run(checkout_command, shell=True, cwd=repo_path)
-    # reset_command = 'git reset --hard'
-    # reset_command = f'git checkout {git_branch}'
-    if git_branch == "master":
-        reset_command = 'git reset --hard'
-    else:
-        reset_command = f'git checkout {git_branch}'
-    subprocess.run(reset_command, shell=True, cwd=repo_path)
+    
 
 # Preprocess text for tokenization
 def preprocess_text(text):
@@ -248,7 +249,7 @@ def process_repositories(repositories, top_n_values):
 bug_report_folder = 'developer_written_bug_reports'
 repositories = [
     {"bug_reports": f"{bug_report_folder}/Zookeeper.json", "ground_truth": "ground_truth/Zookeeper.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/zookeeper", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main"], "git_branch": 'master'},
-    # {"bug_reports": f"{bug_report_folder}/ActiveMQ.json", "ground_truth": "ground_truth/ActiveMQ.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/activemq", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java"], "git_branch": 'main'},
+    {"bug_reports": f"{bug_report_folder}/ActiveMQ.json", "ground_truth": "ground_truth/ActiveMQ.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/activemq", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-core/src/main/java"], "git_branch": 'main'},
     # {"bug_reports": f"{bug_report_folder}/Hadoop.json", "ground_truth": "ground_truth/Hadoop.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java"], "git_branch": 'trunk'},
     # {"bug_reports": f"{bug_report_folder}/HDFS.json", "ground_truth": "ground_truth/HDFS.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs/src/java"], "git_branch": 'trunk'},
     # {"bug_reports": f"{bug_report_folder}/Hive.json", "ground_truth": "ground_truth/Hive.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hive", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hive"], "git_branch": 'master'},

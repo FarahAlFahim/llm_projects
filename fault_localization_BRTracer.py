@@ -44,16 +44,17 @@ def get_commit_version(creation_time, repo_path, git_branch):
 # Checkout to the specific commit version
 def checkout_to_commit(commit_version, repo_path, git_branch):
     # Ensure working directory is clean (optional)
-    # subprocess.run('git stash --include-untracked', shell=True, cwd=repo_path)
+    subprocess.run('git stash --include-untracked', shell=True, cwd=repo_path)
+    # reset_command = 'git reset --hard'
+    reset_command = f'git checkout {git_branch}'
+    # if git_branch == "master":
+    #     reset_command = 'git reset --hard'
+    # else:
+    #     reset_command = f'git checkout {git_branch}'
+    subprocess.run(reset_command, shell=True, cwd=repo_path)
     checkout_command = f'git checkout {commit_version}'
     subprocess.run(checkout_command, shell=True, cwd=repo_path)
-    # reset_command = 'git reset --hard'
-    # reset_command = f'git checkout {git_branch}'
-    if git_branch == "master":
-        reset_command = 'git reset --hard'
-    else:
-        reset_command = f'git checkout {git_branch}'
-    subprocess.run(reset_command, shell=True, cwd=repo_path)
+    
     
 
 # Convert file path to ground truth format
@@ -146,13 +147,13 @@ def perform_fault_localization_single_repo(bug_reports_file, ground_truth_file, 
     return evaluate_metrics(results, ground_truth, top_n_values)
 
 # Function to compare if a ranked file ends with any ground truth file
-# def match_ranked_to_ground_truth(ranked_file, ground_truth_files):
-#     # Loop over each ground truth file
-#     for ground_truth_file in ground_truth_files:
-#         # Check if the ranked file ends with the ground truth file (i.e., matches the last part)
-#         if ranked_file.endswith(ground_truth_file):
-#             return True
-#     return False
+def match_ranked_to_ground_truth(ranked_file, ground_truth_files):
+    # Loop over each ground truth file
+    for ground_truth_file in ground_truth_files:
+        # Check if the ranked file ends with the ground truth file (i.e., matches the last part)
+        if ranked_file.endswith(ground_truth_file):
+            return True
+    return False
 
 # Evaluation function for MAP, MRR, and Top N scores
 def evaluate_metrics(results, ground_truth, top_n_values):
@@ -178,9 +179,9 @@ def evaluate_metrics(results, ground_truth, top_n_values):
         relevant_within_top_n = {n: False for n in top_n_values}
 
         for rank, file in enumerate(ranked_files, start=1):
-            if file in ground_truth_files:
-            # # # Check if any ranked file ends with ground truth file (using endswith)
-            # if match_ranked_to_ground_truth(file, ground_truth_files):
+            # if file in ground_truth_files:
+            # # Check if any ranked file ends with ground truth file (using endswith)
+            if match_ranked_to_ground_truth(file, ground_truth_files):
                 relevant_found += 1
                 precision_sum += relevant_found / rank
                 if relevant_found == 1:
@@ -245,13 +246,13 @@ def process_repositories(repositories, top_n_values):
 # Example repository configuration and usage
 bug_report_folder = 'developer_written_bug_reports'
 repositories = [
-    {"bug_reports": f"{bug_report_folder}/Zookeeper.json", "ground_truth": "ground_truth/Zookeeper.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/zookeeper", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main"], "git_branch": 'master'},
-    # {"bug_reports": f"{bug_report_folder}/ActiveMQ.json", "ground_truth": "ground_truth/ActiveMQ.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/activemq", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java"], "git_branch": 'main'},
+    {"bug_reports": f"{bug_report_folder}/Zookeeper.json", "ground_truth": "ground_truth/Zookeeper.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/zookeeper", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main", "/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/test"], "git_branch": 'master'},
+    # {"bug_reports": f"{bug_report_folder}/ActiveMQ.json", "ground_truth": "ground_truth/ActiveMQ.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/activemq", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-core/src/main/java"], "git_branch": 'main'},
     # {"bug_reports": f"{bug_report_folder}/Hadoop.json", "ground_truth": "ground_truth/Hadoop.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java"], "git_branch": 'trunk'},
     # {"bug_reports": f"{bug_report_folder}/HDFS.json", "ground_truth": "ground_truth/HDFS.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop-hdfs/src/java"], "git_branch": 'trunk'},
     # {"bug_reports": f"{bug_report_folder}/Hive.json", "ground_truth": "ground_truth/Hive.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hive", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hive"], "git_branch": 'master'},
     # {"bug_reports": f"{bug_report_folder}/MAPREDUCE.json", "ground_truth": "ground_truth/MAPREDUCE.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop-mapreduce/src/java"], "git_branch": 'trunk'},
-    # {"bug_reports": f"{bug_report_folder}/Storm.json", "ground_truth": "ground_truth/Storm.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/storm", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/storm/storm-client/src/jvm"], "git_branch": 'master'},
+    # {"bug_reports": f"{bug_report_folder}/Storm.json", "ground_truth": "ground_truth/Storm.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/storm", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/storm/storm-client/src/jvm", "/Users/fahim/Desktop/PhD/Projects/storm/storm-server/src/main/java"], "git_branch": 'master'},
     # {"bug_reports": f"{bug_report_folder}/YARN.json", "ground_truth": "ground_truth/YARN.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java"], "git_branch": 'trunk'},
     # Add all 8 repositories
 ]

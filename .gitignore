@@ -2,3 +2,5 @@
 .DS_Store
 bug_reports_with_stack_traces.json
 test.json
+test_output.json
+source_code_data
