@@ -30,19 +30,33 @@ def checkout_to_commit(commit_version, repo_path, git_branch):
     
 
 
-# Step 4: Extract methods from Java source code
+# Step 4: Extract methods from Java source code 
 def extract_methods_from_file(file_path):
     methods = {}
     try:
         with open(file_path, 'r') as file:
             content = file.read()
-        # Regex to extract the method name
+
+        # Regex to extract the method signature
         method_pattern = re.compile(
-            r'(public|private|protected)?\s+\w+\s+(\w+)\(.*?\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{'
+            # r'(public|private|protected)?\s+\w+\s+(\w+)\(([^)]*)\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{'
+            # r'(public|private|protected)?\s+(static|final|synchronized|abstract)?\s*\w+(\s*<[\w\s,?]+>)?\s+([a-zA-Z_]\w*)\s*\((.*?)\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{'
+            r'(public|private|protected)?\s+(static|final|synchronized|abstract)?\s*\w+(\s*<[\w\s,?]+>)?\s+([a-zA-Z_]\w*)\s*\(([^)]*)\)\s*(throws\s+\w+(\s*,\s*\w+)*)?\s*\{'
+
         )
         matches = method_pattern.finditer(content)
         for match in matches:
-            method_name = match.group(2)  # Extract only the method name
+            print("---------------------match------------------------")
+            print(match)
+            print("---------------------match------------------------")
+            method_name = match.group(4)  # Extract the method name
+            parameter_list = match.group(5)  # Extract the parameter list
+
+            java_keywords = {"if", "else", "for", "while", "switch", "case", "try", "catch", "finally", "return", "break", "continue", "throw", "throws", "assert", "default", "synchronized"}
+            if method_name in java_keywords:
+                continue  # Skip if it's a keyword
+
+            method_key = f"{method_name}({parameter_list})"  # Combine name and parameters
             method_start = match.start()
             brace_count = 0
             method_body = []
@@ -51,7 +65,7 @@ def extract_methods_from_file(file_path):
                 method_body.append(line)
                 if brace_count == 0:
                     break
-            methods[method_name] = "\n".join(method_body)  # Use method_name as key
+            methods[method_key] = "\n".join(method_body)  # Use method signature as key
         # print("######################################################")
         # print(f"Methods extracted from {file_path}: {methods}") 
         # print("######################################################")
@@ -62,6 +76,8 @@ def extract_methods_from_file(file_path):
 
 
 
+
+# Step 5: Parse stack trace to locate methods
 def parse_stack_trace(stack_trace, codebase_dirs):
     """
     Parses the stack trace to extract methods and resolve file paths.
@@ -75,19 +91,22 @@ def parse_stack_trace(stack_trace, codebase_dirs):
             print(f"Parsing stack trace line: {line.strip()}")
             print(f"Extracted: class_path={class_path}, method_name={method_name}, file_name={file_name}, line_number={line_number}")
 
+            # Handle inner classes by removing the `$` for file paths
+            outer_class_path = class_path.split('$')[0]  # Get outer class
+            inner_class_name = class_path.split('$')[-1] if '$' in class_path else None
+            package_path = os.sep.join(outer_class_path.split('.')) + '.java'
 
-            # Construct possible file paths and check existence
-            package_path = os.sep.join(class_path.split('.')) + '.java'
             file_found = False
             for codebase_dir in codebase_dirs:
                 full_path = os.path.join(codebase_dir, package_path)
                 if os.path.exists(full_path):
-                    method_files[method_name] = full_path
+                    print("Full path:", full_path)
+                    method_files[(method_name, inner_class_name)] = full_path
                     file_found = True
+                    # break
 
             if not file_found:
                 print(f"File for method {method_name} not found in any codebase directory.")
-
 
     print("================================================================")
     print("Parsed method files:", method_files)  # Debug line
@@ -104,11 +123,50 @@ def build_call_graph(methods):
     for method, body in methods.items():
         called_methods = call_pattern.findall(body)
         call_graph[method] = [cm.split('(')[0] for cm in called_methods]
-    print("************************************************************************")
-    print('call graph:', call_graph)
-    print("************************************************************************")
+    # print("************************************************************************")
+    # print('call graph:', call_graph)
+    # print("************************************************************************")
     return call_graph
 
+
+# Step 7: Navigate code
+# def navigate_code(stack_trace, codebase_dirs):
+#     """
+#     Navigates code based on stack trace and extracts methods using a call graph.
+#     """
+#     method_files = parse_stack_trace(stack_trace, codebase_dirs)
+#     visited_methods = set()  # Keep track of visited methods to avoid duplicates
+#     extracted_methods = {}
+
+#     for method_name, file_path in method_files.items():
+#         if os.path.exists(file_path) and method_name not in visited_methods:
+#             print(f"Processing method: {method_name} in {file_path}")  # Debugging
+
+#             # Extract methods from the file
+#             methods = extract_methods_from_file(file_path)
+#             # print("----------methods--------")
+#             # print("Methods:", methods)
+#             # print("----------methods--------")
+#             # print(method_name in methods)
+#             # print("Method name", method_name)
+#             # print("Method keys", methods.keys())
+#             if method_name in methods:
+#                 # Add the method to extracted_methods
+#                 extracted_methods[method_name] = methods[method_name]
+#                 visited_methods.add(method_name)
+#                 # print("----------extracted methods--------")
+#                 # print("Extracted Methods:", extracted_methods)
+#                 # print("----------extracted methods--------")
+
+#                 # Build the call graph and explore called methods
+#                 call_graph = build_call_graph(methods)
+#                 for called_method in call_graph.get(method_name, []):
+#                     if called_method in methods and called_method not in visited_methods:
+#                         extracted_methods[called_method] = methods[called_method]
+#                         visited_methods.add(called_method)
+
+#     print("Extracted methods:", extracted_methods.keys())  # Debugging output
+#     return extracted_methods
 
 # Step 7: Navigate code
 def navigate_code(stack_trace, codebase_dirs):
@@ -119,35 +177,48 @@ def navigate_code(stack_trace, codebase_dirs):
     visited_methods = set()  # Keep track of visited methods to avoid duplicates
     extracted_methods = {}
 
-    for method_name, file_path in method_files.items():
-        if os.path.exists(file_path) and method_name not in visited_methods:
+    for (method_name, inner_class_name), file_path in method_files.items():
+        if os.path.exists(file_path):
             print(f"Processing method: {method_name} in {file_path}")  # Debugging
 
-            # Extract methods from the file
+            # Extract all methods from the file
             methods = extract_methods_from_file(file_path)
-            # print("----------methods--------")
-            # print("Methods:", methods)
-            # print("----------methods--------")
+            print("----------methods--------")
+            print("Methods:", methods)
+            print("----------methods--------")
             # print(method_name in methods)
             # print("Method name", method_name)
             # print("Method keys", methods.keys())
-            if method_name in methods:
-                # Add the method to extracted_methods
-                extracted_methods[method_name] = methods[method_name]
-                visited_methods.add(method_name)
-                # print("----------extracted methods--------")
-                # print("Extracted Methods:", extracted_methods)
-                # print("----------extracted methods--------")
 
-                # Build the call graph and explore called methods
-                call_graph = build_call_graph(methods)
-                for called_method in call_graph.get(method_name, []):
-                    if called_method in methods and called_method not in visited_methods:
-                        extracted_methods[called_method] = methods[called_method]
-                        visited_methods.add(called_method)
+            # Locate the exact method by name
+            matched_method_keys = [
+                key for key in methods if key.startswith(f"{method_name}(")
+            ]
+
+            print("matched_method_keys:", matched_method_keys)
+
+            for matched_key in matched_method_keys:
+                if matched_key not in visited_methods:
+                    # Add the method to extracted_methods
+                    extracted_methods[matched_key] = methods[matched_key]
+                    visited_methods.add(matched_key)
+
+                    # Build the call graph and explore called methods
+                    call_graph = build_call_graph(methods)
+                    for called_method in call_graph.get(matched_key, []):
+                        called_method_keys = [
+                            key for key in methods if key.startswith(f"{called_method}(")
+                        ]
+                        for called_key in called_method_keys:
+                            if called_key not in visited_methods:
+                                extracted_methods[called_key] = methods[called_key]
+                                visited_methods.add(called_key)
 
     print("Extracted methods:", extracted_methods.keys())  # Debugging output
     return extracted_methods
+
+
+
 
 
 # Step 8: Merge with developer written bug reports
@@ -181,15 +252,15 @@ def merge_bug_reports(output_data, bug_reports_file):
 if __name__ == "__main__":
     # Read stack trace data
     # stack_trace_file = "test.json"
-    stack_trace_file = "stack_traces/Zookeeper.json"
+    stack_trace_file = "stack_traces/Hadoop.json"
     stack_trace_data = read_stack_traces(stack_trace_file)
 
     # Path to source code and Git repository
-    repo_path = "/Users/fahim/Desktop/PhD/Projects/zookeeper"
-    codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main", "/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/test"]
-    git_branch = "master"
+    repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
+    codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/test/core", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java","/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-distcp/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-azure/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-auth/src/main/java"]
+    git_branch = "trunk"
     # Path to developer-written bug reports
-    dev_written_bug_reports_file = "developer_written_bug_reports/Zookeeper.json"
+    dev_written_bug_reports_file = "developer_written_bug_reports/Hadoop.json"
 
     # Prepare output
     output_data = []
@@ -219,7 +290,7 @@ if __name__ == "__main__":
 
     # Write output to JSON
     # output_file = 'test_output.json'
-    output_file = 'source_code_data/Zookeeper.json'
+    output_file = 'source_code_data/Hadoop.json'
     with open(f"{output_file}", "w") as outfile:
         json.dump(output_data, outfile, indent=4)
 
