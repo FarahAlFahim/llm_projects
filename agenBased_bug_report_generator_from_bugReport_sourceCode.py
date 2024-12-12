@@ -1,202 +1,183 @@
-# prompt templating and chaining
-from langchain import PromptTemplate
-from langchain_core.prompts import PromptTemplate
+from langchain.agents import initialize_agent, Tool
 from langchain.chat_models import ChatOpenAI
-from langchain.chains import LLMChain
+from langchain.tools import tool
 import json
 
 
 
-def agent_interaction(bug_report, source_code_dict, chain):
-    # Initial prompt with only the bug report
-    response = chain.run({'bug_report': bug_report, 'source_code': '[No methods provided yet]'})
-    print("###################################### Initial Prompt only with bug report ########################")
-    print(response)
-    print("###################################### Initial Prompt only with bug report ########################")
+@tool
+def parse_stack_trace(stack_trace):
+    """Parse stack traces directly provided in the input JSON."""
+    print("------- Parse Stack Trace (start) ----------")
+    print(json.dumps(stack_trace))
+    print("------- Parse Stack Trace (end) ----------")
+    return json.dumps(stack_trace)
 
-    context = bug_report
-    processed_methods = set()
+@tool
+def provide_method(method_name_data):
+    """Provide the source code for a specific method if it exists."""
+    # method_body = source_code_dict.get(method_name, "[Method not found in source code]")
+    method_name = method_name_data.split(".")[-1]
+    if method_name[-1] == "'":
+        method_name = method_name[:-1]
+    method_source = {}
+    for key, value in source_code_dict.items():
+        if key.startswith(method_name):
+            method_source[key] = value
+    print("------- Provide Method(start) ----------")
+    # print("input data:", method_name_data)
+    print("Method name:", method_name)
+    # print("Source methods:", method_source)
+    # print("source code dict:", source_code_dict.items())
+    print("returned value:", json.dumps({method_name_data: method_source}))
+    print("------- Provide Method (end) ----------")
+    if method_source == {}:
+        return json.dumps({method_name_data: "[Method not found in source code]"})
+    return json.dumps({method_name_data: method_source})
 
-    response = json.loads(response.replace("```json\n", "").replace("\n```", ""))
+@tool
+def analyze_method_and_request_next(input_data):
+    """
+    Analyze the provided method and determine if further methods are required.
+    Returns the next method to request or 'END' if no further methods are needed.
+    """
+    print("------------------- analyze method and request next (start) --------------")
+    print("input data:", input_data)
+    print("------------------- analyze method and request next (end) --------------")
+    method_name = input_data['method_name']
+    method_body = input_data['method_body']
 
-    while "requested_method" in response:
-        if "stack_trace_line_processed" in response:
-            # convert context into string
-            context = json.dumps(context, indent=4)
-            context = context.replace(response['stack_trace_line_processed'], "")
+    prompt = f"""
+    You are analyzing a call graph for a bug report. The current method is:
 
-            # convert context back to json
-            context = json.loads(context)
+    Method: {method_name}
+    Source Code:
+    {method_body}
 
-        # Parse the requested method
-        if '.' in response['requested_method']:
-            requested_method = response['requested_method'].split(".")[-1]
-        elif "(" in response['requested_method']:
-            requested_method = response['requested_method'].split('(')[0]
-        else:
-            requested_method = response['requested_method']
-        print("************* Requested Method **************")
-        print(requested_method)
-        print("************* Requested Method **************")
+    If this method calls any other methods not in the stack trace, identify one such method and return its name.
+    If no further methods are needed, respond with 'END'.
+    """
+    llm = ChatOpenAI(model='gpt-4o-mini', temperature=0)
+    response = llm.run(prompt)
+    return response.strip()
 
-        if requested_method in processed_methods:
-            response = chain.run({'bug_report': context, 'source_code': 'This method is already Processed. Go to the next line of the Stack Trace and Extract and request the associated method using `requested_method`. If already analyzed the whole stack trace, generate the final bug report'})
-            try:
-                response = json.loads(response.replace("```json\n", "").replace("\n```", ""))
-            except json.JSONDecodeError:
-                print("Failed to parse the response as JSON after providing method.")
-            print("###################################### Response in Processed Method ########################")
-            print(response)
-            print("###################################### Response in Processed Method ########################")
+@tool
+def generate_final_bug_report(input_data):
+    """Generate the final bug report based on analyzed methods."""
+    bug_report = input_data['bug_report']
+    analyzed_methods = input_data['analyzed_methods']
 
-        # Fetch the method from the source_code_dict
-        method_source = {}
-        for key, value in source_code_dict.items():
-            if requested_method in key:
-                method_source[key] = value
-        if method_source == {}:
-            response = chain.run({'bug_report': context, 'source_code': 'Method not found. Go to the next line of the Stack Trace and Extract and request the associated method using `requested_method`. If already analyzed the whole stack trace, generate the final bug report'})
-            try:
-                response = json.loads(response.replace("```json\n", "").replace("\n```", ""))
-            except json.JSONDecodeError:
-                print("Failed to parse the response as JSON after providing method.")
-            print("###################################### Response in Processed Method ########################")
-            print(response)
-            print("###################################### Response in Processed Method ########################")
-            continue
+    prompt = f"""
+    Generate an improved bug report based on the following inputs:
 
-        print("************* Method from source code **************")
-        print(method_source)
-        print("************* Method from source code **************")
-        # Update context with the method source code
-        # context += f"\n\n--- Source code for {requested_method} ---\n{method_source}\n"
-        response = chain.run({'bug_report': context, 'source_code': method_source})
-        try:
-            response = json.loads(response.replace("```json\n", "").replace("\n```", ""))
-        except json.JSONDecodeError:
-            print("Failed to parse the response as JSON after providing method.")
-        print("###################################### Response in Found Method ########################")
-        print(response)
-        print("###################################### Response in Found Method ########################")
+    # Bug Report
+    {bug_report}
 
-        processed_methods.add(requested_method)
+    # Analyzed Methods and Call Graph
+    {json.dumps(analyzed_methods, indent=4)}
+    """
+    llm = ChatOpenAI(model='gpt-4o-mini', temperature=0)
+    return llm.run(prompt)
 
-    # Final enhanced bug report
-    # try:
-    #     return json.loads(response.replace("```json\n", "").replace("\n```", ""))
-    # except json.JSONDecodeError:
-    #     return {"error": "Failed to parse the final bug report."}
-    return response
+# Tools for the agent
+tools = [
+    Tool(name="Parse Stack Trace", func=parse_stack_trace, description="Extract stack traces from the input JSON."),
+    Tool(name="Provide Method", func=provide_method, description="Provide the source code for a specific method."),
+    Tool(name="Analyze and Request Next", func=analyze_method_and_request_next, description="Analyze the method and request the next one if needed."),
+    Tool(name="Generate Final Bug Report", func=generate_final_bug_report, description="Generate the final bug report using analyzed methods.")
+]
 
-
-# Define the prompt template
-template = '''
-Generate an enhanced bug report by analyzing stack traces and iteratively requesting methods based on their relevance, ensuring no method or stack trace line is processed multiple times.
-
-# Guidelines
-- Analyze each line of the provided stack trace sequentially.
-- For each line, output a `requested_method` corresponding to the method in the stack trace, ensuring:
-  - You do not re-analyze methods or stack trace lines that have already been processed.
-  - Requests for methods are unique and do not repeat.
-- Analyze the content of each `requested_method` provided by the system and determine:
-  - Whether further methods are needed based on inner method calls or dependencies within the `requested_method`.
-  - When all necessary methods have been processed or no further analysis is required.
-- Conclude the task by generating an enhanced bug report once all relevant data has been gathered.
-
-# Steps
-1. **Initialize Analysis**:
-   - Start with the first line of the stack trace and extract the method to request.
-   - Ensure no stack trace line is processed multiple times.
-2. **Request Method Details**:
-   - Output a `requested_method` for each relevant method until all lines in the stack trace and their inner dependencies have been addressed.
-   - Avoid duplicating requests for methods already analyzed.
-3. **Analyze Method Content**:
-   - Examine each `requested_method` for its logic, dependencies, and inner calls.
-   - Use insights to determine if further methods need to be requested.
-4. **Iterate**:
-   - Repeat the process for inner calls and dependencies until all necessary data has been collected.
-5. **Generate Enhanced Bug Report**:
-   - Use the insights gathered to create a comprehensive bug report, including actionable recommendations.
-
-# Output Format
-- **For Method Requests**: Output only two fields "requested_method" and "stack_trace_line_processed" and nothing else. The format should be:
-  ```json
-    {{
-        "requested_method": "string",
-        "stack_trace_line_processed": "string of the stack trace line"
-    }}
-
-- **Final Bug Report**: When no further methods are required, output the enhanced bug report in the following JSON format:
-  ```json
-    {{
-        "BugID": "string or null",
-        "Title": "string",
-        "Description": "string",
-        "StackTrace": "string or array of stack trace lines",
-        "RootCause": "string or null",
-        "StepsToReproduce": ["string", "..."] or null,
-        "ExpectedBehavior": "string",
-        "ObservedBehavior": "string",
-        "Suggestions": "string or null"
-    }}
+# Initialize agent
+llm = ChatOpenAI(model='gpt-4o-mini', temperature=0)
+agent = initialize_agent(tools, llm, agent_type="zero-shot-react-description", verbose=True)
 
 
 
+# Read JSON file containing bug reports
+# input_file = "source_code_data/ActiveMQ.json"
+# output_file = "bug_report_from_bugReport_sourceCode/ActiveMQ.json"
+# Test input output
+input_file = "test.json"
+output_file = "test_output.json"
 
-
-# You are given the bug report below:
-
-{bug_report}
-
-
-
-# You are given the source code below:
-
-{source_code}
-'''
-
-# Initialize LangChain
-prompt = PromptTemplate.from_template(template)
-llm = ChatOpenAI(model='gpt-4o-mini', temperature = 0)
-
-chain = LLMChain(llm=llm, prompt=prompt)
-
-
-
-
-# Read developer written bug reports and source code data from JSON file
-with open("test.json", "r") as file:
+with open(input_file, "r") as file:
     source_code_data = json.load(file)
 
-# Prepare the output format
+# Prepare output data
 output_data = []
 
 for entry in source_code_data:
     filename = entry['filename']
     creation_time = entry['creation_time']
-    dev_written_bug_report = entry['bug_report']
-    source_code = entry['source_code']
-    
-    # Generate improved bug report
-    # improved_bug_report = chain.run({'bug_report': dev_written_bug_report, 'source_code': source_code})
-    # Run agent interaction
-    improved_bug_report = agent_interaction(dev_written_bug_report, source_code, chain)
-    print("--------------------------------------------------------------------")
-    print(improved_bug_report)
-    print("--------------------------------------------------------------------")
+    bug_report = entry['bug_report']
+    stack_trace = entry['stack_trace']
+    source_code_dict = entry['source_code']
+
+    # Step 1: Parse the stack trace
+    parsed_stack_traces = json.loads(agent.run({"input": stack_trace, "tool": "Parse Stack Trace"}))
+    # parsed_stack_traces = json.loads(agent.run(stack_trace))
+    # parsed_stack_traces = agent.run(stack_trace)
+    print("================ parsed_stack_traces (start) ====================")
+    print(parsed_stack_traces)
+    print("================ parsed_stack_traces (end) ====================")
+
+    # Step 2: Sequentially request and analyze methods
+    analyzed_methods = {}
+    for trace in parsed_stack_traces:
+        method_name = trace.split("at ")[1].split("(")[0].strip()
+
+        while method_name != "END":
+            # Request the source code for the current method
+            method_response = json.loads(agent.run({"input": method_name, "tool": "Provide Method"}))
+            # method_response = json.loads(agent.run({
+            #     "input": {"method_name": method_name, "source_code_dict": source_code_dict},
+            #     "tool": "Provide Method"
+            # }))
+            print("####################################")
+            print("method resonse:", method_response)
+            print("####################################")
+
+            method_body = method_response.get(method_name, "[Method not found]")
+
+            # Analyze the method and request the next one if needed
+            next_method_name = agent.run({
+                "input": {"method_name": method_name, "method_body": method_body},
+                "tool": "Analyze and Request Next"
+            })
+            # next_method_name = agent.run({
+            #     "method_name": method_name,
+            #     "method_body": method_body
+            # })
 
 
-    
+            # Store the analyzed method
+            analyzed_methods[method_name] = method_body
+
+            # Update the method name for the next iteration
+            method_name = next_method_name.strip()
+
+    # Step 3: Generate the final bug report
+    final_bug_report_input = {
+        "bug_report": bug_report,
+        "analyzed_methods": analyzed_methods
+    }
+    final_bug_report = agent.run({"input": final_bug_report_input, "tool": "Generate Final Bug Report"})
+    # final_bug_report = agent.run({
+    #     "bug_report": bug_report,
+    #     "analyzed_methods": analyzed_methods,
+    #     "tool": "Generate Final Bug Report"
+    # })
+
+
     # Add to output data
     output_data.append({
-        'filename': filename,
-        'creation_time': creation_time,
-        'bug_report': improved_bug_report
+        "filename": filename,
+        "creation_time": creation_time,
+        "bug_report": final_bug_report
     })
 
-# Write the summarized bug reports to a new JSON file
-output_file = 'test_output.json'
-with open(f"{output_file}", "w") as outfile:
+# Write output JSON file
+with open(output_file, "w") as outfile:
     json.dump(output_data, outfile, indent=4)
 
 print(f"Bug reports have been generated and saved to '{output_file}'")
