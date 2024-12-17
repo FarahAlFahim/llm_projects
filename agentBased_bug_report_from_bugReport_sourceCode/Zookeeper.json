@@ -1,0 +1,336 @@
+[
+    {
+        "filename": "ZOOKEEPER-1864.json",
+        "creation_time": "2014-01-20T06:09:53.000+0000",
+        "bug_report": {
+            "Title": "NullPointerException in QuorumPeer when creating QuorumPeerConfig from Properties",
+            "Description": "A NullPointerException (NPE) occurs when using ZK 3.5.0 with curator-test 2.3.0 while attempting to run a quorum peer with a configuration built from a Properties object. The issue arises in the `setQuorumVerifier` method of the `QuorumPeer` class, indicating that the `quorumVerifier` (qv) parameter or the `lastSeenQuorumVerifier` is null. This is likely due to incomplete parsing of the configuration properties, specifically missing the dynamic configuration compatibility checks that are performed in the `parse(String path)` method but not in `parseProperties`.\n\nThe relevant stack trace is as follows:\n```\n2014-01-19 21:58:39,768 [myid:] - ERROR [Thread-3:TestingZooKeeperServer$1@138] - From testing server (random state: false)\njava.lang.NullPointerException\n\tat org.apache.zookeeper.server.quorum.QuorumPeer.setQuorumVerifier(QuorumPeer.java:1320)\n\tat org.apache.zookeeper.server.quorum.QuorumPeerMain.runFromConfig(QuorumPeerMain.java:156)\n\tat org.apache.curator.test.TestingZooKeeperServer$1.run(TestingZooKeeperServer.java:134)\n\tat java.lang.Thread.run(Thread.java:722)\n```",
+            "StackTrace": [
+                "2014-01-19 21:58:39,768 [myid:] - ERROR [Thread-3:TestingZooKeeperServer$1@138] - From testing server (random state: false)",
+                "java.lang.NullPointerException",
+                "at org.apache.zookeeper.server.quorum.QuorumPeer.setQuorumVerifier(QuorumPeer.java:1320)",
+                "at org.apache.zookeeper.server.quorum.QuorumPeerMain.runFromConfig(QuorumPeerMain.java:156)",
+                "at org.apache.curator.test.TestingZooKeeperServer$1.run(TestingZooKeeperServer.java:134)",
+                "at java.lang.Thread.run(Thread.java:722)"
+            ],
+            "RootCause": "The root cause of the NullPointerException is that the `quorumVerifier` parameter passed to the `setQuorumVerifier` method is null, which can occur if the configuration parsing does not properly initialize the `QuorumVerifier` instance. This is likely due to the `QuorumPeerConfig:parseProperties` method not performing the necessary dynamic configuration checks that are present in `QuorumPeerConfig:parse(String path)`.",
+            "StepsToReproduce": [
+                "Use ZK 3.5.0 with curator-test 2.3.0.",
+                "Create a `QuorumPeerConfig` from a Properties object.",
+                "Attempt to run the quorum peer using the created configuration."
+            ],
+            "ExpectedBehavior": "The quorum peer should start successfully without throwing a NullPointerException, with a valid `QuorumVerifier` instance set.",
+            "ObservedBehavior": "A NullPointerException is thrown when attempting to set the quorum verifier, indicating that the configuration parsing did not initialize the necessary components.",
+            "Suggestions": "To resolve this issue, ensure that the `QuorumPeerConfig:parseProperties` method includes the dynamic configuration compatibility checks that are present in the `parse(String path)` method. Specifically, implement the logic to handle backward compatibility for dynamic configurations, ensuring that the `quorumVerifier` is properly initialized before being passed to the `setQuorumVerifier` method."
+        }
+    },
+    {
+        "filename": "ZOOKEEPER-2213.json",
+        "creation_time": "2015-06-10T15:29:23.000+0000",
+        "bug_report": {
+            "Title": "Empty Path in Set Crashes Server and Prevents Restart",
+            "Description": "When attempting to set data with an empty path using the ZooKeeper API, the server crashes with an `IllegalArgumentException`. This issue has been reproduced on ZooKeeper version 3.4.5. The crash occurs when the following code is executed:\n\n```go\nc, _, _ := zk.Connect([]string{\"127.0.0.1\"}, time.Second)\nc.Set(\"\", []byte{}, 0)\n```\n\nThe server logs indicate a severe unrecoverable error, leading to an abnormal exit. This issue prevents the server from restarting successfully after the crash.",
+            "StackTrace": [
+                "2015-06-10 16:21:10,862 [myid:] - ERROR [SyncThread:0:SyncRequestProcessor@151] - Severe unrecoverable error, exiting",
+                "java.lang.IllegalArgumentException: Invalid path",
+                "at org.apache.zookeeper.common.PathTrie.findMaxPrefix(PathTrie.java:259)",
+                "at org.apache.zookeeper.server.DataTree.getMaxPrefixWithQuota(DataTree.java:634)",
+                "at org.apache.zookeeper.server.DataTree.setData(DataTree.java:616)",
+                "at org.apache.zookeeper.server.DataTree.processTxn(DataTree.java:807)",
+                "at org.apache.zookeeper.server.ZKDatabase.processTxn(ZKDatabase.java:329)",
+                "at org.apache.zookeeper.server.ZooKeeperServer.processTxn(ZooKeeperServer.java:965)",
+                "at org.apache.zookeeper.server.FinalRequestProcessor.processRequest(FinalRequestProcessor.java:116)",
+                "at org.apache.zookeeper.server.SyncRequestProcessor.flush(SyncRequestProcessor.java:167)",
+                "at org.apache.zookeeper.server.SyncRequestProcessor.run(SyncRequestProcessor.java:101)",
+                "2015-06-10 16:22:21,352 [myid:] - ERROR [main:ZooKeeperServerMain@54] - Invalid arguments, exiting abnormally",
+                "java.lang.IllegalArgumentException: Invalid path",
+                "at org.apache.zookeeper.common.PathTrie.findMaxPrefix(PathTrie.java:259)",
+                "at org.apache.zookeeper.server.DataTree.getMaxPrefixWithQuota(DataTree.java:634)",
+                "at org.apache.zookeeper.server.DataTree.setData(DataTree.java:616)",
+                "at org.apache.zookeeper.server.DataTree.processTxn(DataTree.java:807)",
+                "at org.apache.zookeeper.server.persistence.FileTxnSnapLog.processTransaction(FileTxnSnapLog.java:198)",
+                "at org.apache.zookeeper.server.persistence.FileTxnSnapLog.restore(FileTxnSnapLog.java:151)",
+                "at org.apache.zookeeper.server.ZKDatabase.loadDataBase(ZKDatabase.java:223)",
+                "at org.apache.zookeeper.server.ZooKeeperServer.loadData(ZooKeeperServer.java:250)",
+                "at org.apache.zookeeper.server.ZooKeeperServer.startdata(ZooKeeperServer.java:377)",
+                "at org.apache.zookeeper.server.NIOServerCnxnFactory.startup(NIOServerCnxnFactory.java:122)",
+                "at org.apache.zookeeper.server.ZooKeeperServerMain.runFromConfig(ZooKeeperServerMain.java:112)",
+                "at org.apache.zookeeper.server.ZooKeeperServerMain.initializeAndRun(ZooKeeperServerMain.java:86)",
+                "at org.apache.zookeeper.server.ZooKeeperServerMain.main(ZooKeeperServerMain.java:52)",
+                "at org.apache.zookeeper.server.quorum.QuorumPeerMain.initializeAndRun(QuorumPeerMain.java:116)",
+                "at org.apache.zookeeper.server.quorum.QuorumPeerMain.main(QuorumPeerMain.java:78)"
+            ],
+            "RootCause": "The root cause of the issue is the lack of validation for the path parameter in the `setData` method of the `DataTree` class. An empty path or a path consisting solely of a root slash ('/') is being passed to the `findMaxPrefix` method, which leads to an `IllegalArgumentException`.",
+            "StepsToReproduce": [
+                "1. Set up a local ZooKeeper server version 3.4.5.",
+                "2. Use the following code to connect to the server and set data with an empty path:\n   ```go\n   c, _, _ := zk.Connect([]string{\"127.0.0.1\"}, time.Second)\n   c.Set(\"\", []byte{}, 0)\n   ```",
+                "3. Observe the server logs for the crash and error messages."
+            ],
+            "ExpectedBehavior": "The server should validate the path before attempting to set data, and it should return an appropriate error message without crashing.",
+            "ObservedBehavior": "The server crashes with an `IllegalArgumentException` when an empty path is provided, preventing it from restarting successfully.",
+            "Suggestions": "Implement input validation in the `setData` method of the `DataTree` class to ensure that the path is neither empty nor invalid before proceeding with the operation. This will prevent the server from crashing and improve overall stability."
+        }
+    },
+    {
+        "filename": "ZOOKEEPER-2297.json",
+        "creation_time": "2015-10-19T11:38:58.000+0000",
+        "bug_report": {
+            "Title": "NullPointerException Thrown During Key Manager and Trust Manager Creation in Non-Secure Mode",
+            "Description": "A NullPointerException (NPE) is thrown while attempting to create the 'key manager' and 'trust manager' in Apache ZooKeeper, even when the ZooKeeper setup is configured in non-secure mode. This issue arises due to missing or improperly set system properties required for the initialization of the X509AuthenticationProvider.",
+            "StackTrace": [
+                "org.apache.zookeeper.common.X509Exception$KeyManagerException: java.lang.NullPointerException",
+                "at org.apache.zookeeper.common.X509Util.createKeyManager(X509Util.java:129)",
+                "at org.apache.zookeeper.server.auth.X509AuthenticationProvider.<init>(X509AuthenticationProvider.java:75)",
+                "at org.apache.zookeeper.server.auth.ProviderRegistry.initialize(ProviderRegistry.java:42)",
+                "at org.apache.zookeeper.server.auth.ProviderRegistry.getProvider(ProviderRegistry.java:68)",
+                "at org.apache.zookeeper.server.PrepRequestProcessor.fixupACL(PrepRequestProcessor.java:952)",
+                "at org.apache.zookeeper.server.PrepRequestProcessor.pRequest2Txn(PrepRequestProcessor.java:379)",
+                "at org.apache.zookeeper.server.PrepRequestProcessor.pRequest(PrepRequestProcessor.java:716)",
+                "at org.apache.zookeeper.server.PrepRequestProcessor.run(PrepRequestProcessor.java:144)",
+                "Caused by: java.lang.NullPointerException",
+                "at org.apache.zookeeper.common.X509Util.createTrustManager(X509Util.java:158)"
+            ],
+            "RootCause": "The NullPointerException is likely caused by null values for 'keyStoreLocation' or 'keyStorePassword' being passed to the 'createKeyManager' and 'createTrustManager' methods in the X509Util class. This can occur if the required system properties are not set correctly during the initialization of the X509AuthenticationProvider.",
+            "StepsToReproduce": [
+                "Set up Apache ZooKeeper in non-secure mode.",
+                "Attempt to create a key manager or trust manager without setting the required system properties for keyStoreLocation and keyStorePassword.",
+                "Observe the NullPointerException in the logs."
+            ],
+            "ExpectedBehavior": "The key manager and trust manager should be created successfully without throwing any exceptions when the ZooKeeper is in non-secure mode.",
+            "ObservedBehavior": "A NullPointerException is thrown, indicating that the key manager and trust manager could not be created due to missing configuration.",
+            "Suggestions": "Ensure that the system properties 'keyStoreLocation' and 'keyStorePassword' are set correctly before initializing the X509AuthenticationProvider. If the ZooKeeper is intended to run in non-secure mode, consider adding checks to bypass the key manager and trust manager creation if these properties are not set."
+        }
+    },
+    {
+        "filename": "ZOOKEEPER-1264.json",
+        "creation_time": "2011-10-28T04:23:28.000+0000",
+        "bug_report": {
+            "Title": "Intermittent Failure in FollowerResyncConcurrencyTest Due to Ephemeral Node Count Mismatch",
+            "Description": "The FollowerResyncConcurrencyTest is failing intermittently, indicating a discrepancy in the expected and actual number of ephemeral nodes between two followers. The test failure is observed in version 3.4, with the following error message:\n\n```\njunit.framework.AssertionFailedError: Should have same number of\nephemerals in both followers expected:<11741> but was:<14001>\n       at org.apache.zookeeper.test.FollowerResyncConcurrencyTest.verifyState(FollowerResyncConcurrencyTest.java:400)\n       at org.apache.zookeeper.test.FollowerResyncConcurrencyTest.testResyncBySnapThenDiffAfterFollowerCrashes(FollowerResyncConcurrencyTest.java:196)\n       at org.apache.zookeeper.JUnit4ZKTestRunner$LoggedInvokeMethod.evaluate(JUnit4ZKTestRunner.java:52)\n```\nThis suggests potential issues with synchronization or session management in the ZooKeeper implementation.",
+            "StackTrace": [
+                "junit.framework.AssertionFailedError: Should have same number of ephemeral nodes in both followers expected:<11741> but was:<14001>",
+                "at org.apache.zookeeper.test.FollowerResyncConcurrencyTest.verifyState(FollowerResyncConcurrencyTest.java:400)",
+                "at org.apache.zookeeper.test.FollowerResyncConcurrencyTest.testResyncBySnapThenDiffAfterFollowerCrashes(FollowerResyncConcurrencyTest.java:196)",
+                "at org.apache.zookeeper.JUnit4ZKTestRunner$LoggedInvokeMethod.evaluate(JUnit4ZKTestRunner.java:52)"
+            ],
+            "RootCause": "The root cause of the issue appears to be related to the handling of ephemeral nodes during the synchronization process between followers. Specifically, the method `verifyState` in `FollowerResyncConcurrencyTest` is failing to validate the expected state of ephemeral nodes, which may indicate a timing issue or a failure in session management when a follower crashes and recovers.",
+            "StepsToReproduce": [
+                "Run the FollowerResyncConcurrencyTest in a ZooKeeper environment.",
+                "Observe the test execution for intermittent failures related to ephemeral node counts.",
+                "Ensure that the test is executed under conditions that may lead to follower crashes."
+            ],
+            "ExpectedBehavior": "The test should pass without any assertion failures, confirming that both followers maintain the same number of ephemeral nodes after synchronization.",
+            "ObservedBehavior": "The test fails intermittently, with the assertion indicating a mismatch in the number of ephemeral nodes between the two followers.",
+            "Suggestions": "1. Review the implementation of the `verifyState` method in `FollowerResyncConcurrencyTest` to ensure it accurately reflects the expected state of ephemeral nodes.\n2. Investigate the session management and synchronization logic in the ZooKeeper codebase, particularly around the handling of ephemeral nodes during follower recovery.\n3. Consider adding additional logging to capture the state of ephemeral nodes before and after follower crashes to aid in debugging.\n4. Explore potential race conditions that may arise during the synchronization process and implement necessary synchronization mechanisms."
+        }
+    },
+    {
+        "filename": "ZOOKEEPER-2808.json",
+        "creation_time": "2017-06-15T17:46:22.000+0000",
+        "bug_report": {
+            "Title": "ACL with index 1 might be removed if it's only being used once",
+            "Description": "When the ZooKeeper server starts up, it creates a DataTree instance, which initializes an empty config znode with a READ_UNSAFE ACL. This ACL is stored in a map with index 1. During the loading of a snapshot from disk, the nodes and ACL map are cleared, but the reconfig znode still references ACL index 1. If the reconfig znode is reused, it may point to a different ACL stored in the snapshot. After leader-follower syncing, if the reconfig znode is added back (if it doesn't exist), it removes the previous reference to ACL index 1. If index 1 has no references, it is removed from the ACL map, rendering that ACL unusable and making the znode unreadable.",
+            "StackTrace": [
+                "2017-06-12 12:02:21,443 [myid:2] - ERROR [CommitProcWorkThread-14:DataTree@249] - ERROR: ACL not available for long 1",
+                "2017-06-12 12:02:21,444 [myid:2] - ERROR [CommitProcWorkThread-14:FinalRequestProcessor@567] - Failed to process sessionid:0x201035cc882002d type:getChildren cxid:0x1 zxid:0xfffffffffffffffe txntype:unknown reqpath:n/a",
+                "java.lang.RuntimeException: Failed to fetch acls for 1",
+                "at org.apache.zookeeper.server.DataTree.convertLong(DataTree.java:250)",
+                "at org.apache.zookeeper.server.DataTree.getACL(DataTree.java:799)",
+                "at org.apache.zookeeper.server.ZKDatabase.getACL(ZKDatabase.java:574)",
+                "at org.apache.zookeeper.server.FinalRequestProcessor.processRequest(FinalRequestProcessor.java:463)",
+                "at org.apache.zookeeper.server.quorum.CommitProcessor$CommitWorkRequest.doWork(CommitProcessor.java:439)",
+                "at org.apache.zookeeper.server.WorkerService$ScheduledWorkRequest.run(WorkerService.java:151)",
+                "at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "RootCause": "The root cause of the issue is the improper handling of ACL references during the snapshot loading process. Specifically, the `convertLong` method in the `DataTree` class fails to retrieve the ACL for index 1 because it has been removed from the ACL map due to having no references.",
+            "StepsToReproduce": [
+                "Start the ZooKeeper server.",
+                "Ensure that the server creates a DataTree instance with an empty config znode and a READ_UNSAFE ACL.",
+                "Load a snapshot from disk that clears the nodes and ACL map.",
+                "Trigger leader-follower syncing to add the reconfig znode back."
+            ],
+            "ExpectedBehavior": "The ACL for index 1 should remain available and usable after the snapshot loading and leader-follower syncing processes.",
+            "ObservedBehavior": "The ACL for index 1 becomes unavailable, leading to a RuntimeException when attempting to fetch ACLs, resulting in errors during request processing.",
+            "Suggestions": "To resolve this issue, ensure that the ACL references are properly managed during the snapshot loading process. Consider implementing a check to retain ACLs that are still referenced by any znodes, even if they are temporarily cleared from the map. Additionally, review the `convertLong` method in the `DataTree` class to handle cases where the ACL might not be available gracefully."
+        }
+    },
+    {
+        "filename": "ZOOKEEPER-2982.json",
+        "creation_time": "2018-02-19T19:28:06.000+0000",
+        "bug_report": {
+            "Title": "DNS Resolution Failure in ZooKeeper 3.5",
+            "Description": "In ZooKeeper 3.5, a DNS resolution issue occurs when a server starts before all peer addresses are resolvable. This results in the server caching a negative lookup result, causing it to fail to resolve the address indefinitely. This issue is particularly evident when deploying ZooKeeper in Kubernetes environments where DNS records are created lazily.",
+            "StackTrace": [
+                "2018-02-18 09:11:22,583 [myid:0] - WARN  [QuorumPeer[myid=0](plain=/0:0:0:0:0:0:0:0:2181)(secure=disabled):Follower@95] - Exception when following the leader",
+                "java.net.UnknownHostException: zk-2.zk.default.svc.cluster.local",
+                "at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:184)",
+                "at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)",
+                "at java.net.Socket.connect(Socket.java:589)",
+                "at org.apache.zookeeper.server.quorum.Learner.sockConnect(Learner.java:227)",
+                "at org.apache.zookeeper.server.quorum.Learner.connectToLeader(Learner.java:256)",
+                "at org.apache.zookeeper.server.quorum.Follower.followLeader(Follower.java:76)",
+                "at org.apache.zookeeper.server.quorum.QuorumPeer.run(QuorumPeer.java:1133)"
+            ],
+            "RootCause": "The root cause of the issue is that the ZooKeeper server caches a negative DNS lookup result when it starts before the DNS records are available. This leads to persistent failures in resolving the hostname `zk-2.zk.default.svc.cluster.local`.",
+            "StepsToReproduce": [
+                "Deploy ZooKeeper 3.5 in a Kubernetes environment using a StatefulSet and a headless Service.",
+                "Ensure that the DNS records for the ZooKeeper peers are not resolvable at the time of server startup.",
+                "Observe the logs for `UnknownHostException` related to the unresolved hostname."
+            ],
+            "ExpectedBehavior": "The ZooKeeper server should be able to resolve peer addresses and connect to the leader without encountering DNS resolution errors.",
+            "ObservedBehavior": "The ZooKeeper server fails to resolve the hostname `zk-2.zk.default.svc.cluster.local`, resulting in an `UnknownHostException` and preventing it from connecting to the leader.",
+            "Suggestions": "Implement a retry mechanism in the `sockConnect` method of the `Learner` class to re-attempt DNS resolution if the initial connection fails. This would allow the server to eventually succeed in connecting once the DNS records become available."
+        }
+    },
+    {
+        "filename": "ZOOKEEPER-1179.json",
+        "creation_time": "2011-09-13T16:20:56.000+0000",
+        "bug_report": {
+            "Title": "NettyServerCnxn Fails to Properly Close Socket on 4-Letter Word Requests",
+            "Description": "When invoking a 4-letter-word command on a server configured with NettyServerCnxnFactory, the server fails to cancel all keys and close the socket after sending the response. This results in a java.io.IOException being thrown, indicating that a non-blocking socket operation could not be completed immediately. The issue leads to the thread not shutting down properly, causing potential resource leaks and degraded server performance.",
+            "StackTrace": [
+                "java.io.IOException: A non-blocking socket operation could not be completed immediately",
+                "at sun.nio.ch.SocketDispatcher.close0(Native Method)",
+                "at sun.nio.ch.SocketDispatcher.preClose(SocketDispatcher.java:44)",
+                "at sun.nio.ch.SocketChannelImpl.implCloseSelectableChannel(SocketChannelImpl.java:684)",
+                "at java.nio.channels.spi.AbstractSelectableChannel.implCloseChannel(AbstractSelectableChannel.java:201)",
+                "at java.nio.channels.spi.AbstractInterruptibleChannel.close(AbstractInterruptibleChannel.java:97)",
+                "at org.jboss.netty.channel.socket.nio.NioWorker.close(NioWorker.java:593)",
+                "at org.jboss.netty.channel.socket.nio.NioServerSocketPipelineSink.handleAcceptedSocket(NioServerSocketPipelineSink.java:119)",
+                "at org.jboss.netty.channel.socket.nio.NioServerSocketPipelineSink.eventSunk(NioServerSocketPipelineSink.java:76)",
+                "at org.jboss.netty.channel.Channels.close(Channels.java:720)",
+                "at org.jboss.netty.channel.AbstractChannel.close(AbstractChannel.java:208)",
+                "at org.apache.zookeeper.server.NettyServerCnxn.close(NettyServerCnxn.java:116)",
+                "at org.apache.zookeeper.server.NettyServerCnxn.cleanupWriterSocket(NettyServerCnxn.java:241)",
+                "at org.apache.zookeeper.server.NettyServerCnxn.access$0(NettyServerCnxn.java:231)",
+                "at org.apache.zookeeper.server.NettyServerCnxn$CommandThread.run(NettyServerCnxn.java:314)",
+                "at org.apache.zookeeper.server.NettyServerCnxn$CommandThread.start(NettyServerCnxn.java:305)",
+                "at org.apache.zookeeper.server.NettyServerCnxn.checkFourLetterWord(NettyServerCnxn.java:674)",
+                "at org.apache.zookeeper.server.NettyServerCnxn.receiveMessage(NettyServerCnxn.java:791)",
+                "at org.apache.zookeeper.server.NettyServerCnxnFactory$CnxnChannelHandler.processMessage(NettyServerCnxnFactory.java:217)",
+                "at org.apache.zookeeper.server.NettyServerCnxnFactory$CnxnChannelHandler.messageReceived(NettyServerCnxnFactory.java:141)",
+                "at org.jboss.netty.channel.Channels.fireMessageReceived(Channels.java:274)",
+                "at org.jboss.netty.channel.Channels.fireMessageReceived(Channels.java:261)",
+                "at org.jboss.netty.channel.socket.nio.NioWorker.read(NioWorker.java:350)",
+                "at org.jboss.netty.channel.socket.nio.NioWorker.processSelectedKeys(NioWorker.java:281)",
+                "at org.jboss.netty.channel.socket.nio.NioWorker.run(NioWorker.java:201)",
+                "at org.jboss.netty.util.internal.IoWorkerRunnable.run(IoWorkerRunnable.java:46)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)",
+                "at java.lang.Thread.run(Thread.java:619)"
+            ],
+            "RootCause": "The root cause of the issue appears to be related to the handling of non-blocking socket operations within the NettyServerCnxnFactory. Specifically, the failure to properly manage the socket's state during closure leads to the IOException being thrown. This may be exacerbated by resource limitations or improper cleanup of socket channels.",
+            "StepsToReproduce": [
+                "1. Set up a ZooKeeper server configured with NettyServerCnxnFactory.",
+                "2. Send a 4-letter-word command to the server.",
+                "3. Observe the server logs for warnings or exceptions related to socket closure."
+            ],
+            "ExpectedBehavior": "The server should successfully close the socket and cancel all associated keys after processing the 4-letter-word command, without throwing any exceptions.",
+            "ObservedBehavior": "The server throws a java.io.IOException indicating that a non-blocking socket operation could not be completed immediately, leading to improper socket closure and potential thread hang.",
+            "Suggestions": "Review the implementation of the NettyServerCnxn and ensure that all socket operations are properly synchronized and managed. Consider adding additional error handling around socket closure to gracefully handle cases where non-blocking operations cannot be completed. Testing under various load conditions may also help identify resource limitations contributing to the issue."
+        }
+    },
+    {
+        "filename": "ZOOKEEPER-2581.json",
+        "creation_time": "2016-09-14T07:12:58.000+0000",
+        "bug_report": {
+            "Title": "NullPointerException Not Handled in Key Manager and Trust Manager Creation",
+            "Description": "A NullPointerException occurs when attempting to create a key manager and trust manager in the X509AuthenticationProvider. This issue arises due to null values being passed to the createKeyManager and createTrustManager methods in the X509Util class. The root cause appears to be improper instantiation of the X509AuthenticationProvider, which fails to initialize the required parameters.",
+            "StackTrace": [
+                "2016-09-14 13:35:23,488 [myid:1] - ERROR [CommitProcWorkThread-1:X509AuthenticationProvider@78] - Failed to create key manager",
+                "org.apache.zookeeper.common.X509Exception$KeyManagerException: java.lang.NullPointerException",
+                "at org.apache.zookeeper.common.X509Util.createKeyManager(X509Util.java:129)",
+                "at org.apache.zookeeper.server.auth.X509AuthenticationProvider.<init>(X509AuthenticationProvider.java:75)",
+                "at org.apache.zookeeper.server.auth.ProviderRegistry.initialize(ProviderRegistry.java:42)",
+                "at org.apache.zookeeper.server.auth.ProviderRegistry.getProvider(ProviderRegistry.java:68)",
+                "at org.apache.zookeeper.server.PrepRequestProcessor.checkACL(PrepRequestProcessor.java:319)",
+                "at org.apache.zookeeper.server.FinalRequestProcessor.processRequest(FinalRequestProcessor.java:324)",
+                "at org.apache.zookeeper.server.quorum.CommitProcessor$CommitWorkRequest.doWork(CommitProcessor.java:296)",
+                "at org.apache.zookeeper.server.WorkerService$ScheduledWorkRequest.run(WorkerService.java:162)",
+                "at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)",
+                "at java.lang.Thread.run(Thread.java:745)",
+                "Caused by: java.lang.NullPointerException",
+                "at org.apache.zookeeper.common.X509Util.createKeyManager(X509Util.java:113)",
+                "... 10 more",
+                "2016-09-14 13:35:23,489 [myid:1] - ERROR [CommitProcWorkThread-1:X509AuthenticationProvider@90] - Failed to create trust manager",
+                "org.apache.zookeeper.common.X509Exception$TrustManagerException: java.lang.NullPointerException",
+                "at org.apache.zookeeper.common.X509Util.createTrustManager(X509Util.java:158)",
+                "at org.apache.zookeeper.server.auth.X509AuthenticationProvider.<init>(X509AuthenticationProvider.java:87)",
+                "at org.apache.zookeeper.server.auth.ProviderRegistry.initialize(ProviderRegistry.java:42)",
+                "at org.apache.zookeeper.server.auth.ProviderRegistry.getProvider(ProviderRegistry.java:68)",
+                "at org.apache.zookeeper.server.PrepRequestProcessor.checkACL(PrepRequestProcessor.java:319)",
+                "at org.apache.zookeeper.server.FinalRequestProcessor.processRequest(FinalRequestProcessor.java:324)",
+                "at org.apache.zookeeper.server.quorum.CommitProcessor$CommitWorkRequest.doWork(CommitProcessor.java:296)",
+                "at org.apache.zookeeper.server.WorkerService$ScheduledWorkRequest.run(WorkerService.java:162)",
+                "at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)",
+                "at java.lang.Thread.run(Thread.java:745)",
+                "Caused by: java.lang.NullPointerException",
+                "at org.apache.zookeeper.common.X509Util.createTrustManager(X509Util.java:143)",
+                "... 10 more"
+            ],
+            "RootCause": "The NullPointerException is likely caused by null values for 'keyStoreLocation' or 'keyStorePassword' being passed to the 'createKeyManager' and 'createTrustManager' methods in the X509Util class. This indicates that the X509AuthenticationProvider is not being properly instantiated with the required parameters.",
+            "StepsToReproduce": [
+                "Attempt to start the ZooKeeper server with an improperly configured X509AuthenticationProvider.",
+                "Ensure that the keyStoreLocation and keyStorePassword are not set or are set to null.",
+                "Observe the logs for NullPointerException errors related to key manager and trust manager creation."
+            ],
+            "ExpectedBehavior": "The ZooKeeper server should start without errors, successfully creating the key manager and trust manager without throwing a NullPointerException.",
+            "ObservedBehavior": "The server fails to start, logging errors related to the creation of the key manager and trust manager due to a NullPointerException.",
+            "Suggestions": "Ensure that the X509AuthenticationProvider is instantiated with valid keyStoreLocation and keyStorePassword parameters. Implement null checks in the createKeyManager and createTrustManager methods to handle cases where these parameters are not provided."
+        }
+    },
+    {
+        "filename": "ZOOKEEPER-1870.json",
+        "creation_time": "2014-01-28T18:45:43.000+0000",
+        "bug_report": {
+            "Title": "Flaky Test in StandaloneDisabledTest.startSingleServerTest",
+            "Description": "The test 'testNormalOperation' in the 'ReconfigTest' class intermittently fails with an AssertionError indicating that the client could not connect to the reestablished quorum after 30 seconds. This issue appears to be related to socket management and the shutdown process of the quorum connection manager.",
+            "StackTrace": [
+                "junit.framework.AssertionFailedError: client could not connect to reestablished quorum: giving up after 30+ seconds.",
+                "at org.apache.zookeeper.test.ReconfigTest.testNormalOperation(ReconfigTest.java:143)",
+                "at org.apache.zookeeper.server.quorum.StandaloneDisabledTest.startSingleServerTest(StandaloneDisabledTest.java:75)",
+                "at org.apache.zookeeper.JUnit4ZKTestRunner$LoggedInvokeMethod.evaluate(JUnit4ZKTestRunner.java:52)"
+            ],
+            "RootCause": "The root cause of the issue appears to be related to the following problems identified in the QuorumCnxManager: 1) The 'Listener.run()' method leaks sockets based on the timing of the shutdown flag. 2) The 'halt()' method does not wait for the listener to terminate properly. 3) The 'shuttingDownLE' flag in 'QuorumPeer' is not reset when restarting the leader election, which may lead to improper state management during tests.",
+            "StepsToReproduce": [
+                "Run the test suite for the Zookeeper project, specifically targeting the 'ReconfigTest' class.",
+                "Observe the intermittent failures of the 'testNormalOperation' method."
+            ],
+            "ExpectedBehavior": "The test should consistently pass, confirming that the client can connect to the reestablished quorum without timing out.",
+            "ObservedBehavior": "The test fails intermittently with a timeout error indicating that the client could not connect to the quorum.",
+            "Suggestions": "1. Review and refactor the 'QuorumCnxManager.Listener.run()' method to ensure proper socket closure and management. 2. Modify the 'QuorumCnxManager.halt()' method to include a wait mechanism for the listener to terminate before proceeding. 3. Ensure that the 'shuttingDownLE' flag is reset appropriately during leader election restarts. 4. Consider adding more robust logging around the connection establishment process to aid in diagnosing future issues."
+        }
+    },
+    {
+        "filename": "ZOOKEEPER-2247.json",
+        "creation_time": "2015-08-14T13:13:18.000+0000",
+        "bug_report": {
+            "Title": "Zookeeper Service Unavailability Due to Leader Transaction Log Write Failure",
+            "Description": "The Zookeeper service becomes unavailable when the leader fails to write the transaction log. This issue is critical as it leads to a complete shutdown of the leader node, preventing it from fulfilling its role in the cluster. The following exceptions were logged during the failure:\n\n```\n2015-08-14 15:41:18,556 [myid:100] - ERROR [SyncThread:100:ZooKeeperCriticalThread@48] - Severe unrecoverable error, from thread : SyncThread:100\njava.io.IOException: Input/output error\n\tat sun.nio.ch.FileDispatcherImpl.force0(Native Method)\n\tat sun.nio.ch.FileDispatcherImpl.force(FileDispatcherImpl.java:76)\n\tat sun.nio.ch.FileChannelImpl.force(FileChannelImpl.java:376)\n\tat org.apache.zookeeper.server.persistence.FileTxnLog.commit(FileTxnLog.java:331)\n\tat org.apache.zookeeper.server.persistence.FileTxnSnapLog.commit(FileTxnSnapLog.java:380)\n\tat org.apache.zookeeper.server.ZKDatabase.commit(ZKDatabase.java:563)\n\tat org.apache.zookeeper.server.SyncRequestProcessor.flush(SyncRequestProcessor.java:178)\n\tat org.apache.zookeeper.server.SyncRequestProcessor.run(SyncRequestProcessor.java:113)\n```\n\nAfter this exception, the leader server remains active despite the unrecoverable error, which is contrary to expected behavior where the leader should relinquish its role to allow followers to take over.",
+            "StackTrace": [
+                "2015-08-14 15:41:18,556 [myid:100] - ERROR [SyncThread:100:ZooKeeperCriticalThread@48] - Severe unrecoverable error, from thread : SyncThread:100",
+                "java.io.IOException: Input/output error",
+                "\tat sun.nio.ch.FileDispatcherImpl.force0(Native Method)",
+                "\tat sun.nio.ch.FileDispatcherImpl.force(FileDispatcherImpl.java:76)",
+                "\tat sun.nio.ch.FileChannelImpl.force(FileChannelImpl.java:376)",
+                "\tat org.apache.zookeeper.server.persistence.FileTxnLog.commit(FileTxnLog.java:331)",
+                "\tat org.apache.zookeeper.server.persistence.FileTxnSnapLog.commit(FileTxnSnapLog.java:380)",
+                "\tat org.apache.zookeeper.server.ZKDatabase.commit(ZKDatabase.java:563)",
+                "\tat org.apache.zookeeper.server.SyncRequestProcessor.flush(SyncRequestProcessor.java:178)",
+                "\tat org.apache.zookeeper.server.SyncRequestProcessor.run(SyncRequestProcessor.java:113)"
+            ],
+            "RootCause": "The root cause of the issue appears to be an Input/Output error during file operations, specifically when the leader attempts to commit transaction logs. This suggests potential problems with the underlying file system or the specific file being accessed for logging.",
+            "StepsToReproduce": [
+                "Set up a Zookeeper cluster with a leader and multiple followers.",
+                "Simulate a failure in the leader node's ability to write to the transaction log (e.g., by filling up the disk or corrupting the log file).",
+                "Observe the behavior of the leader node and the cluster's response."
+            ],
+            "ExpectedBehavior": "Upon encountering a non-recoverable error during transaction log writing, the leader should gracefully shut down and allow one of the followers to take over leadership responsibilities.",
+            "ObservedBehavior": "The leader remains active despite the unrecoverable error, leading to service unavailability and potential data inconsistency within the cluster.",
+            "Suggestions": "Investigate the file handling operations in the `FileTxnLog` and `FileTxnSnapLog` classes, particularly the `commit` methods. Ensure that proper error handling is implemented to allow the leader to relinquish its role upon encountering critical I/O errors. Additionally, consider implementing health checks for the file system to preemptively catch issues that could lead to such failures."
+        }
+    }
+]

@@ -251,16 +251,16 @@ def merge_bug_reports(output_data, bug_reports_file):
 # Step 9: Main Execution
 if __name__ == "__main__":
     # Read stack trace data
-    # stack_trace_file = "test.json"
-    stack_trace_file = "stack_traces/Hadoop.json"
+    stack_trace_file = "test.json"
+    # stack_trace_file = "stack_traces/HDFS.json"
     stack_trace_data = read_stack_traces(stack_trace_file)
 
     # Path to source code and Git repository
     repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
-    codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/test/core", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java","/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-distcp/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-azure/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-auth/src/main/java"]
+    codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hdfs/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java"]
     git_branch = "trunk"
     # Path to developer-written bug reports
-    dev_written_bug_reports_file = "developer_written_bug_reports/Hadoop.json"
+    dev_written_bug_reports_file = "developer_written_bug_reports/HDFS.json"
 
     # Prepare output
     output_data = []
@@ -272,6 +272,7 @@ if __name__ == "__main__":
 
         # Switch to the appropriate commit
         commit_version = get_commit_version(creation_time, repo_path, git_branch)
+        print("Commit Version:", commit_version)
         checkout_to_commit(commit_version, repo_path, git_branch)
 
         # Extract relevant methods using stack trace and call graph
@@ -289,8 +290,8 @@ if __name__ == "__main__":
     output_data = merge_bug_reports(output_data, dev_written_bug_reports_file)
 
     # Write output to JSON
-    # output_file = 'test_output.json'
-    output_file = 'source_code_data/Hadoop.json'
+    output_file = 'test_output.json'
+    # output_file = 'source_code_data/HDFS.json'
     with open(f"{output_file}", "w") as outfile:
         json.dump(output_data, outfile, indent=4)
 

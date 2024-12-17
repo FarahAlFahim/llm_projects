@@ -1,0 +1,1648 @@
+[
+    {
+        "filename": "HADOOP-6989.json",
+        "creation_time": "2010-10-04T23:55:16.000+0000",
+        "bug_report": {
+            "Title": "TestSetFile Fails Due to Missing Key Class in MapFile.Writer Initialization",
+            "Description": "The test suite `org.apache.hadoop.io.TestSetFile` is failing due to an `IllegalArgumentException` indicating that the key class or comparator option must be set. This issue arises during the initialization of `MapFile.Writer` in the `writeTest` method of `TestSetFile`. The test attempts to create a `MapFile` without specifying the required key class, leading to the failure.",
+            "StackTrace": [
+                "java.lang.IllegalArgumentException: key class or comparator option must be set",
+                "at org.apache.hadoop.io.MapFile$Writer.<init>(MapFile.java:247)",
+                "at org.apache.hadoop.io.SetFile$Writer.<init>(SetFile.java:60)",
+                "at org.apache.hadoop.io.TestSetFile.writeTest(TestSetFile.java:73)",
+                "at org.apache.hadoop.io.TestSetFile.testSetFile(TestSetFile.java:45)"
+            ],
+            "RootCause": "The root cause of the issue is the absence of a specified key class or comparator when initializing the `MapFile.Writer`. This is a mandatory requirement for the `MapFile` to function correctly.",
+            "StepsToReproduce": [
+                "Run the test suite `org.apache.hadoop.io.TestSetFile`.",
+                "Observe the output for the `IllegalArgumentException` related to the key class."
+            ],
+            "ExpectedBehavior": "The test should complete successfully without throwing any exceptions, indicating that the `MapFile.Writer` was initialized correctly with the required key class.",
+            "ObservedBehavior": "The test fails with an `IllegalArgumentException`, indicating that the key class or comparator option must be set.",
+            "Suggestions": "Modify the `writeTest` method in `TestSetFile` to include the necessary key class and comparator when initializing the `MapFile.Writer`. For example, ensure that the constructor of `MapFile.Writer` is called with appropriate parameters such as `new MapFile.Writer(conf, path, keyClass, valueClass)`."
+        }
+    },
+    {
+        "filename": "HADOOP-10823.json",
+        "creation_time": "2014-07-15T07:20:00.000+0000",
+        "bug_report": {
+            "Title": "Flaky Test in TestReloadingX509TrustManager Due to KeyStore Loading Issues",
+            "Description": "The unit test TestReloadingX509TrustManager is failing intermittently due to an AssertionFailedError indicating a mismatch between expected and actual values. The stack trace reveals that the test expected a value of 2 but received 1 instead. Additionally, there is an EOFException occurring when attempting to load the Java KeyStore, which may be contributing to the test's instability.",
+            "StackTrace": [
+                "junit.framework.Assert.fail(Assert.java:50)",
+                "junit.framework.Assert.failNotEquals(Assert.java:287)",
+                "junit.framework.Assert.assertEquals(Assert.java:67)",
+                "junit.framework.Assert.assertEquals(Assert.java:199)",
+                "junit.framework.Assert.assertEquals(Assert.java:205)",
+                "org.apache.hadoop.security.ssl.TestReloadingX509TrustManager.testReload(TestReloadingX509TrustManager.java:112)",
+                "java.io.DataInputStream.readInt(DataInputStream.java:375)",
+                "sun.security.provider.JavaKeyStore.engineLoad(JavaKeyStore.java:628)",
+                "sun.security.provider.JavaKeyStore$JKS.engineLoad(JavaKeyStore.java:38)",
+                "java.security.KeyStore.load(KeyStore.java:1185)",
+                "org.apache.hadoop.security.ssl.ReloadingX509TrustManager.loadTrustManager(ReloadingX509TrustManager.java:166)",
+                "org.apache.hadoop.security.ssl.ReloadingX509TrustManager.run(ReloadingX509TrustManager.java:195)",
+                "java.lang.Thread.run(Thread.java:662)"
+            ],
+            "RootCause": "The root cause of the flaky test appears to be related to the inability to load the Java KeyStore properly, leading to an EOFException. This failure to load the truststore may result in the test not being able to validate SSL certificates correctly, causing the assertion to fail.",
+            "StepsToReproduce": [
+                "Run the unit test TestReloadingX509TrustManager in the Hadoop security module.",
+                "Ensure that the environment is set up with the appropriate Java version (1.6.0_31) and that the KeyStore is accessible.",
+                "Observe the test results for intermittent failures."
+            ],
+            "ExpectedBehavior": "The test should pass consistently, asserting that the expected value of 2 is returned when the KeyStore is loaded correctly.",
+            "ObservedBehavior": "The test fails intermittently with an AssertionFailedError indicating expected:<2> but was:<1>, alongside an EOFException during KeyStore loading.",
+            "Suggestions": "1. Investigate the KeyStore loading mechanism in the ReloadingX509TrustManager class to ensure it handles exceptions properly and does not lead to EOFExceptions. 2. Consider adding more robust error handling and logging to capture the state of the KeyStore when loading fails. 3. Review the test logic in TestReloadingX509TrustManager to ensure it does not rely on fixed values that may change based on the KeyStore state."
+        }
+    },
+    {
+        "filename": "HADOOP-9125.json",
+        "creation_time": "2012-12-10T02:07:52.000+0000",
+        "bug_report": {
+            "Title": "LdapGroupsMapping threw CommunicationException after some idle time",
+            "Description": "The LdapGroupsMapping component is throwing a CommunicationException after a period of inactivity. This issue arises when the system attempts to retrieve group information for a user (aduser2) after a period of idle time, leading to a failure in establishing a connection with the LDAP server. The exception indicates that the connection was closed unexpectedly, which should not occur if the connection management is handled correctly.",
+            "StackTrace": [
+                "2012-12-07 02:20:59,738 WARN org.apache.hadoop.security.LdapGroupsMapping: Exception trying to get groups for user aduser2",
+                "javax.naming.CommunicationException: connection closed [Root exception is java.io.IOException: connection closed]; remaining name 'CN=Users,DC=EXAMPLE,DC=COM'",
+                "at com.sun.jndi.ldap.LdapCtx.doSearch(LdapCtx.java:1983)",
+                "at com.sun.jndi.ldap.LdapCtx.searchAux(LdapCtx.java:1827)",
+                "at com.sun.jndi.ldap.LdapCtx.c_search(LdapCtx.java:1752)",
+                "at com.sun.jndi.ldap.LdapCtx.c_search(LdapCtx.java:1769)",
+                "at com.sun.jndi.toolkit.ctx.ComponentDirContext.p_search(ComponentDirContext.java:394)",
+                "at com.sun.jndi.toolkit.ctx.PartialCompositeDirContext.search(PartialCompositeDirContext.java:376)",
+                "at com.sun.jndi.toolkit.ctx.PartialCompositeDirContext.search(PartialCompositeDirContext.java:358)",
+                "at javax.naming.directory.InitialDirContext.search(InitialDirContext.java:267)",
+                "at org.apache.hadoop.security.LdapGroupsMapping.getGroups(LdapGroupsMapping.java:187)",
+                "at org.apache.hadoop.security.CompositeGroupsMapping.getGroups(CompositeGroupsMapping.java:97)",
+                "at org.apache.hadoop.security.Groups.doGetGroups(Groups.java:103)",
+                "at org.apache.hadoop.security.Groups.getGroups(Groups.java:70)",
+                "at org.apache.hadoop.security.UserGroupInformation.getGroupNames(UserGroupInformation.java:1035)",
+                "at org.apache.hadoop.hbase.security.User.getGroupNames(User.java:90)",
+                "at org.apache.hadoop.hbase.security.access.TableAuthManager.authorize(TableAuthManager.java:355)",
+                "at org.apache.hadoop.hbase.security.access.AccessController.requirePermission(AccessController.java:379)",
+                "at org.apache.hadoop.hbase.security.access.AccessController.getUserPermissions(AccessController.java:1051)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethod)",
+                "at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)",
+                "at java.lang.reflect.Method.invoke(Method.java:597)",
+                "at org.apache.hadoop.hbase.regionserver.HRegion.exec(HRegion.java:4914)",
+                "at org.apache.hadoop.hbase.regionserver.HRegionServer.execCoprocessor(HRegionServer.java:3546)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke(Native Method)",
+                "at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)",
+                "at java.lang.reflect.Method.invoke(Method.java:597)",
+                "at org.apache.hadoop.hbase.ipc.SecureRpcEngine$Server.call(SecureRpcEngine.java:372)",
+                "at org.apache.hadoop.hbase.ipc.HBaseServer$Handler.run(HBaseServer.java:1399)",
+                "Caused by: java.io.IOException: connection closed",
+                "at com.sun.jndi.ldap.LdapClient.ensureOpen(LdapClient.java:1558)",
+                "at com.sun.jndi.ldap.LdapClient.search(LdapClient.java:503)",
+                "at com.sun.jndi.ldap.LdapCtx.doSearch(LdapCtx.java:1965)"
+            ],
+            "RootCause": "The root cause of the issue appears to be related to the connection management within the LDAP client. Specifically, the `LdapClient.ensureOpen` method is failing to maintain an active connection, leading to a `CommunicationException` when attempting to perform a search operation after a period of inactivity.",
+            "StepsToReproduce": [
+                "1. Configure the system to use LDAP for group mapping.",
+                "2. Allow the system to remain idle for a significant period.",
+                "3. Attempt to retrieve group information for a user (e.g., aduser2).",
+                "4. Observe the thrown CommunicationException in the logs."
+            ],
+            "ExpectedBehavior": "The system should maintain an active connection to the LDAP server, allowing for successful retrieval of group information even after periods of inactivity.",
+            "ObservedBehavior": "The system throws a CommunicationException indicating that the connection was closed, preventing the retrieval of group information for the specified user.",
+            "Suggestions": "Investigate the connection management logic within the `LdapClient` and `LdapGroupsMapping` classes. Consider implementing a keep-alive mechanism or adjusting the connection timeout settings to prevent the connection from closing during idle periods. Additionally, review the error handling in the `getGroups` method to ensure that it can gracefully handle connection issues and attempt to re-establish the connection if necessary."
+        }
+    },
+    {
+        "filename": "HADOOP-10252.json",
+        "creation_time": "2014-01-22T16:43:27.000+0000",
+        "bug_report": {
+            "Title": "HttpServer Initialization Fails Due to Missing Hostname Configuration",
+            "Description": "The HttpServer fails to start when the hostname is not specified in the Hadoop configuration. This issue arises from the addition of a null check in HADOOP-8362, which prevents the server from initializing correctly if required properties are not set. The stack trace indicates that an IllegalArgumentException is thrown due to a null property value being passed to the Configuration.set method.",
+            "StackTrace": [
+                "2014-01-22 08:43:05,969 FATAL [M:0;localhost:48573] master.HMaster(2187): Unhandled exception. Starting shutdown.",
+                "java.lang.IllegalArgumentException: Property value must not be null",
+                "at com.google.common.base.Preconditions.checkArgument(Preconditions.java:92)",
+                "at org.apache.hadoop.conf.Configuration.set(Configuration.java:958)",
+                "at org.apache.hadoop.conf.Configuration.set(Configuration.java:940)",
+                "at org.apache.hadoop.http.HttpServer.initializeWebServer(HttpServer.java:510)",
+                "at org.apache.hadoop.http.HttpServer.<init>(HttpServer.java:470)",
+                "at org.apache.hadoop.http.HttpServer.<init>(HttpServer.java:458)",
+                "at org.apache.hadoop.http.HttpServer.<init>(HttpServer.java:412)",
+                "at org.apache.hadoop.hbase.util.InfoServer.<init>(InfoServer.java:59)",
+                "at org.apache.hadoop.hbase.master.HMaster.run(HMaster.java:584)",
+                "at java.lang.Thread.run(Thread.java:722)"
+            ],
+            "RootCause": "The root cause of the issue is the absence of a required hostname configuration in the Hadoop configuration files, leading to a null value being passed to the Configuration.set method, which triggers an IllegalArgumentException.",
+            "StepsToReproduce": [
+                "1. Ensure that the Hadoop configuration files do not specify a hostname for the HttpServer.",
+                "2. Attempt to start the HttpServer.",
+                "3. Observe the logs for the IllegalArgumentException indicating a null property value."
+            ],
+            "ExpectedBehavior": "The HttpServer should start successfully without throwing any exceptions, even if the hostname is not specified.",
+            "ObservedBehavior": "The HttpServer fails to start, resulting in an IllegalArgumentException due to a null property value.",
+            "Suggestions": "To resolve this issue, check the Hadoop configuration files for any missing properties, particularly the hostname for the HttpServer. Ensure that all required properties are set before initializing the HttpServer. Additionally, consider adding default values or error handling in the HttpServer initialization code to prevent this issue from occurring in the future."
+        }
+    },
+    {
+        "filename": "HADOOP-12239.json",
+        "creation_time": "2015-07-15T18:06:14.000+0000",
+        "bug_report": {
+            "Title": "StorageException: 'no lease ID' when updating FolderLastModifiedTime in WASB",
+            "Description": "This issue is similar to HADOOP-11523 and HADOOP-12089, observed in a customer's HBase cluster logs. The error occurs during the log splitting process in HBase when attempting to rename a folder in Azure Blob Storage. The stack trace indicates that an IOException is thrown due to a lease on the blob, which prevents the renaming operation. This issue may arise from improper handling of blob leases in the Azure storage configuration used by HBase.",
+            "StackTrace": [
+                "2015-07-09 13:38:57,388 INFO org.apache.hadoop.hbase.master.SplitLogManager: dead splitlog workers [workernode3.xxx.b6.internal.cloudapp.net,60020,1436448555180]",
+                "2015-07-09 13:38:57,466 ERROR org.apache.hadoop.hbase.executor.EventHandler: Caught throwable while processing event M_SERVER_SHUTDOWN",
+                "java.io.IOException: failed log splitting for workernode12.xxx.b6.internal.cloudapp.net,60020,1436448566374, will retry",
+                "at org.apache.hadoop.hbase.master.handler.ServerShutdownHandler.resubmit(ServerShutdownHandler.java:343)",
+                "at org.apache.hadoop.hbase.master.handler.ServerShutdownHandler.process(ServerShutdownHandler.java:211)",
+                "at org.apache.hadoop.hbase.executor.EventHandler.run(EventHandler.java:128)",
+                "at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)",
+                "at java.lang.Thread.run(Thread.java:745)",
+                "Caused by: java.io.IOException: Unable to write RenamePending file for folder rename from hbase/WALs/workernode12.xxx.b6.internal.cloudapp.net,60020,1436448566374 to hbase/WALs/workernode12.xxx.b6.internal.cloudapp.net,60020,1436448566374-splitting",
+                "at org.apache.hadoop.fs.azure.NativeAzureFileSystem$FolderRenamePending.writeFile(NativeAzureFileSystem.java:258)",
+                "at org.apache.hadoop.fs.azure.NativeAzureFileSystem.prepareAtomicFolderRename(NativeAzureFileSystem.java:2110)",
+                "at org.apache.hadoop.fs.azure.NativeAzureFileSystem.rename(NativeAzureFileSystem.java:1998)",
+                "at org.apache.hadoop.hbase.master.MasterFileSystem.getLogDirs(MasterFileSystem.java:325)",
+                "at org.apache.hadoop.hbase.master.MasterFileSystem.splitLog(MasterFileSystem.java:412)",
+                "at org.apache.hadoop.hbase.master.MasterFileSystem.splitLog(MasterFileSystem.java:390)",
+                "at org.apache.hadoop.hbase.master.MasterFileSystem.splitLog(MasterFileSystem.java:288)",
+                "at org.apache.hadoop.hbase.master.handler.ServerShutdownHandler.process(ServerShutdownHandler.java:204)",
+                "... 4 more",
+                "Caused by: org.apache.hadoop.fs.azure.AzureException: com.microsoft.azure.storage.StorageException: There is currently a lease on the blob and no lease ID was specified in the request.",
+                "at org.apache.hadoop.fs.azure.AzureNativeFileSystemStore.updateFolderLastModifiedTime(AzureNativeFileSystemStore.java:2598)",
+                "at org.apache.hadoop.fs.azure.AzureNativeFileSystemStore.updateFolderLastModifiedTime(AzureNativeFileSystemStore.java:2609)",
+                "at org.apache.hadoop.fs.azure.NativeAzureFileSystem.create(NativeAzureFileSystem.java:1366)",
+                "at org.apache.hadoop.fs.azure.NativeAzureFileSystem.create(NativeAzureFileSystem.java:1195)",
+                "at org.apache.hadoop.fs.FileSystem.create(FileSystem.java:908)",
+                "at org.apache.hadoop.fs.FileSystem.create(FileSystem.java:889)",
+                "at org.apache.hadoop.fs.FileSystem.create(FileSystem.java:786)",
+                "at org.apache.hadoop.fs.FileSystem.create(FileSystem.java:775)",
+                "at org.apache.hadoop.fs.azure.NativeAzureFileSystem$FolderRenamePending.writeFile(NativeAzureFileSystem.java:255)",
+                "... 11 more",
+                "Caused by: com.microsoft.azure.storage.StorageException: There is currently a lease on the blob and no lease ID was specified in the request.",
+                "at com.microsoft.azure.storage.StorageException.translateException(StorageException.java:89)",
+                "at com.microsoft.azure.storage.core.StorageRequest.materializeException(StorageRequest.java:307)",
+                "at com.microsoft.azure.storage.core.ExecutionEngine.executeWithRetry(ExecutionEngine.java:182)",
+                "at com.microsoft.azure.storage.blob.CloudBlob.uploadProperties(CloudBlob.java:2892)",
+                "at org.apache.hadoop.fs.azure.StorageInterfaceImpl$CloudBlobWrapperImpl.uploadProperties(StorageInterfaceImpl.java:372)",
+                "at org.apache.hadoop.fs.azure.AzureNativeFileSystemStore.updateFolderLastModifiedTime(AzureNativeFileSystemStore.java:2593)",
+                "... 19 more"
+            ],
+            "RootCause": "The root cause of the IOException is a lease on the blob in Azure storage, which prevents the renaming operation during log splitting in HBase. The Azure storage configuration may not be handling blob leases correctly, leading to this issue.",
+            "StepsToReproduce": [
+                "1. Set up an HBase cluster with Azure Blob Storage as the file system.",
+                "2. Trigger a server shutdown event in the HBase cluster.",
+                "3. Monitor the logs for any IOException related to blob leases during the log splitting process."
+            ],
+            "ExpectedBehavior": "The log splitting process should complete successfully without any IOException related to blob leases, allowing for the proper renaming of folders in Azure Blob Storage.",
+            "ObservedBehavior": "An IOException is thrown indicating that a lease on the blob is preventing the renaming operation, leading to a failure in the log splitting process.",
+            "Suggestions": "To resolve this issue, check the lease status of the blob in Azure storage. Review the HBase Azure storage configuration to ensure it is set up correctly. Consult the Azure storage documentation for handling blob leases and consider enabling detailed logging in HBase for further insights into the issue."
+        }
+    },
+    {
+        "filename": "HADOOP-11878.json",
+        "creation_time": "2015-04-27T08:06:22.000+0000",
+        "bug_report": {
+            "Title": "NullPointerException in FileContext.fixRelativePart due to Null Parameter",
+            "Description": "A NullPointerException is thrown in the fixRelativePart method of the FileContext class when the deletion service attempts to delete log files. The error occurs because the method does not check for null values in its parameters, leading to an attempt to access properties of a null object.",
+            "StackTrace": [
+                "2015-04-27 14:56:17,113 INFO org.apache.hadoop.yarn.server.nodemanager.DefaultContainerExecutor: Deleting absolute path : null",
+                "2015-04-27 14:56:17,113 ERROR org.apache.hadoop.yarn.server.nodemanager.DeletionService: Exception during execution of task in DeletionService",
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.fs.FileContext.fixRelativePart(FileContext.java:274)",
+                "at org.apache.hadoop.fs.FileContext.delete(FileContext.java:761)",
+                "at org.apache.hadoop.yarn.server.nodemanager.DefaultContainerExecutor.deleteAsUser(DefaultContainerExecutor.java:457)",
+                "at org.apache.hadoop.yarn.server.nodemanager.DeletionService$FileDeletionTask.run(DeletionService.java:293)",
+                "at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)",
+                "at java.util.concurrent.FutureTask.run(FutureTask.java:266)",
+                "at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.access$201(ScheduledThreadPoolExecutor.java:180)",
+                "at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:293)",
+                "at java.lang.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)",
+                "at java.lang.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "RootCause": "The NullPointerException is caused by the fixRelativePart method in FileContext not handling null parameters properly. This indicates that the method is being called with a null file path or configuration, which should be validated before use.",
+            "StepsToReproduce": [
+                "Trigger a job that fails and causes the deletion service to attempt to delete log files.",
+                "Observe the logs for the NullPointerException in the fixRelativePart method."
+            ],
+            "ExpectedBehavior": "The deletion service should handle null paths gracefully, either by skipping the deletion or logging a more informative error message without throwing an exception.",
+            "ObservedBehavior": "A NullPointerException is thrown, causing the deletion service to fail and log an error message.",
+            "Suggestions": "Implement null checks in the fixRelativePart method of the FileContext class to ensure that parameters are validated before use. This will prevent NullPointerExceptions and provide clearer error messages when invalid parameters are encountered."
+        }
+    },
+    {
+        "filename": "HADOOP-14949.json",
+        "creation_time": "2017-10-13T23:44:09.000+0000",
+        "bug_report": {
+            "Title": "Intermittent Failure in TestKMS#testACLs Due to AssertionError",
+            "Description": "The test case `TestKMS#testACLs` has been observed to fail intermittently, resulting in an `AssertionError` with the message 'Should not have been able to reencryptEncryptedKey'. This indicates that the test is incorrectly allowing a re-encryption operation that should not be permitted under the current conditions. The issue appears to be related to the access control mechanisms within the Key Management Server (KMS) of Apache Hadoop.",
+            "StackTrace": [
+                "java.lang.AssertionError: Should not have been able to reencryptEncryptedKey",
+                "at org.junit.Assert.fail(Assert.java:88)",
+                "at org.apache.hadoop.crypto.key.kms.server.TestKMS$11$15.run(TestKMS.java:1616)",
+                "at org.apache.hadoop.crypto.key.kms.server.TestKMS$11$15.run(TestKMS.java:1608)",
+                "at java.security.AccessController.doPrivileged(Native Method)",
+                "at javax.security.auth.Subject.doAs(Subject.java:415)",
+                "at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1917)",
+                "at org.apache.hadoop.crypto.key.kms.server.TestKMS.doAs(TestKMS.java:313)",
+                "at org.apache.hadoop.crypto.key.kms.server.TestKMS.access$100(TestKMS.java:97)"
+            ],
+            "RootCause": "The intermittent failure is likely due to improper handling of access control lists (ACLs) within the KMS. The test case expects that certain operations, such as re-encrypting keys, should be restricted based on the user's permissions. However, the current implementation may not be enforcing these restrictions correctly, leading to the assertion failure when the test attempts to validate the expected behavior.",
+            "StepsToReproduce": [
+                "Run the test suite for the KMS module, specifically targeting the `TestKMS` class.",
+                "Observe the execution of the `testACLs` method, which includes scenarios for key re-encryption.",
+                "Note the intermittent nature of the failure, which may not occur on every run."
+            ],
+            "ExpectedBehavior": "The test should pass without throwing an `AssertionError`, confirming that the re-encryption operation is correctly restricted based on the user's permissions as defined in the ACLs.",
+            "ObservedBehavior": "The test fails intermittently, throwing an `AssertionError` indicating that a re-encryption operation was incorrectly allowed.",
+            "Suggestions": "Review the implementation of the KMS access control logic, particularly the methods responsible for handling key re-encryption requests. Ensure that the ACLs are correctly configured and enforced. Consider adding additional logging around the permission checks to help diagnose why the assertion fails intermittently. Additionally, review the test case to ensure it accurately reflects the expected behavior of the KMS under various user permissions."
+        }
+    },
+    {
+        "filename": "HADOOP-10540.json",
+        "creation_time": "2014-04-11T05:14:07.000+0000",
+        "bug_report": {
+            "Title": "Datanode Upgrade on Windows Fails with Hardlink Error During Hadoop Upgrade",
+            "Description": "When upgrading from Hadoop 1.x to 2.4 on a Windows environment, the DataNode fails to start due to a hard link exception. The issue arises during the upgrade process when the DataNode attempts to create hard links for block storage, leading to an IOException caused by incorrect command line arguments.",
+            "StackTrace": [
+                "2014-04-10 22:47:12,254 FATAL org.apache.hadoop.hdfs.server.datanode.DataNode: Initialization failed for block pool Block pool <registering> (Datanode Uuid unassigned) service to myhost/10.0.0.1:8020",
+                "java.io.IOException: Usage: hardlink create [LINKNAME] [FILENAME] |Incorrect command line arguments.",
+                "at org.apache.hadoop.fs.HardLink.createHardLinkMult(HardLink.java:479)",
+                "at org.apache.hadoop.fs.HardLink.createHardLinkMult(HardLink.java:416)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataStorage.linkBlocks(DataStorage.java:816)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataStorage.linkAllBlocks(DataStorage.java:759)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataStorage.doUpgrade(DataStorage.java:566)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataStorage.doTransition(DataStorage.java:486)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataStorage.recoverTransitionRead(DataStorage.java:225)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataStorage.recoverTransitionRead(DataStorage.java:249)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.initStorage(DataNode.java:929)",
+                "at org.apache.hadoop.hdfs.server.datanode.DataNode.initBlockPool(DataNode.java:900)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPOfferService.verifyAndSetNamespaceInfo(BPOfferService.java:274)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPServiceActor.connectToNNAndHandshake(BPServiceActor.java:220)",
+                "at org.apache.hadoop.hdfs.server.datanode.BPServiceActor.run(BPServiceActor.java:815)",
+                "at java.lang.Thread.run(Thread.java:722)"
+            ],
+            "RootCause": "The root cause of the issue is an IOException thrown in the `createHardLinkMult` method of the `HardLink` class due to incorrect command line arguments provided for creating hard links. This indicates a failure in the command-line parsing logic or the parameters being passed during the upgrade process.",
+            "StepsToReproduce": [
+                "Install Hadoop 1.x.",
+                "Run `hadoop dfsadmin -safemode enter`.",
+                "Run `hadoop dfsadmin -saveNamespace`.",
+                "Run `hadoop namenode -finalize`.",
+                "Stop all Hadoop services.",
+                "Uninstall Hadoop 1.x.",
+                "Install Hadoop 2.4.",
+                "Start the namenode with the `-upgrade` option.",
+                "Attempt to start the datanode."
+            ],
+            "ExpectedBehavior": "The DataNode should start successfully after the upgrade process without throwing any exceptions related to hard links.",
+            "ObservedBehavior": "The DataNode fails to start, and the logs indicate a hard link exception due to incorrect command line arguments.",
+            "Suggestions": "Review the command line arguments being passed to the `createHardLinkMult` method in the `HardLink` class. Ensure that the arguments conform to the expected format for creating hard links. Additionally, consider adding validation for command line arguments before invoking the hard link creation process to prevent such errors during upgrades."
+        }
+    },
+    {
+        "filename": "HADOOP-7629.json",
+        "creation_time": "2011-09-09T17:45:14.000+0000",
+        "bug_report": {
+            "Title": "Regression in MAPREDUCE-2289: setPermission Passed Immutable FsPermission Leading to RPC Failure",
+            "Description": "The issue arises from a change introduced in MAPREDUCE-2289, where the method `fs.setPermission(stagingArea, JOB_DIR_PERMISSION)` is called with `JOB_DIR_PERMISSION`, an immutable instance of `FsPermission`. This results in a `NoSuchMethodException` during RPC calls, as the inner class `FsPermission$2` does not have a no-argument constructor, leading to failures in reading call parameters.",
+            "StackTrace": [
+                "2011-09-08 16:31:45,187 WARN org.apache.hadoop.ipc.Server: Unable to read call parameters for client 127.0.0.1",
+                "java.lang.RuntimeException: java.lang.NoSuchMethodException: org.apache.hadoop.fs.permission.FsPermission$2.<init>()",
+                "at org.apache.hadoop.util.ReflectionUtils.newInstance(ReflectionUtils.java:115)",
+                "at org.apache.hadoop.io.WritableFactories.newInstance(WritableFactories.java:53)",
+                "at org.apache.hadoop.io.ObjectWritable.readObject(ObjectWritable.java:236)",
+                "at org.apache.hadoop.ipc.RPC$Invocation.readFields(RPC.java:104)",
+                "at org.apache.hadoop.ipc.Server$Connection.processData(Server.java:1337)",
+                "at org.apache.hadoop.ipc.Server$Connection.processOneRpc(Server.java:1315)",
+                "at org.apache.hadoop.ipc.Server$Connection.readAndProcess(Server.java:1215)",
+                "at org.apache.hadoop.ipc.Server$Listener.doRead(Server.java:566)",
+                "at org.apache.hadoop.ipc.Server$Listener$Reader.run(Server.java:363)",
+                "Caused by: java.lang.NoSuchMethodException: org.apache.hadoop.fs.permission.FsPermission$2.<init>()",
+                "at java.lang.Class.getConstructor0(Class.java:2706)",
+                "at java.lang.Class.getDeclaredConstructor(Class.java:1985)",
+                "at org.apache.hadoop.util.ReflectionUtils.newInstance(ReflectionUtils.java:109)"
+            ],
+            "RootCause": "The root cause of the issue is the use of an immutable `FsPermission` instance in an RPC call, which requires a no-argument constructor for the inner class `FsPermission$2`. The absence of this constructor leads to a `NoSuchMethodException` when attempting to instantiate the class via reflection.",
+            "StepsToReproduce": [
+                "1. Set up a Hadoop environment with the version that includes MAPREDUCE-2289.",
+                "2. Attempt to execute a job that involves setting permissions using `fs.setPermission(stagingArea, JOB_DIR_PERMISSION)`.",
+                "3. Observe the logs for the `NoSuchMethodException` related to `FsPermission$2`."
+            ],
+            "ExpectedBehavior": "The expected behavior is for the `setPermission` method to execute successfully without throwing any exceptions, allowing the job to proceed with the correct permissions set.",
+            "ObservedBehavior": "The observed behavior is that the job fails with a `NoSuchMethodException`, preventing the correct execution of the RPC call and leading to a failure in reading call parameters.",
+            "Suggestions": "To resolve this issue, ensure that the `FsPermission$2` class has a public no-argument constructor. Additionally, verify that the class is properly included in the classpath and instantiated correctly in the context of its outer class. Consider refactoring the use of immutable `FsPermission` instances in RPC calls to avoid similar issues in the future."
+        }
+    },
+    {
+        "filename": "HADOOP-15060.json",
+        "creation_time": "2017-11-22T00:18:55.000+0000",
+        "bug_report": {
+            "Title": "Flaky Test in TestShellBasedUnixGroupsMapping.testFiniteGroupResolutionTime",
+            "Description": "The test 'testFiniteGroupResolutionTime' in the 'TestShellBasedUnixGroupsMapping' class is failing intermittently due to an unexpected log message. The test expects a log message indicating a command timeout, but instead, it receives a warning about a non-existing user. This discrepancy leads to an AssertionError, causing the test to fail.",
+            "StackTrace": [
+                "[ERROR] testFiniteGroupResolutionTime(org.apache.hadoop.security.TestShellBasedUnixGroupsMapping)  Time elapsed: 61.975 s  <<< FAILURE!",
+                "java.lang.AssertionError: ",
+                "Expected the logs to carry a message about command timeout but was: 2017-11-22 00:10:57,523 WARN  security.ShellBasedUnixGroupsMapping (ShellBasedUnixGroupsMapping.java:getUnixGroups(181)) - unable to return groups for user foobarnonexistinguser",
+                "PartialGroupNameException The user name 'foobarnonexistinguser' is not found.",
+                "at org.apache.hadoop.security.ShellBasedUnixGroupsMapping.resolvePartialGroupNames(ShellBasedUnixGroupsMapping.java:275)",
+                "at org.apache.hadoop.security.ShellBasedUnixGroupsMapping.getUnixGroups(ShellBasedUnixGroupsMapping.java:178)",
+                "at org.apache.hadoop.security.ShellBasedUnixGroupsMapping.getGroups(ShellBasedUnixGroupsMapping.java:97)",
+                "at org.apache.hadoop.security.TestShellBasedUnixGroupsMapping.testFiniteGroupResolutionTime(TestShellBasedUnixGroupsMapping.java:278)"
+            ],
+            "RootCause": "The root cause of the issue is that the test is expecting a specific log message regarding command timeout, which is not being generated. Instead, a warning is logged due to the absence of the user 'foobarnonexistinguser'. This indicates that the test may not be handling cases where the user does not exist properly.",
+            "StepsToReproduce": [
+                "Run the test suite for 'TestShellBasedUnixGroupsMapping'.",
+                "Observe the output for 'testFiniteGroupResolutionTime'.",
+                "Note the AssertionError related to the expected log message."
+            ],
+            "ExpectedBehavior": "The test should pass without any AssertionError, and the logs should contain a message indicating a command timeout when the user is not found.",
+            "ObservedBehavior": "The test fails with an AssertionError because the expected log message about command timeout is missing, and instead, a warning about a non-existing user is logged.",
+            "Suggestions": "1. Modify the test to handle cases where the user does not exist, possibly by mocking the user lookup to ensure that the expected log message is generated. \n2. Review the implementation of the 'getUnixGroups' method in the 'ShellBasedUnixGroupsMapping' class to ensure it correctly logs the expected timeout message under the right conditions. \n3. Consider adding additional logging to capture more context when the user is not found, which may help in diagnosing similar issues in the future."
+        }
+    },
+    {
+        "filename": "HADOOP-10937.json",
+        "creation_time": "2014-08-04T21:22:55.000+0000",
+        "bug_report": {
+            "Title": "Null Pointer Exception in KMSClientProvider during File Touch Operation",
+            "Description": "When executing the command to create a file using the 'touchz' operation in Hadoop, a Null Pointer Exception is thrown. This issue arises specifically in the decryption process of the encrypted key, indicating a potential misconfiguration or missing initialization of required parameters.",
+            "StackTrace": [
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.crypto.key.kms.KMSClientProvider.decryptEncryptedKey(KMSClientProvider.java:652)",
+                "at org.apache.hadoop.crypto.key.KeyProviderCryptoExtension.decryptEncryptedKey(KeyProviderCryptoExtension.java:342)",
+                "at org.apache.hadoop.hdfs.DFSClient.decryptEncryptedDataEncryptionKey(DFSClient.java:1319)",
+                "at org.apache.hadoop.hdfs.DFSClient.createWrappedOutputStream(DFSClient.java:1364)",
+                "at org.apache.hadoop.hdfs.DFSClient.createWrappedOutputStream(DFSClient.java:1352)",
+                "at org.apache.hadoop.hdfs.DistributedFileSystem$6.doCall(DistributedFileSystem.java:391)",
+                "at org.apache.hadoop.hdfs.DistributedFileSystem$6.doCall(DistributedFileSystem.java:384)",
+                "at org.apache.hadoop.fs.FileSystemLinkResolver.resolve(FileSystemLinkResolver.java:81)",
+                "at org.apache.hadoop.hdfs.DistributedFileSystem.create(DistributedFileSystem.java:384)",
+                "at org.apache.hadoop.hdfs.DistributedFileSystem.create(DistributedFileSystem.java:328)",
+                "at org.apache.hadoop.fs.FileSystem.create(FileSystem.java:906)",
+                "at org.apache.hadoop.fs.FileSystem.create(FileSystem.java:887)"
+            ],
+            "RootCause": "The Null Pointer Exception is likely caused by an uninitialized or improperly configured key provider, which is accessed in the 'decryptEncryptedKey' method of the KMSClientProvider class. This suggests that the necessary encryption keys or configurations are not set before the decryption process is attempted.",
+            "StepsToReproduce": [
+                "Execute the command: hdfs dfs -touchz /enc3/touchFile",
+                "Monitor the logs for any Null Pointer Exceptions during the execution."
+            ],
+            "ExpectedBehavior": "The 'touchz' command should successfully create an empty file without throwing any exceptions.",
+            "ObservedBehavior": "A Null Pointer Exception is thrown, preventing the successful creation of the file.",
+            "Suggestions": "1. Ensure that the key provider is correctly initialized and configured before invoking the 'touchz' command. Check the KMS configuration settings to verify that the necessary keys are available.\n2. Review the implementation of the 'decryptEncryptedKey' method to handle potential null references more gracefully, possibly by adding checks for null values before accessing them.\n3. Consider adding logging to capture the state of the key provider and any relevant parameters before the decryption process to aid in debugging."
+        }
+    },
+    {
+        "filename": "HADOOP-9103.json",
+        "creation_time": "2012-04-20T01:07:25.000+0000",
+        "bug_report": {
+            "Title": "UTF8 Class Does Not Properly Decode Unicode Characters Outside the Basic Multilingual Plane",
+            "Description": "An IOException is thrown indicating a lease issue for a non-existent file in Hadoop's SecondaryNameNode. The error occurs during the checkpointing process when the system attempts to load files under construction. The issue appears to stem from inconsistencies in how UTF8 encoding is handled in the FSImage saving process, particularly when dealing with file names that contain characters outside the basic multilingual plane.",
+            "StackTrace": [
+                "2012-03-28 00:48:42,553 ERROR org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode: java.io.IOException: Found lease for non-existent file /user/boss/pgv/fission/task16/split/_temporary/_attempt_201203271849_0016_r_000174_0/????@???????????????",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.loadFilesUnderConstruction(FSImage.java:1211)",
+                "at org.apache.hadoop.hdfs.server.namenode.FSImage.loadFSImage(FSImage.java:959)",
+                "at org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode$CheckpointStorage.doMerge(SecondaryNameNode.java:589)",
+                "at org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode.doMerge(SecondaryNameNode.java:350)",
+                "at org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode.doCheckpoint(SecondaryNameNode.java:314)",
+                "at org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode.run(SecondaryNameNode.java:225)",
+                "at java.lang.Thread.run(Thread.java:619)"
+            ],
+            "RootCause": "The root cause of the issue is identified as a mismatch in UTF8 encoding methods used in the FSImage saving process. Specifically, the method 'child.getLocalNameBytes()' uses 'str.getBytes(\"UTF8\")', while 'writeINodeUnderConstruction' uses the UTF8 class to encode strings. This inconsistency leads to discrepancies in byte arrays for file names containing special characters, resulting in the IOException.",
+            "StepsToReproduce": [
+                "Create a file with a name that includes Unicode characters outside the basic multilingual plane.",
+                "Attempt to save the FSImage while the file is under construction.",
+                "Observe the IOException in the logs indicating a lease for a non-existent file."
+            ],
+            "ExpectedBehavior": "The system should correctly handle file names with Unicode characters and not throw an IOException for non-existent files during the checkpointing process.",
+            "ObservedBehavior": "An IOException is thrown indicating a lease for a non-existent file, which is caused by improper handling of UTF8 encoding for file names.",
+            "Suggestions": "Refactor the FSImage saving methods to ensure consistent use of UTF8 encoding. Specifically, replace the use of 'str.getBytes(\"UTF8\")' with the UTF8 class for encoding file names in both 'saveImage' and 'writeINodeUnderConstruction' methods. This should resolve the discrepancies in byte arrays and prevent the IOException from occurring."
+        }
+    },
+    {
+        "filename": "HADOOP-11151.json",
+        "creation_time": "2014-09-29T08:18:04.000+0000",
+        "bug_report": {
+            "Title": "Authentication Failure When Accessing KMS After Initial Success",
+            "Description": "After enabling CFS and KMS services in the cluster, the application initially allows file operations in the encryption zone. However, after a period of time (approximately one day), attempts to put or copy files into the encryption zone fail with a 403 Forbidden error. The logs indicate an AuthenticationException due to disallowed anonymous requests, suggesting that the authentication token is not being refreshed or is expiring without a retry mechanism in place.",
+            "StackTrace": [
+                "java.util.concurrent.ExecutionException: java.io.IOException: HTTP status [403], message [Forbidden]",
+                "org.apache.hadoop.security.authentication.server.PseudoAuthenticationHandler.authenticate(PseudoAuthenticationHandler.java:184)",
+                "org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationHandler.authenticate(DelegationTokenAuthenticationHandler.java:331)",
+                "org.apache.hadoop.security.authentication.server.AuthenticationFilter.doFilter(AuthenticationFilter.java:507)",
+                "org.apache.hadoop.crypto.key.kms.server.KMSAuthenticationFilter.doFilter(KMSAuthenticationFilter.java:129)",
+                "org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:235)",
+                "org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:206)",
+                "org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:233)",
+                "org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:191)",
+                "org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:127)",
+                "org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:103)",
+                "org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:109)",
+                "org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:293)",
+                "org.apache.coyote.http11.Http11Processor.process(Http11Processor.java:861)",
+                "org.apache.coyote.http11.Http11Protocol$Http11ConnectionHandler.process(Http11Protocol.java:606)",
+                "org.apache.tomcat.util.net.JIoEndpoint$Worker.run(JIoEndpoint.java:489)",
+                "java.lang.Thread.run(Thread.java:745)"
+            ],
+            "RootCause": "The root cause of the issue is the failure to refresh the authentication token, leading to an AuthenticationException when the application attempts to access the KMS after the initial successful operations. The application is configured to disallow anonymous requests, and the incoming requests lack valid authentication credentials.",
+            "StepsToReproduce": [
+                "Enable CFS and KMS services in the Hadoop cluster.",
+                "Perform file operations (put/copy) in the encryption zone successfully.",
+                "Wait for approximately one day.",
+                "Attempt to perform file operations again and observe the 403 Forbidden error."
+            ],
+            "ExpectedBehavior": "The application should allow continuous file operations in the encryption zone without encountering authentication errors, even after a period of inactivity.",
+            "ObservedBehavior": "After a period of time, attempts to put or copy files into the encryption zone result in a 403 Forbidden error due to authentication failure.",
+            "Suggestions": "Implement a mechanism to automatically refresh the authentication token before it expires and retry the operation upon encountering an authentication failure. Alternatively, consider allowing anonymous access in the configuration if appropriate for your security model."
+        }
+    },
+    {
+        "filename": "HADOOP-8031.json",
+        "creation_time": "2012-02-07T20:22:24.000+0000",
+        "bug_report": {
+            "Title": "Configuration class fails to find embedded .jar resources; should use URL.openStream()",
+            "Description": "While running a Hadoop client within RHQ (monitoring software) using its classloader, an error occurs indicating that the `core-site.xml` configuration file cannot be found. The logs show that the system attempts to parse a resource from a jar file but fails due to the incorrect handling of the URL. The current implementation uses `url.toString()` which does not provide a valid input for the DocumentBuilder. Instead, the resource stream should be obtained directly from the URL object using `url.openStream()`.",
+            "StackTrace": [
+                "2012-02-07 09:15:25,313 INFO  [ResourceContainer.invoker.daemon-2] (org.apache.hadoop.conf.Configuration)- parsing jar:file:/usr/local/rhq-agent/data/tmp/rhq-hadoop-plugin-4.3.0-SNAPSHOT.jar6856622641102893436.classloader/hadoop-core-0.20.2+737+1.jar7204287718482036191.tmp!/core-default.xml",
+                "2012-02-07 09:15:25,318 ERROR [InventoryManager.discovery-1] (rhq.core.pc.inventory.InventoryManager)- Failed to start component for Resource[id=16290, type=NameNode, key=NameNode:/usr/lib/hadoop-0.20, name=NameNode, parent=vg61l01ad-hadoop002.apple.com] from synchronized merge.",
+                "org.rhq.core.clientapi.agent.PluginContainerException: Failed to start component for resource Resource[id=16290, type=NameNode, key=NameNode:/usr/lib/hadoop-0.20, name=NameNode, parent=vg61l01ad-hadoop002.apple.com].",
+                "Caused by: java.lang.RuntimeException: core-site.xml not found",
+                "at org.apache.hadoop.conf.Configuration.loadResource(Configuration.java:1308)",
+                "at org.apache.hadoop.conf.Configuration.loadResources(Configuration.java:1228)",
+                "at org.apache.hadoop.conf.Configuration.getProps(Configuration.java:1169)",
+                "at org.apache.hadoop.conf.Configuration.set(Configuration.java:438)"
+            ],
+            "RootCause": "The root cause of the issue is the failure to locate the `core-site.xml` configuration file, which is essential for the Hadoop component to start. The current implementation of the Configuration class does not correctly handle the URL for embedded resources, leading to a RuntimeException.",
+            "StepsToReproduce": [
+                "1. Set up RHQ monitoring software with Hadoop client.",
+                "2. Attempt to start the Hadoop component (e.g., NameNode).",
+                "3. Observe the logs for errors related to `core-site.xml` not being found."
+            ],
+            "ExpectedBehavior": "The Hadoop component should start successfully without errors, and the `core-site.xml` configuration file should be loaded correctly.",
+            "ObservedBehavior": "The system fails to start the Hadoop component due to a missing `core-site.xml` file, resulting in a RuntimeException.",
+            "Suggestions": "To resolve this issue, ensure that the `core-site.xml` file is present in the Hadoop configuration directory. Additionally, modify the Configuration class to use `url.openStream()` instead of `url.toString()` when parsing resources. A patch for this change is pending approval."
+        }
+    },
+    {
+        "filename": "HADOOP-15411.json",
+        "creation_time": "2018-04-24T23:18:39.000+0000",
+        "bug_report": {
+            "Title": "Node Manager Startup Failure Due to ConcurrentModificationException",
+            "Description": "The Node Manager fails to start, resulting in a YarnRuntimeException. The root cause is a ConcurrentModificationException occurring during the iteration of a Hashtable in the Configuration class, which affects the initialization of the NMWebapps.",
+            "StackTrace": [
+                "2018-04-19 13:08:30,638 ERROR nodemanager.NodeManager (NodeManager.java:initAndStartNodeManager(921)) - Error starting NodeManager",
+                "org.apache.hadoop.yarn.exceptions.YarnRuntimeException: NMWebapps failed to start.",
+                "at org.apache.hadoop.yarn.server.nodemanager.webapp.WebServer.serviceStart(WebServer.java:117)",
+                "at org.apache.hadoop.service.AbstractService.start(AbstractService.java:194)",
+                "at org.apache.hadoop.service.CompositeService.serviceStart(CompositeService.java:121)",
+                "at org.apache.hadoop.service.AbstractService.start(AbstractService.java:194)",
+                "at org.apache.hadoop.yarn.server.nodemanager.NodeManager.initAndStartNodeManager(NodeManager.java:919)",
+                "at org.apache.hadoop.yarn.server.nodemanager.NodeManager.main(NodeManager.java:979)",
+                "Caused by: org.apache.hadoop.yarn.webapp.WebAppException: Error starting http server",
+                "at org.apache.hadoop.yarn.webapp.WebApps$Builder.build(WebApps.java:377)",
+                "at org.apache.hadoop.yarn.webapp.WebApps$Builder.start(WebApps.java:424)",
+                "at org.apache.hadoop.yarn.webapp.WebApps$Builder.start(WebApps.java:420)",
+                "at org.apache.hadoop.yarn.server.nodemanager.webapp.WebServer.serviceStart(WebServer.java:112)",
+                "... 5 more",
+                "Caused by: java.io.IOException: java.util.ConcurrentModificationException",
+                "at org.apache.hadoop.http.HttpServer2.<init>(HttpServer2.java:532)",
+                "at org.apache.hadoop.http.HttpServer2.<init>(HttpServer2.java:117)",
+                "at org.apache.hadoop.http.HttpServer2$Builder.build(HttpServer2.java:421)",
+                "at org.apache.hadoop.yarn.webapp.WebApps$Builder.build(WebApps.java:333)",
+                "... 8 more",
+                "Caused by: java.util.ConcurrentModificationException",
+                "at java.util.Hashtable$Enumerator.next(Hashtable.java:1383)",
+                "at org.apache.hadoop.conf.Configuration.iterator(Configuration.java:2853)",
+                "at org.apache.hadoop.security.AuthenticationFilterInitializer.getFilterConfigMap(AuthenticationFilterInitializer.java:73)",
+                "at org.apache.hadoop.http.HttpServer2.getFilterProperties(HttpServer2.java:647)",
+                "at org.apache.hadoop.http.HttpServer2.constructSecretProvider(HttpServer2.java:637)",
+                "at org.apache.hadoop.http.HttpServer2.<init>(HttpServer2.java:525)",
+                "... 11 more"
+            ],
+            "RootCause": "The root cause of the issue is a ConcurrentModificationException that occurs when iterating over a Hashtable in the Configuration class. This indicates that the configuration properties are being modified concurrently while being accessed, leading to instability during the Node Manager's startup process.",
+            "StepsToReproduce": [
+                "Start the Node Manager in a multi-threaded environment where configuration properties may be modified concurrently.",
+                "Observe the logs for YarnRuntimeException and ConcurrentModificationException."
+            ],
+            "ExpectedBehavior": "The Node Manager should start successfully without throwing any exceptions, allowing the NMWebapps to initialize properly.",
+            "ObservedBehavior": "The Node Manager fails to start, throwing a YarnRuntimeException due to an underlying ConcurrentModificationException.",
+            "Suggestions": "To resolve this issue, ensure that the configuration properties are accessed in a thread-safe manner. Consider using concurrent collections or synchronizing access to the Hashtable in the Configuration class. Additionally, review the code in the AuthenticationFilterInitializer and HttpServer2 classes to ensure they handle configuration properties correctly without causing concurrent modifications."
+        }
+    },
+    {
+        "filename": "HADOOP-15850.json",
+        "creation_time": "2018-10-13T14:24:29.000+0000",
+        "bug_report": {
+            "Title": "Inconsistent Sequence File Error in CopyCommitter#concatFileChunks",
+            "Description": "During the execution of the `TestIncrementalBackupWithBulkLoad` test case in HBase against Hadoop 3.1.1, an inconsistency in the sequence file was encountered. The `BackupDistCp` class is responsible for creating a listing file, but the subsequent execution of `CopyCommitter#concatFileChunks` throws an `IOException` indicating that the current chunk file does not match the prior entry. This issue arises despite the two bulk-loaded HFiles being independent, suggesting a potential flaw in how the `CopyCommitter` handles file chunks.",
+            "StackTrace": [
+                "java.io.IOException: Inconsistent sequence file: current chunk file org.apache.hadoop.tools.CopyListingFileStatus@bb8826ee{hdfs://localhost:42796/user/hbase/test-data/160aeab5-6bca-9f87-465e-2517a0c43119/data/default/test-1539439707496/96b5a3613d52f4df1ba87a1cef20684c/f/a7599081e835440eb7bf0dd3ef4fd7a5_SeqId_205_ length = 5100 aclEntries  = null, xAttrs = null} doesn't match prior entry org.apache.hadoop.tools.CopyListingFileStatus@243d544d{hdfs://localhost:42796/user/hbase/test-data/160aeab5-6bca-9f87-465e-2517a0c43119/data/default/test-1539439707496/96b5a3613d52f4df1ba87a1cef20684c/f/394e6d39a9b94b148b9089c4fb967aad_SeqId_205_ length = 5142 aclEntries = null, xAttrs = null}",
+                "at org.apache.hadoop.tools.mapred.CopyCommitter.concatFileChunks(CopyCommitter.java:276)",
+                "at org.apache.hadoop.tools.mapred.CopyCommitter.commitJob(CopyCommitter.java:100)",
+                "at org.apache.hadoop.mapred.LocalJobRunner$Job.run(LocalJobRunner.java:567)"
+            ],
+            "RootCause": "The root cause of the issue appears to be related to the handling of file chunks in the `CopyCommitter` class. The `isSplit()` method returns false for both `CopyListingFileStatus` instances, indicating that the files are not being treated as splitable, which leads to the inconsistency when attempting to concatenate chunks. This could be due to a lack of proper checks for the number of blocks per chunk.",
+            "StepsToReproduce": [
+                "Run the `TestIncrementalBackupWithBulkLoad` test case in HBase against Hadoop 3.1.1.",
+                "Ensure that two bulk-loaded HFiles are present in the listing.",
+                "Observe the logs for the creation of the input listing and the execution of `CopyCommitter#concatFileChunks`."
+            ],
+            "ExpectedBehavior": "The `CopyCommitter` should successfully concatenate the chunks of the sequence files without throwing an `IOException`, indicating that the files are consistent and can be processed as expected.",
+            "ObservedBehavior": "An `IOException` is thrown during the execution of `CopyCommitter#concatFileChunks`, indicating an inconsistency between the current and prior chunk files.",
+            "Suggestions": "1. Review the implementation of `CopyCommitter#concatFileChunks` to ensure that it properly checks the number of blocks per chunk before attempting to concatenate. 2. Implement additional logging to capture the state of the files being processed, particularly their lengths and attributes. 3. Verify the integrity of the HFiles being processed and ensure that there are no concurrency issues affecting the file states."
+        }
+    },
+    {
+        "filename": "HADOOP-11693.json",
+        "creation_time": "2015-03-05T23:19:13.000+0000",
+        "bug_report": {
+            "Title": "Throttling Issues in Azure Storage Affecting HBase WAL Archiving",
+            "Description": "A customer reported that their production HBase clusters were periodically throttled by Azure storage during the archiving of old Write-Ahead Logs (WALs). This led to the HMaster aborting the region server and attempting to restart it. However, due to continued throttling, the distributed log splitting failed, causing the hbase:meta table to go offline and putting the entire cluster in a bad state.",
+            "StackTrace": [
+                "2015-03-01 18:36:45,623 ERROR org.apache.hadoop.hbase.master.HMaster: Region server workernode4.hbaseproddb4001.f5.internal.cloudapp.net,60020,1424845421044 reported a fatal error: ABORTING region server workernode4.hbaseproddb4001.f5.internal.cloudapp.net,60020,1424845421044: IOE in log roller",
+                "Caused by: org.apache.hadoop.fs.azure.AzureException: com.microsoft.windowsazure.storage.StorageException: The server is busy.",
+                "at org.apache.hadoop.fs.azurenative.AzureNativeFileSystemStore.rename(AzureNativeFileSystemStore.java:2446)",
+                "at org.apache.hadoop.fs.azurenative.AzureNativeFileSystemStore.rename(AzureNativeFileSystemStore.java:2367)",
+                "at org.apache.hadoop.fs.azurenative.NativeAzureFileSystem.rename(NativeAzureFileSystem.java:1960)",
+                "at org.apache.hadoop.hbase.util.FSUtils.renameAndSetModifyTime(FSUtils.java:1719)",
+                "at org.apache.hadoop.hbase.regionserver.wal.FSHLog.archiveLogFile(FSHLog.java:798)",
+                "at org.apache.hadoop.hbase.regionserver.wal.FSHLog.cleanOldLogs(FSHLog.java:656)",
+                "at org.apache.hadoop.hbase.regionserver.wal.FSHLog.rollWriter(FSHLog.java:593)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "RootCause": "The root cause of the issue is the aggressive throttling of Azure storage during rename operations, which are critical for archiving WALs. The rename operation involves copying the source blob to a destination blob and deleting the source blob, which is resource-intensive and prone to throttling, especially during Azure storage garbage collection.",
+            "StepsToReproduce": [
+                "Set up an HBase cluster with Azure storage as the backend.",
+                "Generate a significant amount of WAL data.",
+                "Trigger the archiving of old WALs while monitoring Azure storage performance."
+            ],
+            "ExpectedBehavior": "The HBase cluster should successfully archive old WALs without encountering throttling issues, allowing for smooth operation and maintenance of the region servers.",
+            "ObservedBehavior": "The HBase cluster experiences throttling from Azure storage, leading to aborted region servers and offline hbase:meta tables, resulting in a degraded state of the entire cluster.",
+            "Suggestions": "Implement a more robust retry policy for the rename operation in the AzureNativeFileSystemStore class. Consider increasing the maximum duration of retries and implementing a backoff strategy that allows for longer wait times between attempts when throttling is detected. Additionally, monitor Azure storage performance and adjust the archiving process to avoid peak usage times."
+        }
+    },
+    {
+        "filename": "HADOOP-12441.json",
+        "creation_time": "2015-09-25T23:26:43.000+0000",
+        "bug_report": {
+            "Title": "Fix kill command behavior under some Linux distributions",
+            "Description": "After the implementation of HADOOP-12317, the kill command's execution fails under Ubuntu 12. The NodeManager (NM) fails to determine if a process is alive using the PID of containers, resulting in an inability to kill processes correctly when instructed by the ResourceManager (RM) or ApplicationMaster (AM). This issue manifests as an `ExitCodeException` with the message 'ERROR: garbage process ID \"--\".'",
+            "StackTrace": [
+                "at org.apache.hadoop.util.Shell.runCommand(Shell.java:550)",
+                "at org.apache.hadoop.util.Shell.run(Shell.java:461)",
+                "at org.apache.hadoop.util.Shell$ShellCommandExecutor.execute(Shell.java:727)",
+                "at org.apache.hadoop.yarn.server.nodemanager.DefaultContainerExecutor.containerIsAlive(DefaultContainerExecutor.java:432)",
+                "at org.apache.hadoop.yarn.server.nodemanager.DefaultContainerExecutor.signalContainer(DefaultContainerExecutor.java:401)",
+                "at org.apache.hadoop.yarn.server.nodemanager.containermanager.launcher.ContainerLaunch.cleanupContainer(ContainerLaunch.java:419)",
+                "at org.apache.hadoop.yarn.server.nodemanager.containermanager.launcher.ContainersLauncher.handle(ContainersLauncher.java:139)",
+                "at org.apache.hadoop.yarn.server.nodemanager.containermanager.launcher.ContainersLauncher.handle(ContainersLauncher.java:55)",
+                "at org.apache.hadoop.yarn.event.AsyncDispatcher.dispatch(AsyncDispatcher.java:175)",
+                "at org.apache.hadoop.yarn.event.AsyncDispatcher$1.run(AsyncDispatcher.java:108)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "RootCause": "The root cause of the issue is the incorrect handling of process IDs in the kill command, specifically when the PID is represented as '--'. This leads to the command failing to execute properly, resulting in the observed exception.",
+            "StepsToReproduce": [
+                "Deploy Hadoop on Ubuntu 12.",
+                "Start a container using NodeManager.",
+                "Attempt to kill the container using the kill command.",
+                "Observe the logs for the ExitCodeException related to garbage process ID."
+            ],
+            "ExpectedBehavior": "The kill command should successfully terminate the specified process using its PID without errors.",
+            "ObservedBehavior": "The kill command fails with an ExitCodeException indicating a garbage process ID ('--'). The NodeManager cannot determine the process's status correctly.",
+            "Suggestions": "Review the implementation of the `DefaultContainerExecutor` class, particularly the `containerIsAlive` and `signalContainer` methods. Ensure that valid PIDs are passed to the kill command. Consider implementing additional validation to handle cases where the PID may be malformed or invalid. Testing should be conducted across various Linux distributions to ensure compatibility."
+        }
+    },
+    {
+        "filename": "HADOOP-11685.json",
+        "creation_time": "2015-03-06T22:00:14.000+0000",
+        "bug_report": {
+            "Title": "StorageException: No Lease ID during HBase Distributed Log Splitting",
+            "Description": "During the HBase distributed log splitting process, multiple threads access the same folder named 'recovered.edits'. The WASB (Windows Azure Storage Blob) code fails to acquire a lease on the blob, leading to an IOException. This issue is similar to HADOOP-11523 but occurs in a different context. The error is triggered when the system attempts to update the folder's last modified time without a valid lease ID, resulting in a failure to write to Azure Blob Storage.",
+            "StackTrace": [
+                "2015-02-26 03:21:28,871 WARN org.apache.hadoop.hbase.regionserver.SplitLogWorker: log splitting of WALs/workernode4.xxx.g6.internal.cloudapp.net,60020,1422071058425-splitting/workernode4.xxx.g6.internal.cloudapp.net%2C60020%2C1422071058425.1424914216773 failed, returning error",
+                "java.io.IOException: org.apache.hadoop.fs.azure.AzureException: java.io.IOException",
+                "at org.apache.hadoop.hbase.regionserver.wal.HLogSplitter.checkForErrors(HLogSplitter.java:633)",
+                "at org.apache.hadoop.hbase.regionserver.wal.HLogSplitter.access$000(HLogSplitter.java:121)",
+                "at org.apache.hadoop.hbase.regionserver.wal.HLogSplitter$OutputSink.finishWriting(HLogSplitter.java:964)",
+                "at org.apache.hadoop.hbase.regionserver.wal.HLogSplitter$LogRecoveredEditsOutputSink.finishWritingAndClose(HLogSplitter.java:1019)",
+                "at org.apache.hadoop.hbase.regionserver.wal.HLogSplitter.splitLogFile(HLogSplitter.java:359)",
+                "at org.apache.hadoop.hbase.regionserver.wal.HLogSplitter.splitLogFile(HLogSplitter.java:223)",
+                "at org.apache.hadoop.hbase.regionserver.SplitLogWorker$1.exec(SplitLogWorker.java:142)",
+                "at org.apache.hadoop.hbase.regionserver.handler.HLogSplitterHandler.process(HLogSplitterHandler.java:79)",
+                "at org.apache.hadoop.hbase.executor.EventHandler.run(EventHandler.java:128)",
+                "at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)",
+                "at java.lang.Thread.run(Thread.java:745)",
+                "Caused by: org.apache.hadoop.fs.azure.AzureException: java.io.IOException",
+                "at org.apache.hadoop.fs.azurenative.AzureNativeFileSystemStore.storeEmptyFolder(AzureNativeFileSystemStore.java:1477)",
+                "at org.apache.hadoop.fs.azurenative.NativeAzureFileSystem.mkdirs(NativeAzureFileSystem.java:1862)",
+                "at org.apache.hadoop.fs.azurenative.NativeAzureFileSystem.mkdirs(NativeAzureFileSystem.java:1812)",
+                "at org.apache.hadoop.fs.FileSystem.mkdirs(FileSystem.java:1815)",
+                "at org.apache.hadoop.hbase.regionserver.wal.HLogSplitter.getRegionSplitEditsPath(HLogSplitter.java:502)",
+                "at org.apache.hadoop.hbase.regionserver.wal.HLogSplitter$LogRecoveredEditsOutputSink.createWAP(HLogSplitter.java:1211)",
+                "at org.apache.hadoop.hbase.regionserver.wal.HLogSplitter$LogRecoveredEditsOutputSink.getWriterAndPath(HLogSplitter.java:1200)",
+                "at org.apache.hadoop.hbase.regionserver.wal.HLogSplitter$LogRecoveredEditsOutputSink.append(HLogSplitter.java:1243)",
+                "at org.apache.hadoop.hbase.regionserver.wal.HLogSplitter$WriterThread.writeBuffer(HLogSplitter.java:851)",
+                "at org.apache.hadoop.hbase.regionserver.wal.HLogSplitter$WriterThread.doRun(HLogSplitter.java:843)",
+                "at org.apache.hadoop.hbase.regionserver.wal.HLogSplitter$WriterThread.run(HLogSplitter.java:813)",
+                "Caused by: java.io.IOException",
+                "at com.microsoft.windowsazure.storage.core.Utility.initIOException(Utility.java:493)",
+                "at com.microsoft.windowsazure.storage.blob.BlobOutputStream.close(BlobOutputStream.java:282)",
+                "at org.apache.hadoop.fs.azurenative.AzureNativeFileSystemStore.storeEmptyFolder(AzureNativeFileSystemStore.java:1472)",
+                "... 10 more",
+                "Caused by: com.microsoft.windowsazure.storage.StorageException: There is currently a lease on the blob and no lease ID was specified in the request.",
+                "at com.microsoft.windowsazure.storage.StorageException.translateException(StorageException.java:163)",
+                "at com.microsoft.windowsazure.storage.core.StorageRequest.materializeException(StorageRequest.java:306)",
+                "at com.microsoft.windowsazure.storage.core.ExecutionEngine.executeWithRetry(ExecutionEngine.java:229)",
+                "at com.microsoft.windowsazure.storage.blob.CloudBlockBlob.commitBlockList(CloudBlockBlob.java:248)",
+                "at com.microsoft.windowsazure.storage.blob.BlobOutputStream.commit(BlobOutputStream.java:319)",
+                "at com.microsoft.windowsazure.storage.blob.BlobOutputStream.close(BlobOutputStream.java:279)",
+                "... 11 more"
+            ],
+            "RootCause": "The root cause of the issue is the failure to acquire a lease on the Azure Blob Storage, which is necessary for operations that modify the state of the blob. The absence of a lease ID in the request leads to a StorageException, preventing the log splitting process from completing successfully.",
+            "StepsToReproduce": [
+                "Set up an HBase environment with Azure Blob Storage as the backend.",
+                "Initiate the log splitting process while multiple threads attempt to access the same 'recovered.edits' folder.",
+                "Observe the logs for any warnings or errors related to lease acquisition."
+            ],
+            "ExpectedBehavior": "The log splitting process should complete successfully without any exceptions, allowing the system to write to the Azure Blob Storage without lease conflicts.",
+            "ObservedBehavior": "The log splitting process fails with a StorageException indicating that there is a lease on the blob and no lease ID was specified, preventing the operation from completing.",
+            "Suggestions": "To resolve this issue, ensure that the WASB code properly acquires a lease on the blob before attempting to write to it. Implement checks to handle lease acquisition failures gracefully and retry the operation with a valid lease ID. Additionally, consider reviewing the threading model to prevent multiple threads from accessing the same folder simultaneously."
+        }
+    },
+    {
+        "filename": "HADOOP-8589.json",
+        "creation_time": "2012-07-11T23:27:00.000+0000",
+        "bug_report": {
+            "Title": "ViewFs tests fail when tests and home dirs are nested",
+            "Description": "The `TestFSMainOperationsLocalFileSystem` fails when the test root directory is located under the user's home directory, particularly when the home directory is more than two levels deep from the root (`/`). This issue arises during the default 1-node installation of Jenkins. The failure is logged as follows:\n\n```\norg.apache.hadoop.fs.FileAlreadyExistsException: Path /var already exists as dir; cannot create link here\n\tat org.apache.hadoop.fs.viewfs.InodeTree.createLink(InodeTree.java:244)\n\tat org.apache.hadoop.fs.viewfs.InodeTree.<init>(InodeTree.java:334)\n\tat org.apache.hadoop.fs.viewfs.ViewFileSystem$1.<init>(ViewFileSystem.java:167)\n\tat org.apache.hadoop.fs.viewfs.ViewFileSystem.initialize(ViewFileSystem.java:167)\n\tat org.apache.hadoop.fs.FileSystem.createFileSystem(FileSystem.java:2094)\n\tat org.apache.hadoop.fs.FileSystem.access$200(FileSystem.java:79)\n\tat org.apache.hadoop.fs.FileSystem$Cache.getInternal(FileSystem.java:2128)\n\tat org.apache.hadoop.fs.FileSystem$Cache.get(FileSystem.java:2110)\n\tat org.apache.hadoop.fs.FileSystem.get(FileSystem.java:290)\n\tat org.apache.hadoop.fs.viewfs.ViewFileSystemTestSetup.setupForViewFileSystem(ViewFileSystemTestSetup.java:76)\n\tat org.apache.hadoop.fs.viewfs.TestFSMainOperationsLocalFileSystem.setUp(TestFSMainOperationsLocalFileSystem.java:40)\n```\n\nThe root cause of the failure is that the code attempts to mount links for both `/var` and `/var/lib`, leading to a conflict since `/var` is already mounted as a directory. This issue was previously addressed in HADOOP-8036 but was later reverted in HADOOP-8129.",
+            "StackTrace": [
+                "org.apache.hadoop.fs.FileAlreadyExistsException: Path /var already exists as dir; cannot create link here",
+                "at org.apache.hadoop.fs.viewfs.InodeTree.createLink(InodeTree.java:244)",
+                "at org.apache.hadoop.fs.viewfs.InodeTree.<init>(InodeTree.java:334)",
+                "at org.apache.hadoop.fs.viewfs.ViewFileSystem$1.<init>(ViewFileSystem.java:167)",
+                "at org.apache.hadoop.fs.viewfs.ViewFileSystem.initialize(ViewFileSystem.java:167)",
+                "at org.apache.hadoop.fs.FileSystem.createFileSystem(FileSystem.java:2094)",
+                "at org.apache.hadoop.fs.FileSystem.access$200(FileSystem.java:79)",
+                "at org.apache.hadoop.fs.FileSystem$Cache.getInternal(FileSystem.java:2128)",
+                "at org.apache.hadoop.fs.FileSystem$Cache.get(FileSystem.java:2110)",
+                "at org.apache.hadoop.fs.FileSystem.get(FileSystem.java:290)",
+                "at org.apache.hadoop.fs.viewfs.ViewFileSystemTestSetup.setupForViewFileSystem(ViewFileSystemTestSetup.java:76)",
+                "at org.apache.hadoop.fs.viewfs.TestFSMainOperationsLocalFileSystem.setUp(TestFSMainOperationsLocalFileSystem.java:40)"
+            ],
+            "RootCause": "The `FileAlreadyExistsException` is thrown because the `createLink` method in the `InodeTree` class checks for the existence of the path `/var` and finds it already occupied by a directory, preventing the creation of a new link.",
+            "StepsToReproduce": [
+                "Set up a default 1-node installation of Jenkins.",
+                "Create a test root directory under the user's home directory that is more than two levels deep.",
+                "Run the `TestFSMainOperationsLocalFileSystem` test."
+            ],
+            "ExpectedBehavior": "The test should pass without throwing any exceptions, and the links should be created successfully.",
+            "ObservedBehavior": "The test fails with a `FileAlreadyExistsException`, indicating that the path `/var` already exists as a directory.",
+            "Suggestions": "Review the logic in the `createLink` method of the `InodeTree` class to handle cases where the target path already exists. Consider implementing a check to avoid attempting to create a link if the path is already occupied by a directory. Additionally, revisit the changes made in HADOOP-8036 and HADOOP-8129 to determine if a suitable fix can be reintroduced."
+        }
+    },
+    {
+        "filename": "HADOOP-11754.json",
+        "creation_time": "2015-03-26T05:22:54.000+0000",
+        "bug_report": {
+            "Title": "ResourceManager Fails to Start in Non-Secure Mode Due to Authentication Filter Failure",
+            "Description": "The ResourceManager (RM) fails to start in non-secure mode, resulting in a critical error during initialization. The issue is triggered by the inability of the RMAuthenticationFilter to read the signature secret file, leading to a cascade of failures in the startup process.",
+            "StackTrace": [
+                "2015-03-25 22:02:42,526 WARN org.mortbay.log: failed RMAuthenticationFilter: javax.servlet.ServletException: java.lang.RuntimeException: Could not read signature secret file: /Users/sjlee/hadoop-http-auth-signature-secret",
+                "2015-03-25 22:02:42,526 WARN org.mortbay.log: Failed startup of context org.mortbay.jetty.webapp.WebAppContext@6de50b08{/,jar:file:/Users/sjlee/hadoop-3.0.0-SNAPSHOT/share/hadoop/yarn/hadoop-yarn-common-3.0.0-SNAPSHOT.jar!/webapps/cluster}",
+                "javax.servlet.ServletException: java.lang.RuntimeException: Could not read signature secret file: /Users/sjlee/hadoop-http-auth-signature-secret",
+                "at org.apache.hadoop.security.authentication.server.AuthenticationFilter.initializeSecretProvider(AuthenticationFilter.java:266)",
+                "at org.apache.hadoop.security.authentication.server.AuthenticationFilter.init(AuthenticationFilter.java:225)",
+                "at org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationFilter.init(DelegationTokenAuthenticationFilter.java:161)",
+                "at org.apache.hadoop.yarn.server.security.http.RMAuthenticationFilter.init(RMAuthenticationFilter.java:53)",
+                "at org.mortbay.jetty.servlet.FilterHolder.doStart(FilterHolder.java:97)",
+                "at org.mortbay.component.AbstractLifeCycle.start(AbstractLifeCycle.java:50)",
+                "at org.mortbay.jetty.servlet.ServletHandler.initialize(ServletHandler.java:713)",
+                "at org.mortbay.jetty.servlet.Context.startContext(Context.java:140)",
+                "at org.mortbay.jetty.webapp.WebAppContext.startContext(WebAppContext.java:1282)",
+                "at org.mortbay.jetty.handler.ContextHandler.doStart(ContextHandler.java:518)",
+                "at org.mortbay.jetty.webapp.WebAppContext.doStart(WebAppContext.java:499)",
+                "at org.mortbay.component.AbstractLifeCycle.start(AbstractLifeCycle.java:50)",
+                "at org.mortbay.jetty.handler.HandlerCollection.doStart(HandlerCollection.java:152)",
+                "at org.mortbay.component.AbstractLifeCycle.start(AbstractLifeCycle.java:50)",
+                "at org.mortbay.jetty.handler.HandlerWrapper.doStart(HandlerWrapper.java:130)",
+                "at org.mortbay.jetty.Server.doStart(Server.java:224)",
+                "at org.mortbay.component.AbstractLifeCycle.start(AbstractLifeCycle.java:50)",
+                "at org.apache.hadoop.http.HttpServer2.start(HttpServer2.java:773)",
+                "at org.apache.hadoop.yarn.webapp.WebApps$Builder.start(WebApps.java:274)",
+                "at org.apache.hadoop.yarn.server.resourcemanager.ResourceManager.startWepApp(ResourceManager.java:974)",
+                "at org.apache.hadoop.yarn.server.resourcemanager.ResourceManager.serviceStart(ResourceManager.java:1074)",
+                "at org.apache.hadoop.service.AbstractService.start(AbstractService.java:193)",
+                "at org.apache.hadoop.yarn.server.resourcemanager.ResourceManager.main(ResourceManager.java:1208)",
+                "Caused by: java.lang.RuntimeException: Could not read signature secret file: /Users/sjlee/hadoop-http-auth-signature-secret",
+                "at org.apache.hadoop.security.authentication.util.FileSignerSecretProvider.init(FileSignerSecretProvider.java:59)",
+                "at org.apache.hadoop.security.authentication.server.AuthenticationFilter.initializeSecretProvider(AuthenticationFilter.java:264)"
+            ],
+            "RootCause": "The root cause of the issue is the failure to read the signature secret file located at '/Users/sjlee/hadoop-http-auth-signature-secret'. This is likely due to the file being missing or having incorrect permissions.",
+            "StepsToReproduce": [
+                "Attempt to start the ResourceManager in non-secure mode.",
+                "Observe the startup logs for errors related to the RMAuthenticationFilter."
+            ],
+            "ExpectedBehavior": "The ResourceManager should start successfully in non-secure mode without any errors related to authentication filters.",
+            "ObservedBehavior": "The ResourceManager fails to start, logging errors indicating that it could not read the signature secret file.",
+            "Suggestions": "1. Verify the existence of the signature secret file at '/Users/sjlee/hadoop-http-auth-signature-secret'.\n2. Check the file permissions to ensure that the user running the ResourceManager has read access.\n3. If the file is missing, create it or adjust the configuration to point to the correct file location."
+        }
+    },
+    {
+        "filename": "HADOOP-8225.json",
+        "creation_time": "2012-03-13T20:33:53.000+0000",
+        "bug_report": {
+            "Title": "DistCp Fails When Invoked by Oozie Due to SecurityException",
+            "Description": "When DistCp is invoked through a proxy-user (e.g., via Oozie), the delegation-token-store isn't correctly picked up by DistCp, leading to failures. The error observed is:\n\nERROR [main] org.apache.hadoop.tools.DistCp: Couldn't complete DistCp operation:\njava.lang.SecurityException: Intercepted System.exit(-999)\n    at org.apache.oozie.action.hadoop.LauncherSecurityManager.checkExit(LauncherMapper.java:651)\n    at java.lang.Runtime.exit(Runtime.java:88)\n    at java.lang.System.exit(System.java:904)\n    at org.apache.hadoop.tools.DistCp.main(DistCp.java:357)\n\nThe root cause appears to be that the HADOOP_TOKEN_FILE_LOCATION is not being copied to mapreduce.job.credentials.binary in the job configuration, which is essential for the DistCp operation to function correctly in a secured environment.",
+            "StackTrace": [
+                "java.lang.SecurityException: Intercepted System.exit(-999)",
+                "at org.apache.oozie.action.hadoop.LauncherSecurityManager.checkExit(LauncherMapper.java:651)",
+                "at java.lang.Runtime.exit(Runtime.java:88)",
+                "at java.lang.System.exit(System.java:904)",
+                "at org.apache.hadoop.tools.DistCp.main(DistCp.java:357)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)",
+                "at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)",
+                "at java.lang.reflect.Method.invoke(Method.java:597)",
+                "at org.apache.oozie.action.hadoop.LauncherMapper.map(LauncherMapper.java:394)",
+                "at org.apache.hadoop.mapred.MapRunner.run(MapRunner.java:54)",
+                "at org.apache.hadoop.mapred.MapTask.runOldMapper(MapTask.java:399)",
+                "at org.apache.hadoop.mapred.MapTask.run(MapTask.java:334)",
+                "at org.apache.hadoop.mapred.YarnChild$2.run(YarnChild.java:147)",
+                "at java.security.AccessController.doPrivileged(Native Method)",
+                "at javax.security.auth.Subject.doAs(Subject.java:396)",
+                "at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1177)",
+                "at org.apache.hadoop.mapred.YarnChild.main(YarnChild.java:142)"
+            ],
+            "RootCause": "The root cause of the issue is that the HADOOP_TOKEN_FILE_LOCATION is not being copied to mapreduce.job.credentials.binary in the job configuration, which is necessary for the DistCp operation to access the required delegation tokens.",
+            "StepsToReproduce": [
+                "Set up a Hadoop cluster with Oozie installed.",
+                "Create a DistCp job that is invoked through Oozie as a proxy user.",
+                "Run the job and observe the logs for the SecurityException."
+            ],
+            "ExpectedBehavior": "The DistCp operation should complete successfully without throwing a SecurityException, and the delegation tokens should be correctly utilized.",
+            "ObservedBehavior": "The DistCp operation fails with a SecurityException indicating that System.exit(-999) was intercepted, preventing the job from completing.",
+            "Suggestions": "To resolve this issue, ensure that the HADOOP_TOKEN_FILE_LOCATION is correctly set in the job configuration. A patch should be created to copy this environment variable to mapreduce.job.credentials.binary before the DistCp job is executed."
+        }
+    },
+    {
+        "filename": "HADOOP-10866.json",
+        "creation_time": "2014-07-18T22:00:15.000+0000",
+        "bug_report": {
+            "Title": "Intermittent Failure in Symlink Tests Due to Invalid Symbolic Links",
+            "Description": "The symlink tests in the Hadoop project are failing intermittently, specifically the `testDanglingLink` method in the `TestSymlinkLocalFS` class. The failure occurs when the test attempts to access a symbolic link that is not correctly set up, leading to a `java.io.IOException` indicating that the specified path is not a symbolic link. This issue has been observed in multiple builds, as documented in the provided build reports.",
+            "StackTrace": [
+                "java.io.IOException: Path file:/home/jenkins/jenkins-slave/workspace/PreCommit-HDFS-Build/trunk/hadoop-common-project/hadoop-common/target/test/data/RtGBheUh4y/test1/linkToFile is not a symbolic link",
+                "at org.apache.hadoop.fs.FileStatus.getSymlink(FileStatus.java:266)",
+                "at org.apache.hadoop.fs.TestSymlinkLocalFS.testDanglingLink(TestSymlinkLocalFS.java:163)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)",
+                "at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)",
+                "at java.lang.reflect.Method.invoke(Method.java:597)",
+                "at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)",
+                "at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)",
+                "at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)",
+                "at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)",
+                "at org.junit.internal.runners.statements.FailOnTimeout$StatementThread.run(FailOnTimeout.java:74)"
+            ],
+            "RootCause": "The root cause of the issue is that the symbolic link being tested does not exist or is not correctly created in the file system. The `FileUtil.symLink` method is failing to create the symbolic link due to either a missing target file or an existing link that conflicts with the intended link path.",
+            "StepsToReproduce": [
+                "Run the test suite for the Hadoop project, specifically targeting the `TestSymlinkLocalFS` class.",
+                "Observe the output for the `testDanglingLink` method, which should fail intermittently.",
+                "Check the file system to verify the existence and correctness of the symbolic links being tested."
+            ],
+            "ExpectedBehavior": "The `testDanglingLink` method should successfully verify the existence of the symbolic link and not throw an IOException.",
+            "ObservedBehavior": "The test fails with an IOException indicating that the specified path is not a symbolic link, suggesting that the link was not created or is incorrectly set up.",
+            "Suggestions": "1. Ensure that the target files for the symbolic links exist before running the tests. \n2. Modify the test setup to create the necessary files and links in a controlled manner to avoid conflicts. \n3. Implement additional logging in the `FileUtil.symLink` method to capture detailed information about failures when creating symbolic links."
+        }
+    },
+    {
+        "filename": "HADOOP-12089.json",
+        "creation_time": "2015-06-15T17:34:46.000+0000",
+        "bug_report": {
+            "Title": "StorageException: No Lease ID Specified When Updating FolderLastModifiedTime in WASB",
+            "Description": "This issue is similar to HADOOP-11523, which occurs during HBase's distributed log splitting. The current bug arises when HBase attempts to delete old Write Ahead Logs (WALs) and update the /hbase/oldWALs folder. The error message indicates that a lease exists on the blob, and no lease ID was provided in the request, leading to a failure in the deletion process.",
+            "StackTrace": [
+                "2015-06-10 08:11:40,636 WARN org.apache.hadoop.hbase.master.cleaner.CleanerChore: Error while deleting: wasb://basecus1-1@basestoragecus1.blob.core.windows.net/hbase/oldWALs/workernode10.dthbasecus1.g1.internal.cloudapp.net%2C60020%2C1433908062461.1433921692855",
+                "org.apache.hadoop.fs.azure.AzureException: com.microsoft.azure.storage.StorageException: There is currently a lease on the blob and no lease ID was specified in the request.",
+                "at org.apache.hadoop.fs.azure.AzureNativeFileSystemStore.updateFolderLastModifiedTime(AzureNativeFileSystemStore.java:2602)",
+                "at org.apache.hadoop.fs.azure.AzureNativeFileSystemStore.updateFolderLastModifiedTime(AzureNativeFileSystemStore.java:2613)",
+                "at org.apache.hadoop.fs.azure.NativeAzureFileSystem.delete(NativeAzureFileSystem.java:1505)",
+                "at org.apache.hadoop.fs.azure.NativeAzureFileSystem.delete(NativeAzureFileSystem.java:1437)",
+                "at org.apache.hadoop.hbase.master.cleaner.CleanerChore.checkAndDeleteFiles(CleanerChore.java:256)",
+                "at org.apache.hadoop.hbase.master.cleaner.CleanerChore.checkAndDeleteEntries(CleanerChore.java:157)",
+                "at org.apache.hadoop.hbase.master.cleaner.CleanerChore.chore(CleanerChore.java:124)",
+                "at org.apache.hadoop.hbase.Chore.run(Chore.java:80)",
+                "at java.lang.Thread.run(Thread.java:745)",
+                "Caused by: com.microsoft.azure.storage.StorageException: There is currently a lease on the blob and no lease ID was specified in the request.",
+                "at com.microsoft.azure.storage.StorageException.translateException(StorageException.java:162)",
+                "at com.microsoft.azure.storage.core.StorageRequest.materializeException(StorageRequest.java:307)",
+                "at com.microsoft.azure.storage.core.ExecutionEngine.executeWithRetry(ExecutionEngine.java:177)",
+                "at com.microsoft.azure.storage.blob.CloudBlob.uploadProperties(CloudBlob.java:2991)",
+                "at org.apache.hadoop.fs.azure.StorageInterfaceImpl$CloudBlobWrapperImpl.uploadProperties(StorageInterfaceImpl.java:372)",
+                "at org.apache.hadoop.fs.azure.AzureNativeFileSystemStore.updateFolderLastModifiedTime(AzureNativeFileSystemStore.java:2597)"
+            ],
+            "RootCause": "The root cause of the issue is that the deletion operation fails due to an active lease on the blob in Azure Blob Storage. The system does not provide a lease ID in the request, which is required to perform the deletion.",
+            "StepsToReproduce": [
+                "1. Set up HBase with Azure Blob Storage as the file system.",
+                "2. Trigger the deletion of old WALs while a lease is active on the blob.",
+                "3. Observe the logs for the StorageException indicating no lease ID was specified."
+            ],
+            "ExpectedBehavior": "The system should successfully delete the old WALs and update the /hbase/oldWALs folder without throwing a StorageException.",
+            "ObservedBehavior": "The system throws a StorageException indicating that there is a lease on the blob and no lease ID was specified, preventing the deletion of the old WALs.",
+            "Suggestions": "To resolve this issue, ensure that the deletion request includes a lease ID if a lease is active on the blob. Additionally, consider implementing a mechanism to check for active leases before attempting to delete blobs. This could involve releasing the lease or waiting until the lease expires before proceeding with the deletion."
+        }
+    },
+    {
+        "filename": "HADOOP-11934.json",
+        "creation_time": "2015-05-07T00:38:53.000+0000",
+        "bug_report": {
+            "Title": "Infinite Loop Caused by Recursive Dependencies in LdapGroupsMapping with JavaKeyStoreProvider",
+            "Description": "While using the LdapGroupsMapping code alongside the JavaKeyStoreProvider, an infinite loop occurs due to recursive method calls that lead to a stack overflow. The issue arises when the JavaKeyStoreProvider attempts to access the file system, which in turn calls back into the LdapGroupsMapping, creating a cycle. This bug was observed in the Hadoop Common project, specifically when initializing user group information and credential providers.",
+            "StackTrace": [
+                "at org.apache.hadoop.fs.FileSystem.get(FileSystem.java:370)",
+                "at org.apache.hadoop.fs.Path.getFileSystem(Path.java:296)",
+                "at org.apache.hadoop.security.alias.JavaKeyStoreProvider.<init>(JavaKeyStoreProvider.java:88)",
+                "at org.apache.hadoop.security.alias.JavaKeyStoreProvider.<init>(JavaKeyStoreProvider.java:65)",
+                "at org.apache.hadoop.security.alias.JavaKeyStoreProvider$Factory.createProvider(JavaKeyStoreProvider.java:291)",
+                "at org.apache.hadoop.security.alias.CredentialProviderFactory.getProviders(CredentialProviderFactory.java:58)",
+                "at org.apache.hadoop.conf.Configuration.getPasswordFromCredentialProviders(Configuration.java:1863)",
+                "at org.apache.hadoop.conf.Configuration.getPassword(Configuration.java:1843)",
+                "at org.apache.hadoop.security.LdapGroupsMapping.getPassword(LdapGroupsMapping.java:386)",
+                "at org.apache.hadoop.security.LdapGroupsMapping.setConf(LdapGroupsMapping.java:349)",
+                "at org.apache.hadoop.util.ReflectionUtils.setConf(ReflectionUtils.java:73)",
+                "at org.apache.hadoop.util.ReflectionUtils.newInstance(ReflectionUtils.java:133)",
+                "at org.apache.hadoop.security.Groups.<init>(Groups.java:70)",
+                "at org.apache.hadoop.security.Groups.<init>(Groups.java:66)",
+                "at org.apache.hadoop.security.Groups.getUserToGroupsMappingService(Groups.java:280)",
+                "at org.apache.hadoop.security.UserGroupInformation.initialize(UserGroupInformation.java:283)",
+                "at org.apache.hadoop.security.UserGroupInformation.ensureInitialized(UserGroupInformation.java:260)",
+                "at org.apache.hadoop.security.UserGroupInformation.loginUserFromSubject(UserGroupInformation.java:804)",
+                "at org.apache.hadoop.security.UserGroupInformation.getLoginUser(UserGroupInformation.java:774)",
+                "at org.apache.hadoop.security.UserGroupInformation.getCurrentUser(UserGroupInformation.java:647)",
+                "at org.apache.hadoop.fs.FileSystem$Cache$Key.<init>(FileSystem.java:2753)",
+                "at org.apache.hadoop.fs.FileSystem$Cache$Key.<init>(FileSystem.java:2745)",
+                "at org.apache.hadoop.fs.FileSystem$Cache.get(FileSystem.java:2611)",
+                "at org.apache.hadoop.fs.FileSystem.get(FileSystem.java:370)",
+                "at org.apache.hadoop.fs.Path.getFileSystem(Path.java:296)"
+            ],
+            "RootCause": "The root cause of the issue is the recursive dependency between the JavaKeyStoreProvider and the LdapGroupsMapping. When the JavaKeyStoreProvider is initialized, it attempts to access the file system, which leads back to the LdapGroupsMapping for user group information, creating a cycle that results in a stack overflow.",
+            "StepsToReproduce": [
+                "Configure LdapGroupsMapping to use JavaKeyStoreProvider.",
+                "Attempt to initialize user group information in a Hadoop environment.",
+                "Observe the stack trace indicating recursive calls leading to a stack overflow."
+            ],
+            "ExpectedBehavior": "The system should initialize user group information without entering an infinite loop, allowing for proper credential management and file system access.",
+            "ObservedBehavior": "The system enters a recursive loop that eventually leads to a stack overflow, causing the application to crash.",
+            "Suggestions": "Refactor the initialization logic in LdapGroupsMapping and JavaKeyStoreProvider to eliminate the recursive dependency. Consider implementing a more robust configuration handling mechanism that separates credential provider initialization from user group mapping to prevent such cycles."
+        }
+    },
+    {
+        "filename": "HADOOP-11722.json",
+        "creation_time": "2015-03-16T21:39:07.000+0000",
+        "bug_report": {
+            "Title": "Concurrent Deletion of Tokens in ZKDelegationTokenSecretManager Causes Service Failures",
+            "Description": "The delete node code in `ZKDelegationTokenSecretManager` allows multiple instances of a service to attempt to delete the same token node simultaneously. This leads to a race condition where only one instance succeeds in deletion, while others encounter a `NoNodeException`, causing the service instances to fail. The relevant code snippet is as follows:\n\n```java\nwhile(zkClient.checkExists().forPath(nodeRemovePath) != null) {\n    zkClient.delete().guaranteed().forPath(nodeRemovePath);\n}\n```\n\nWhen multiple instances enter this loop, they all check for the existence of the node, and upon finding it, they attempt to delete it. If the node is deleted by one instance, the others will throw an exception, leading to service instability.",
+            "StackTrace": [
+                "2015-03-15 10:24:54,000 ERROR org.apache.hadoop.security.token.delegation.AbstractDelegationTokenSecretManager: ExpiredTokenRemover thread received unexpected exception",
+                "java.lang.RuntimeException: Could not remove Stored Token ZKDTSMDelegationToken_28",
+                "at org.apache.hadoop.security.token.delegation.ZKDelegationTokenSecretManager.removeStoredToken(ZKDelegationTokenSecretManager.java:770)",
+                "at org.apache.hadoop.security.token.delegation.AbstractDelegationTokenSecretManager.removeExpiredToken(AbstractDelegationTokenSecretManager.java:605)",
+                "at org.apache.hadoop.security.token.delegation.AbstractDelegationTokenSecretManager.access$400(AbstractDelegationTokenSecretManager.java:54)",
+                "at org.apache.hadoop.security.token.delegation.AbstractDelegationTokenSecretManager$ExpiredTokenRemover.run(AbstractDelegationTokenSecretManager.java:656)",
+                "at java.lang.Thread.run(Thread.java:745)",
+                "Caused by: org.apache.zookeeper.KeeperException$NoNodeException: KeeperErrorCode = NoNode for /zkdtsm/ZKDTSMRoot/ZKDTSMTokensRoot/DT_28",
+                "at org.apache.zookeeper.KeeperException.create(KeeperException.java:111)",
+                "at org.apache.zookeeper.KeeperException.create(KeeperException.java:51)",
+                "at org.apache.zookeeper.ZooKeeper.delete(ZooKeeper.java:873)",
+                "at org.apache.curator.framework.imps.DeleteBuilderImpl$5.call(DeleteBuilderImpl.java:238)",
+                "at org.apache.curator.framework.imps.DeleteBuilderImpl$5.call(DeleteBuilderImpl.java:233)",
+                "at org.apache.curator.RetryLoop.callWithRetry(RetryLoop.java:107)",
+                "at org.apache.curator.framework.imps.DeleteBuilderImpl.pathInForeground(DeleteBuilderImpl.java:230)",
+                "at org.apache.curator.framework.imps.DeleteBuilderImpl.forPath(DeleteBuilderImpl.java:214)",
+                "at org.apache.curator.framework.imps.DeleteBuilderImpl.forPath(DeleteBuilderImpl.java:41)",
+                "at org.apache.hadoop.security.token.delegation.ZKDelegationTokenSecretManager.removeStoredToken(ZKDelegationTokenSecretManager.java:764)"
+            ],
+            "RootCause": "The root cause of the issue is a race condition in the deletion logic of the `ZKDelegationTokenSecretManager`. Multiple service instances can enter the deletion loop simultaneously, leading to attempts to delete a non-existent node after one instance has already succeeded in deletion.",
+            "StepsToReproduce": [
+                "Deploy multiple instances of a service that uses `ZKDelegationTokenSecretManager`.",
+                "Trigger the expiration of tokens that require deletion.",
+                "Observe the logs for `RuntimeException` related to token removal."
+            ],
+            "ExpectedBehavior": "Only one instance should successfully delete the token node, while others should handle the situation gracefully without causing service failures.",
+            "ObservedBehavior": "Multiple instances attempt to delete the same token node, resulting in `NoNodeException` and causing service instances to fail.",
+            "Suggestions": "Implement a locking mechanism or use a more robust approach to handle concurrent deletions. Consider using ZooKeeper's built-in features for atomic operations or a distributed lock to ensure that only one instance can delete a token at a time."
+        }
+    },
+    {
+        "filename": "HADOOP-15331.json",
+        "creation_time": "2018-03-21T01:15:56.000+0000",
+        "bug_report": {
+            "Title": "Fix a race condition causing parsing error of java.io.BufferedInputStream in class org.apache.hadoop.conf.Configuration",
+            "Description": "A race condition exists in the Hadoop Configuration class when multiple threads interact with the same Configuration instance. Specifically, if one thread adds resources while another thread clones the Configuration, it can lead to a situation where both threads attempt to access the same input stream. This results in a 'Stream closed' exception when one thread closes the stream after parsing, while the other thread still tries to read from it. This issue is critical as it affects the startup of the Hadoop ResourceManager, which relies on loading configuration resources correctly.",
+            "StackTrace": [
+                "2018-02-28 08:23:19,589 ERROR org.apache.hadoop.conf.Configuration: error parsing conf java.io.BufferedInputStream@7741d346",
+                "com.ctc.wstx.exc.WstxIOException: Stream closed",
+                "at com.ctc.wstx.stax.WstxInputFactory.doCreateSR(WstxInputFactory.java:578)",
+                "at com.ctc.wstx.stax.WstxInputFactory.createSR(WstxInputFactory.java:633)",
+                "at org.apache.hadoop.conf.Configuration.parse(Configuration.java:2803)",
+                "at org.apache.hadoop.conf.Configuration.loadResource(Configuration.java:2853)",
+                "at org.apache.hadoop.conf.Configuration.loadResources(Configuration.java:2817)",
+                "at org.apache.hadoop.conf.Configuration.getProps(Configuration.java:2689)",
+                "at org.apache.hadoop.conf.Configuration.get(Configuration.java:1420)",
+                "at org.apache.hadoop.security.authorize.ServiceAuthorizationManager.refreshWithLoadedConfiguration(ServiceAuthorizationManager.java:161)",
+                "at org.apache.hadoop.ipc.Server.refreshServiceAclWithLoadedConfiguration(Server.java:607)",
+                "at org.apache.hadoop.yarn.server.resourcemanager.AdminService.refreshServiceAcls(AdminService.java:586)",
+                "at org.apache.hadoop.yarn.server.resourcemanager.AdminService.startServer(AdminService.java:188)",
+                "at org.apache.hadoop.yarn.server.resourcemanager.ResourceManager.serviceStart(ResourceManager.java:1231)"
+            ],
+            "RootCause": "The root cause of the issue is a race condition between threads that share the same Configuration instance. When one thread adds resources and another thread clones the Configuration, the input stream can be closed by one thread while still being accessed by another, leading to a 'Stream closed' exception.",
+            "StepsToReproduce": [
+                "Create a Configuration instance.",
+                "In one thread, add a resource to the Configuration.",
+                "In another thread, clone the Configuration instance.",
+                "Attempt to access the resources in both threads."
+            ],
+            "ExpectedBehavior": "The Configuration instance should allow concurrent access without causing exceptions, and resources should be loaded correctly regardless of the order of operations performed by the threads.",
+            "ObservedBehavior": "A 'Stream closed' exception is thrown when one thread attempts to access a resource that has been closed by another thread.",
+            "Suggestions": "To resolve this issue, implement synchronization mechanisms to ensure that the Configuration instance is not modified while it is being cloned or accessed. Consider using a copy-on-write strategy or locking the Configuration instance during resource addition and access to prevent concurrent modifications."
+        }
+    },
+    {
+        "filename": "HADOOP-14062.json",
+        "creation_time": "2016-12-20T00:35:48.000+0000",
+        "bug_report": {
+            "Title": "EOFException in ApplicationMasterProtocolPBClientImpl.allocate when RPC privacy is enabled",
+            "Description": "When privacy is enabled for RPC (hadoop.rpc.protection = privacy), the method `ApplicationMasterProtocolPBClientImpl.allocate` intermittently fails with an EOFException. This issue has been reproduced with Spark 2.0.2 built against the latest branch-2.8, specifically during a distcp job. The problem appears to be related to network issues or premature closure of the input stream in the Hadoop RPC framework.",
+            "StackTrace": [
+                "java.io.EOFException: End of File Exception between local host is: \"<application_master_host>/<ip_addr>\"; destination host is: \"<rm_host>\":8030; : java.io.EOFException; For more details see:  http://wiki.apache.org/hadoop/EOFException",
+                "at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)",
+                "at sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)",
+                "at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)",
+                "at java.lang.reflect.Constructor.newInstance(Constructor.java:422)",
+                "at org.apache.hadoop.net.NetUtils.wrapWithMessage(NetUtils.java:801)",
+                "at org.apache.hadoop.net.NetUtils.wrapException(NetUtils.java:765)",
+                "at org.apache.hadoop.ipc.Client.getRpcResponse(Client.java:1486)",
+                "at org.apache.hadoop.ipc.Client.call(Client.java:1428)",
+                "at org.apache.hadoop.ipc.Client.call(Client.java:1338)",
+                "at org.apache.hadoop.yarn.api.impl.pb.client.ApplicationMasterProtocolPBClientImpl.allocate(ApplicationMasterProtocolPBClientImpl.java:77)",
+                "at org.apache.hadoop.mapreduce.v2.app.rm.RMContainerRequestor.makeRemoteRequest(RMContainerRequestor.java:204)",
+                "at org.apache.hadoop.mapreduce.v2.app.rm.RMContainerAllocator.getResources(RMContainerAllocator.java:735)"
+            ],
+            "RootCause": "The EOFException is likely caused by network instability or a premature closure of the input stream during the RPC call. This can occur if the connection between the Application Master and Resource Manager is interrupted or if the Resource Manager is unable to respond in a timely manner.",
+            "StepsToReproduce": [
+                "Set hadoop.rpc.protection equal to privacy.",
+                "Write data to HDFS using Spark with the following command:\nsc.parallelize(1 to (5*1024*1024)).map(k => Seq(k, org.apache.commons.lang.RandomStringUtils.random(1024, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWxyZ0123456789\")).mkString(\"|\")).toDF().repartition(100).write.parquet(\"hdfs:///tmp/testData\")",
+                "Attempt to distcp that data to another location in HDFS using:\nhadoop distcp -Dmapreduce.framework.name=yarn hdfs:///tmp/testData hdfs:///tmp/testDataCopy"
+            ],
+            "ExpectedBehavior": "The distcp command should successfully copy the data from the source HDFS location to the destination without any exceptions.",
+            "ObservedBehavior": "The distcp command fails intermittently with an EOFException, indicating a problem with the RPC communication when privacy is enabled.",
+            "Suggestions": "Investigate network stability between the Application Master and Resource Manager. Consider implementing retries with exponential backoff for the RPC calls in the `ApplicationMasterProtocolPBClientImpl.allocate` method. Additionally, review the configuration settings for RPC protection and ensure that all nodes in the cluster are properly configured to handle encrypted RPC communications."
+        }
+    },
+    {
+        "filename": "HADOOP-11149.json",
+        "creation_time": "2014-09-27T16:37:06.000+0000",
+        "bug_report": {
+            "Title": "Increase the timeout of TestZKFailoverController",
+            "Description": "The test case `testGracefulFailover` in the `TestZKFailoverController` class is failing due to a timeout exception. The test is designed to validate the graceful failover process in a Hadoop application, but it is timing out after 25 seconds, indicating that the operation is taking longer than expected. This could be due to performance issues in the failover process or the system environment.",
+            "StackTrace": [
+                "java.lang.Exception: test timed out after 25000 milliseconds",
+                "at java.lang.Object.wait(Native Method)",
+                "at org.apache.hadoop.ha.ZKFailoverController.waitForActiveAttempt(ZKFailoverController.java:467)",
+                "at org.apache.hadoop.ha.ZKFailoverController.doGracefulFailover(ZKFailoverController.java:657)",
+                "at org.apache.hadoop.ha.ZKFailoverController.access$400(ZKFailoverController.java:61)",
+                "at org.apache.hadoop.ha.ZKFailoverController$3.run(ZKFailoverController.java:602)",
+                "at org.apache.hadoop.ha.ZKFailoverController$3.run(ZKFailoverController.java:599)",
+                "at java.security.AccessController.doPrivileged(Native Method)",
+                "at javax.security.auth.Subject.doAs(Subject.java:415)",
+                "at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1621)",
+                "at org.apache.hadoop.ha.ZKFailoverController.gracefulFailoverToYou(ZKFailoverController.java:599)",
+                "at org.apache.hadoop.ha.ZKFCRpcServer.gracefulFailover(ZKFCRpcServer.java:94)",
+                "at org.apache.hadoop.ha.TestZKFailoverController.testGracefulFailover(TestZKFailoverController.java:448)"
+            ],
+            "RootCause": "The test is failing due to a timeout in the graceful failover process, which suggests that the failover operation is not completing within the expected time frame. This could be attributed to performance bottlenecks in the system or inefficiencies in the failover logic.",
+            "StepsToReproduce": [
+                "Run the test suite for the Hadoop application.",
+                "Execute the `org.apache.hadoop.ha.TestZKFailoverController` test class.",
+                "Observe the failure of the `testGracefulFailover` method due to a timeout."
+            ],
+            "ExpectedBehavior": "The `testGracefulFailover` should complete successfully within the specified timeout, validating that the graceful failover process works as intended.",
+            "ObservedBehavior": "The `testGracefulFailover` fails with a timeout exception after 25 seconds, indicating that the operation is taking too long to complete.",
+            "Suggestions": "Increase the timeout duration for the `testGracefulFailover` method to accommodate longer failover times. Additionally, investigate the performance of the failover process to identify any potential bottlenecks or inefficiencies that may be causing the delays."
+        }
+    },
+    {
+        "filename": "HADOOP-15059.json",
+        "creation_time": "2017-11-21T20:54:52.000+0000",
+        "bug_report": {
+            "Title": "3.0 Deployment Fails with Old MR Tarball Due to Token Incompatibility",
+            "Description": "When attempting to deploy a Hadoop 3.0 cluster using a 2.9 MR tarball, the MR job fails with a critical error indicating an inability to determine the current user. The underlying issue appears to be related to token storage file incompatibility between versions 2.9 and 3.0, which disrupts the expected rolling upgrade functionality.",
+            "StackTrace": [
+                "2017-11-21 12:42:50,911 INFO [main] org.apache.hadoop.mapreduce.v2.app.MRAppMaster: Created MRAppMaster for application appattempt_1511295641738_0003_000001",
+                "2017-11-21 12:42:51,070 WARN [main] org.apache.hadoop.util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable",
+                "2017-11-21 12:42:51,118 FATAL [main] org.apache.hadoop.mapreduce.v2.app.MRAppMaster: Error starting MRAppMaster",
+                "java.lang.RuntimeException: Unable to determine current user",
+                "\tat org.apache.hadoop.conf.Configuration$Resource.getRestrictParserDefault(Configuration.java:254)",
+                "\tat org.apache.hadoop.conf.Configuration$Resource.<init>(Configuration.java:220)",
+                "\tat org.apache.hadoop.conf.Configuration$Resource.<init>(Configuration.java:212)",
+                "\tat org.apache.hadoop.conf.Configuration.addResource(Configuration.java:888)",
+                "\tat org.apache.hadoop.mapreduce.v2.app.MRAppMaster.main(MRAppMaster.java:1638)",
+                "Caused by: java.io.IOException: Exception reading /tmp/nm-local-dir/usercache/jdu/appcache/application_1511295641738_0003/container_e03_1511295641738_0003_01_000001/container_tokens",
+                "\tat org.apache.hadoop.security.Credentials.readTokenStorageFile(Credentials.java:208)",
+                "\tat org.apache.hadoop.security.UserGroupInformation.loginUserFromSubject(UserGroupInformation.java:907)",
+                "\tat org.apache.hadoop.security.UserGroupInformation.getLoginUser(UserGroupInformation.java:820)",
+                "\tat org.apache.hadoop.security.UserGroupInformation.getCurrentUser(UserGroupInformation.java:689)",
+                "\tat org.apache.hadoop.conf.Configuration$Resource.getRestrictParserDefault(Configuration.java:252)",
+                "\t... 4 more",
+                "Caused by: java.io.IOException: Unknown version 1 in token storage.",
+                "\tat org.apache.hadoop.security.Credentials.readTokenStorageStream(Credentials.java:226)",
+                "\tat org.apache.hadoop.security.Credentials.readTokenStorageFile(Credentials.java:205)",
+                "\t... 8 more",
+                "2017-11-21 12:42:51,122 INFO [main] org.apache.hadoop.util.ExitUtil: Exiting with status 1: java.lang.RuntimeException: Unable to determine current user"
+            ],
+            "RootCause": "The root cause of the issue is an IOException triggered by an 'Unknown version 1 in token storage' error when attempting to read the token storage file. This suggests that the token file format has changed between versions 2.9 and 3.0, leading to incompatibility and potential corruption of the token storage file.",
+            "StepsToReproduce": [
+                "Deploy a Hadoop 3.0 cluster using a 2.9 MR tarball.",
+                "Submit an MR job to the cluster.",
+                "Observe the failure in the MRAppMaster logs."
+            ],
+            "ExpectedBehavior": "The MR job should start successfully without errors, allowing for a seamless rolling upgrade from version 2.9 to 3.0.",
+            "ObservedBehavior": "The MR job fails to start, resulting in a fatal error indicating an inability to determine the current user due to token storage incompatibility.",
+            "Suggestions": "To resolve this issue, ensure that the token storage file format is compatible between versions 2.9 and 3.0. Consider implementing a migration strategy for existing token files or providing a configuration option to specify the token file format. Additionally, enhance the error handling in the MRAppMaster to provide clearer diagnostics when encountering token storage issues."
+        }
+    },
+    {
+        "filename": "HADOOP-15307.json",
+        "creation_time": "2018-03-12T14:56:59.000+0000",
+        "bug_report": {
+            "Title": "NFS: Unsupported verifier flavor AUTH_SYS in Verifier class",
+            "Description": "When the NFS gateway starts, if the portmapper request is denied by rpcbind (e.g., due to /etc/hosts.allow not including localhost), the NFS gateway fails with an UnsupportedOperationException. The exception occurs because the Verifier class does not handle the AUTH_SYS verifier flavor, which is required for proper authentication in certain configurations.",
+            "StackTrace": [
+                "2018-03-05 12:49:31,976 INFO org.apache.hadoop.oncrpc.SimpleUdpServer: Started listening to UDP requests at port 4242 for Rpc program: mountd at localhost:4242 with workerCount 1",
+                "2018-03-05 12:49:31,988 INFO org.apache.hadoop.oncrpc.SimpleTcpServer: Started listening to TCP requests at port 4242 for Rpc program: mountd at localhost:4242 with workerCount 1",
+                "2018-03-05 12:49:31,993 TRACE org.apache.hadoop.oncrpc.RpcCall: Xid:692394656, messageType:RPC_CALL, rpcVersion:2, program:100000, version:2, procedure:1, credential:(AuthFlavor:AUTH_NONE), verifier:(AuthFlavor:AUTH_NONE)",
+                "2018-03-05 12:49:31,998 FATAL org.apache.hadoop.mount.MountdBase: Failed to start the server. Cause:",
+                "java.lang.UnsupportedOperationException: Unsupported verifier flavor AUTH_SYS",
+                "at org.apache.hadoop.oncrpc.security.Verifier.readFlavorAndVerifier(Verifier.java:45)",
+                "at org.apache.hadoop.oncrpc.RpcDeniedReply.read(RpcDeniedReply.java:50)",
+                "at org.apache.hadoop.oncrpc.RpcReply.read(RpcReply.java:67)",
+                "at org.apache.hadoop.oncrpc.SimpleUdpClient.run(SimpleUdpClient.java:71)",
+                "at org.apache.hadoop.oncrpc.RpcProgram.register(RpcProgram.java:130)",
+                "at org.apache.hadoop.oncrpc.RpcProgram.register(RpcProgram.java:101)",
+                "at org.apache.hadoop.mount.MountdBase.start(MountdBase.java:83)",
+                "at org.apache.hadoop.hdfs.nfs.nfs3.Nfs3.startServiceInternal(Nfs3.java:56)",
+                "at org.apache.hadoop.hdfs.nfs.nfs3.Nfs3.startService(Nfs3.java:69)",
+                "at org.apache.hadoop.hdfs.nfs.nfs3.PrivilegedNfsGatewayStarter.start(PrivilegedNfsGatewayStarter.java:60)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)",
+                "at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)",
+                "at java.lang.reflect.Method.invoke(Method.java:498)",
+                "at org.apache.commons.daemon.support.DaemonLoader.start(DaemonLoader.java:243)",
+                "2018-03-05 12:49:32,007 INFO org.apache.hadoop.util.ExitUtil: Exiting with status 1"
+            ],
+            "RootCause": "The root cause of the issue is that the Verifier class does not support the AUTH_SYS verifier flavor, which is necessary for certain authentication scenarios. The current implementation only handles AUTH_NONE and RPCSEC_GSS, leading to the UnsupportedOperationException when AUTH_SYS is encountered.",
+            "StepsToReproduce": [
+                "Ensure that the NFS gateway is configured to use AUTH_SYS authentication.",
+                "Modify /etc/hosts.allow to deny access to localhost.",
+                "Start the NFS gateway and observe the logs for the UnsupportedOperationException."
+            ],
+            "ExpectedBehavior": "The NFS gateway should start successfully and handle AUTH_SYS authentication without throwing an exception.",
+            "ObservedBehavior": "The NFS gateway fails to start and throws an UnsupportedOperationException due to the unsupported AUTH_SYS verifier flavor.",
+            "Suggestions": "Update the Verifier class to include support for the AUTH_SYS verifier flavor. This may involve modifying the readFlavorAndVerifier method to handle AUTH_SYS appropriately. Additionally, review the configuration settings to ensure that the correct authentication methods are enabled."
+        }
+    },
+    {
+        "filename": "HADOOP-11446.json",
+        "creation_time": "2014-12-23T22:15:23.000+0000",
+        "bug_report": {
+            "Title": "S3AOutputStream should use shared thread pool to avoid OutOfMemoryError",
+            "Description": "When working with S3A for HBase snapshots, an OutOfMemoryError (OOME) occurs during the export process. The issue arises from the creation of multiple TransferManager instances, each initializing its own thread pool, leading to excessive thread creation and ultimately exhausting the available native threads. This was observed while exporting HBase snapshots to S3A, even after increasing the nofile ulimit to 102400.",
+            "StackTrace": [
+                "Exception in thread \"main\" java.lang.OutOfMemoryError: unable to create new native thread",
+                "at java.lang.Thread.start0(Native Method)",
+                "at java.lang.Thread.start(Thread.java:713)",
+                "at java.util.concurrent.ThreadPoolExecutor.addWorker(ThreadPoolExecutor.java:949)",
+                "at java.util.concurrent.ThreadPoolExecutor.execute(ThreadPoolExecutor.java:1360)",
+                "at java.util.concurrent.AbstractExecutorService.submit(AbstractExecutorService.java:132)",
+                "at com.amazonaws.services.s3.transfer.internal.UploadMonitor.<init>(UploadMonitor.java:129)",
+                "at com.amazonaws.services.s3.transfer.TransferManager.upload(TransferManager.java:449)",
+                "at com.amazonaws.services.s3.transfer.TransferManager.upload(TransferManager.java:382)",
+                "at org.apache.hadoop.fs.s3a.S3AOutputStream.close(S3AOutputStream.java:127)",
+                "at org.apache.hadoop.fs.FSDataOutputStream$PositionCache.close(FSDataOutputStream.java:72)",
+                "at org.apache.hadoop.fs.FSDataOutputStream.close(FSDataOutputStream.java:106)",
+                "at org.apache.hadoop.io.IOUtils.copyBytes(IOUtils.java:54)",
+                "at org.apache.hadoop.io.IOUtils.copyBytes(IOUtils.java:112)",
+                "at org.apache.hadoop.fs.FileUtil.copy(FileUtil.java:366)",
+                "at org.apache.hadoop.fs.FileUtil.copy(FileUtil.java:356)",
+                "at org.apache.hadoop.fs.FileUtil.copy(FileUtil.java:356)",
+                "at org.apache.hadoop.fs.FileUtil.copy(FileUtil.java:338)",
+                "at org.apache.hadoop.hbase.snapshot.ExportSnapshot.run(ExportSnapshot.java:791)",
+                "at org.apache.hadoop.util.ToolRunner.run(ToolRunner.java:70)",
+                "at org.apache.hadoop.hbase.snapshot.ExportSnapshot.innerMain(ExportSnapshot.java:882)",
+                "at org.apache.hadoop.hbase.snapshot.ExportSnapshot.main(ExportSnapshot.java:886)"
+            ],
+            "RootCause": "The root cause of the OutOfMemoryError is the creation of multiple TransferManager instances, each with its own thread pool. This leads to excessive thread creation, which exceeds the system's limit on the number of threads that can be created.",
+            "StepsToReproduce": [
+                "Increase the nofile ulimit to a high value (e.g., 102400).",
+                "Use S3A to export HBase snapshots.",
+                "Monitor the application for OutOfMemoryError during the export process."
+            ],
+            "ExpectedBehavior": "The application should successfully export HBase snapshots to S3A without encountering OutOfMemoryError, utilizing a shared thread pool for TransferManager instances.",
+            "ObservedBehavior": "The application throws an OutOfMemoryError during the export process due to excessive thread creation from multiple TransferManager instances.",
+            "Suggestions": "Refactor the S3AOutputStream to utilize a shared thread pool for TransferManager instances. This can be achieved by passing a common thread pool to the TransferManager constructor, thereby limiting the number of threads created and preventing the OutOfMemoryError."
+        }
+    },
+    {
+        "filename": "HADOOP-12689.json",
+        "creation_time": "2016-01-04T23:30:49.000+0000",
+        "bug_report": {
+            "Title": "S3 Filesystem Operations Fail Due to IOException Instead of Expected Null Returns",
+            "Description": "The issue arises from the resolution of HADOOP-10542, where the return value of several S3 filesystem operations was changed from 'null' to throwing an 'IOException'. This change has led to unexpected behavior in the following methods:\n\n- `S3FileSystem.getFileStatus()` no longer raises `FileNotFoundException` but throws `IOException` instead.\n- `FileSystem.exists()` now raises `IOException` instead of returning `false`.\n- `S3FileSystem.create()` fails with `IOException` instead of succeeding.\n\nThis has caused the command `hadoop distcp hdfs://localhost:9000/test s3://xxx:yyy@com.bar.foo/` to fail, resulting in the stack trace provided below.",
+            "StackTrace": [
+                "2015-12-11 10:04:34,030 FATAL [IPC Server handler 6 on 44861] org.apache.hadoop.mapred.TaskAttemptListenerImpl: Task: attempt_1449826461866_0005_m_000006_0 - exited : java.io.IOException: /test doesn't exist",
+                "at org.apache.hadoop.fs.s3.Jets3tFileSystemStore.get(Jets3tFileSystemStore.java:170)",
+                "at org.apache.hadoop.fs.s3.Jets3tFileSystemStore.retrieveINode(Jets3tFileSystemStore.java:221)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)",
+                "at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)",
+                "at java.lang.reflect.Method.invoke(Method.java:606)",
+                "at org.apache.hadoop.io.retry.RetryInvocationHandler.invokeMethod(RetryInvocationHandler.java:187)",
+                "at org.apache.hadoop.io.retry.RetryInvocationHandler.invokeMethod(RetryInvocationHandler.java:102)",
+                "at com.sun.proxy.$Proxy17.retrieveINode(Unknown Source)",
+                "at org.apache.hadoop.fs.s3.S3FileSystem.getFileStatus(S3FileSystem.java:340)",
+                "at org.apache.hadoop.tools.mapred.CopyMapper.map(CopyMapper.java:230)",
+                "at org.apache.hadoop.tools.mapred.CopyMapper.map(CopyMapper.java:50)",
+                "at org.apache.hadoop.mapreduce.Mapper.run(Mapper.java:146)",
+                "at org.apache.hadoop.mapred.MapTask.runNewMapper(MapTask.java:787)",
+                "at org.apache.hadoop.mapred.MapTask.run(MapTask.java:341)",
+                "at org.apache.hadoop.mapred.YarnChild$2.run(YarnChild.java:164)",
+                "at java.security.AccessController.doPrivileged(Native Method)",
+                "at javax.security.auth.Subject.doAs(Subject.java:415)",
+                "at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1657)",
+                "at org.apache.hadoop.mapred.YarnChild.main(YarnChild.java:158)"
+            ],
+            "RootCause": "The root cause of the issue is the change in behavior of the S3 filesystem methods due to the resolution of HADOOP-10542. The methods now throw IOException instead of returning null, which is not handled correctly in the calling code, leading to failures in operations that expect a null return value.",
+            "StepsToReproduce": [
+                "Ensure that the Hadoop environment is set up with S3 filesystem support.",
+                "Run the command: `hadoop distcp hdfs://localhost:9000/test s3://xxx:yyy@com.bar.foo/`.",
+                "Observe the resulting IOException indicating that the path '/test' does not exist."
+            ],
+            "ExpectedBehavior": "The expected behavior is for the S3 filesystem operations to return appropriate values (e.g., null or false) without throwing an IOException, allowing the distcp command to succeed.",
+            "ObservedBehavior": "The observed behavior is that the S3 filesystem operations throw IOException, causing the distcp command to fail with a message indicating that the specified path does not exist.",
+            "Suggestions": "To resolve this issue, consider reverting the changes made in HADOOP-10542 that replaced null returns with IOException throws. Alternatively, update the calling code to handle IOException appropriately, ensuring that it can differentiate between a non-existent file and other types of errors. Testing should be conducted to ensure that the expected behavior is restored."
+        }
+    },
+    {
+        "filename": "HADOOP-13132.json",
+        "creation_time": "2016-05-11T11:42:30.000+0000",
+        "bug_report": {
+            "Title": "Handle ClassCastException on AuthenticationException in LoadBalancingKMSClientProvider",
+            "Description": "An Oozie job with a single shell action fails with an error message from NodeManager. The error is caused by a ClassCastException when attempting to cast an AuthenticationException to a GeneralSecurityException. This issue leads to an uncaught exception, preventing the Oozie job from completing successfully and causing YARN logs to not be reported or saved. The problematic cast occurs in the LoadBalancingKMSClientProvider class.",
+            "StackTrace": [
+                "2016-05-10 11:10:14,290 ERROR org.apache.hadoop.yarn.YarnUncaughtExceptionHandler: Thread Thread[LogAggregationService #652,5,main] threw an Exception.",
+                "java.lang.ClassCastException: org.apache.hadoop.security.authentication.client.AuthenticationException cannot be cast to java.security.GeneralSecurityException",
+                "at org.apache.hadoop.crypto.key.kms.LoadBalancingKMSClientProvider.decryptEncryptedKey(LoadBalancingKMSClientProvider.java:189)",
+                "at org.apache.hadoop.crypto.key.KeyProviderCryptoExtension.decryptEncryptedKey(KeyProviderCryptoExtension.java:388)",
+                "at org.apache.hadoop.hdfs.DFSClient.decryptEncryptedDataEncryptionKey(DFSClient.java:1419)",
+                "at org.apache.hadoop.hdfs.DFSClient.createWrappedOutputStream(DFSClient.java:1521)",
+                "at org.apache.hadoop.fs.Hdfs.createInternal(Hdfs.java:108)",
+                "at org.apache.hadoop.fs.Hdfs.createInternal(Hdfs.java:59)",
+                "at org.apache.hadoop.fs.AbstractFileSystem.create(AbstractFileSystem.java:577)",
+                "at org.apache.hadoop.fs.FileContext$3.next(FileContext.java:683)",
+                "at org.apache.hadoop.fs.FileContext$3.next(FileContext.java:679)",
+                "at org.apache.hadoop.fs.FSLinkResolver.resolve(FSLinkResolver.java:90)",
+                "at org.apache.hadoop.fs.FileContext.create(FileContext.java:679)",
+                "at org.apache.hadoop.yarn.logaggregation.AggregatedLogFormat$LogWriter$1.run(AggregatedLogFormat.java:382)",
+                "at org.apache.hadoop.yarn.logaggregation.AggregatedLogFormat$LogWriter$1.run(AggregatedLogFormat.java:377)",
+                "at java.security.AccessController.doPrivileged(Native Method)",
+                "at javax.security.auth.Subject.doAs(Subject.java:422)",
+                "at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1671)",
+                "at org.apache.hadoop.yarn.logaggregation.AggregatedLogFormat$LogWriter.<init>(AggregatedLogFormat.java:376)",
+                "at org.apache.hadoop.yarn.server.nodemanager.containermanager.logaggregation.AppLogAggregatorImpl.uploadLogsForContainers(AppLogAggregatorImpl.java:246)",
+                "at org.apache.hadoop.yarn.server.nodemanager.containermanager.logaggregation.AppLogAggregatorImpl.doAppLogAggregation(AppLogAggregatorImpl.java:456)",
+                "at org.apache.hadoop.yarn.server.nodemanager.containermanager.logaggregation.AppLogAggregatorImpl.run(AppLogAggregatorImpl.java:421)",
+                "at org.apache.hadoop.yarn.server.nodemanager.containermanager.logaggregation.LogAggregationService$2.run(LogAggregationService.java:384)",
+                "at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)",
+                "at java.lang.Thread.run(Thread.java:745)"
+            ],
+            "RootCause": "The root cause of the issue is an unsafe cast in the LoadBalancingKMSClientProvider class, specifically at line 189, where an AuthenticationException is incorrectly cast to a GeneralSecurityException. This leads to a ClassCastException being thrown, which is not handled properly, resulting in the failure of the Oozie job.",
+            "StepsToReproduce": [
+                "1. Submit an Oozie job with a single shell action that requires key decryption.",
+                "2. Monitor the YARN logs for the job execution.",
+                "3. Observe the ClassCastException in the logs."
+            ],
+            "ExpectedBehavior": "The Oozie job should complete successfully, and the YARN logs should be reported and saved without any exceptions.",
+            "ObservedBehavior": "The Oozie job fails with a ClassCastException, and YARN logs are not reported or saved.",
+            "Suggestions": "To resolve this issue, modify the LoadBalancingKMSClientProvider class to handle the AuthenticationException properly. Instead of casting it to GeneralSecurityException, implement a check to handle the specific exception type or refactor the code to avoid the unsafe cast. Additionally, ensure that proper logging is in place to capture the original exception message."
+        }
+    },
+    {
+        "filename": "HADOOP-15121.json",
+        "creation_time": "2017-12-15T07:41:39.000+0000",
+        "bug_report": {
+            "Title": "NullPointerException Encountered in DecayRpcScheduler Metrics Collection",
+            "Description": "When configuring the IPC scheduler to use `org.apache.hadoop.ipc.DecayRpcScheduler`, a `NullPointerException` is thrown in the NameNode. The error occurs during the metrics collection process, specifically when the `getMetrics` method is invoked on the `MetricsProxy` class. This issue arises due to a null `MetricsCollector` instance, which is not properly initialized before being accessed.",
+            "StackTrace": [
+                "2017-12-15 15:26:34,662 ERROR impl.MetricsSourceAdapter (MetricsSourceAdapter.java:getMetrics(202)) - Error getting metrics from source DecayRpcSchedulerMetrics2.ipc.8020",
+                "java.lang.NullPointerException",
+                "at org.apache.hadoop.ipc.DecayRpcScheduler$MetricsProxy.getMetrics(DecayRpcScheduler.java:781)",
+                "at org.apache.hadoop.metrics2.impl.MetricsSourceAdapter.getMetrics(MetricsSourceAdapter.java:199)",
+                "at org.apache.hadoop.metrics2.impl.MetricsSourceAdapter.updateJmxCache(MetricsSourceAdapter.java:182)",
+                "at org.apache.hadoop.metrics2.impl.MetricsSourceAdapter.getMBeanInfo(MetricsSourceAdapter.java:155)",
+                "at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.getNewMBeanClassName(DefaultMBeanServerInterceptor.java:333)",
+                "at com.sun.jmx.interceptor.DefaultMBeanServerInterceptor.registerMBean(DefaultMBeanServerInterceptor.java:319)",
+                "at org.apache.hadoop.metrics2.util.MBeans.register(MBeans.java:66)",
+                "at org.apache.hadoop.metrics2.impl.MetricsSourceAdapter.startMBeans(MetricsSourceAdapter.java:222)",
+                "at org.apache.hadoop.metrics2.impl.MetricsSourceAdapter.start(MetricsSourceAdapter.java:100)",
+                "at org.apache.hadoop.metrics2.impl.MetricsSystemImpl.registerSource(MetricsSystemImpl.java:268)",
+                "at org.apache.hadoop.metrics2.impl.MetricsSystemImpl.register(MetricsSystemImpl.java:233)",
+                "at org.apache.hadoop.ipc.DecayRpcScheduler$MetricsProxy.registerMetrics2Source(DecayRpcScheduler.java:709)",
+                "at org.apache.hadoop.ipc.DecayRpcScheduler$MetricsProxy.<init>(DecayRpcScheduler.java:685)",
+                "at org.apache.hadoop.ipc.DecayRpcScheduler$MetricsProxy.getInstance(DecayRpcScheduler.java:693)",
+                "at org.apache.hadoop.ipc.DecayRpcScheduler.<init>(DecayRpcScheduler.java:236)",
+                "at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)",
+                "at sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)",
+                "at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)",
+                "at java.lang.reflect.Constructor.newInstance(Constructor.java:423)",
+                "at org.apache.hadoop.ipc.CallQueueManager.createScheduler(CallQueueManager.java:102)",
+                "at org.apache.hadoop.ipc.CallQueueManager.<init>(CallQueueManager.java:76)",
+                "at org.apache.hadoop.ipc.Server.<init>(Server.java:2612)",
+                "at org.apache.hadoop.ipc.RPC$Server.<init>(RPC.java:958)",
+                "at org.apache.hadoop.ipc.ProtobufRpcEngine$Server.<init>(ProtobufRpcEngine.java:374)",
+                "at org.apache.hadoop.ipc.ProtobufRpcEngine.getServer(ProtobufRpcEngine.java:349)",
+                "at org.apache.hadoop.ipc.RPC$Builder.build(RPC.java:800)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNodeRpcServer.<init>(NameNodeRpcServer.java:415)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.createRpcServer(NameNode.java:755)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.initialize(NameNode.java:697)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.<init>(NameNode.java:905)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.<init>(NameNode.java:884)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.createNameNode(NameNode.java:1610)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.main(NameNode.java:1678)"
+            ],
+            "RootCause": "The `NullPointerException` is caused by a null `MetricsCollector` being passed to the `getMetrics` method in the `DecayRpcScheduler$MetricsProxy` class. This indicates that the `MetricsCollector` is not properly initialized before being accessed, leading to the exception.",
+            "StepsToReproduce": [
+                "Set the configuration property `ipc.8020.scheduler.impl` to `org.apache.hadoop.ipc.DecayRpcScheduler`.",
+                "Start the NameNode.",
+                "Observe the logs for the `NullPointerException` during metrics collection."
+            ],
+            "ExpectedBehavior": "The `DecayRpcScheduler` should initialize its metrics collection without throwing a `NullPointerException`, allowing for proper monitoring and metrics reporting.",
+            "ObservedBehavior": "A `NullPointerException` is thrown when attempting to collect metrics from the `DecayRpcScheduler`, indicating that the metrics collector is not initialized.",
+            "Suggestions": "Ensure that the `MetricsCollector` is properly initialized in the `DecayRpcScheduler$MetricsProxy` class before it is accessed in the `getMetrics` method. This may involve checking the initialization logic and ensuring that all necessary dependencies are set up correctly."
+        }
+    },
+    {
+        "filename": "HADOOP-8110.json",
+        "creation_time": "2012-02-24T18:49:27.000+0000",
+        "bug_report": {
+            "Title": "Intermittent Failure in TestViewFsTrash due to Assertion Error",
+            "Description": "The test case `TestViewFsTrash.testTrash` is failing intermittently, as indicated by the JUnit assertion failure. The expected value was 0, but the actual value returned was 1. This issue has been observed in multiple builds, suggesting a potential problem in the underlying logic of the trash management system in Hadoop's filesystem.",
+            "StackTrace": [
+                "junit.framework.AssertionFailedError: -expunge failed expected:<0> but was:<1>",
+                "at junit.framework.Assert.fail(Assert.java:47)",
+                "at junit.framework.Assert.failNotEquals(Assert.java:283)",
+                "at junit.framework.Assert.assertEquals(Assert.java:64)",
+                "at junit.framework.Assert.assertEquals(Assert.java:195)",
+                "at org.apache.hadoop.fs.TestTrash.trashShell(TestTrash.java:322)",
+                "at org.apache.hadoop.fs.viewfs.TestViewFsTrash.testTrash(TestViewFsTrash.java:73)"
+            ],
+            "RootCause": "The root cause of the failure appears to be related to the logic in the `trashShell` method of the `TestTrash` class. The method is expected to return a value of 0 when the trash is empty, but it is returning 1, indicating that there may be items in the trash that are not being cleared as expected. The exact implementation details of the `trashShell` method could not be located, which complicates the diagnosis.",
+            "StepsToReproduce": [
+                "Run the test suite for `TestViewFsTrash` in the Hadoop project.",
+                "Observe the intermittent failures in the `testTrash` method.",
+                "Check the output of the `trashShell` method to verify the return values."
+            ],
+            "ExpectedBehavior": "The `testTrash` method should pass without assertion errors, indicating that the trash management system is functioning correctly and that the expected value of 0 is returned when the trash is empty.",
+            "ObservedBehavior": "The test fails intermittently, with the assertion indicating that the expected value of 0 is not being met, and instead, a value of 1 is returned.",
+            "Suggestions": "1. Investigate the implementation of the `trashShell` method in the `TestTrash` class to identify any logical errors that may lead to the incorrect return value. 2. Ensure that the trash is being properly cleared before the test runs. 3. Consider adding additional logging to the `trashShell` method to capture the state of the trash before and after operations. 4. Review related issues such as HADOOP-8542, HADOOP-8036, and HADOOP-7974 for potential overlaps or related fixes."
+        }
+    },
+    {
+        "filename": "HADOOP-11400.json",
+        "creation_time": "2014-12-12T10:05:52.000+0000",
+        "bug_report": {
+            "Title": "GraphiteSink Fails to Reconnect After 'Broken Pipe' Error",
+            "Description": "After encountering a network error, the GraphiteSink does not attempt to reconnect to the Graphite server, resulting in a failure to send metrics. This issue is particularly problematic as it leads to a loss of critical metrics data. The stack trace indicates that the error originates from the MetricsSinkAdapter, specifically during the flush operation of the GraphiteSinkFixed class.",
+            "StackTrace": [
+                "2014-12-11 16:39:21,655 ERROR org.apache.hadoop.metrics2.impl.MetricsSinkAdapter: Got sink exception, retry in 4806ms",
+                "org.apache.hadoop.metrics2.MetricsException: Error flushing metrics",
+                "at org.apache.hadoop.metrics2.sink.GraphiteSinkFixed.flush(GraphiteSinkFixed.java:120)",
+                "at org.apache.hadoop.metrics2.impl.MetricsSinkAdapter.consume(MetricsSinkAdapter.java:184)",
+                "at org.apache.hadoop.metrics2.impl.MetricsSinkAdapter.consume(MetricsSinkAdapter.java:43)",
+                "at org.apache.hadoop.metrics2.impl.SinkQueue.consumeAll(SinkQueue.java:87)",
+                "at org.apache.hadoop.metrics2.impl.MetricsSinkAdapter.publishMetricsFromQueue(MetricsSinkAdapter.java:129)",
+                "at org.apache.hadoop.metrics2.impl.MetricsSinkAdapter$1.run(MetricsSinkAdapter.java:88)",
+                "Caused by: java.net.SocketException: Broken pipe",
+                "at java.net.SocketOutputStream.socketWrite0(Native Method)",
+                "at java.net.SocketOutputStream.socketWrite(SocketOutputStream.java:113)",
+                "at java.net.SocketOutputStream.write(SocketOutputStream.java:159)",
+                "at sun.nio.cs.StreamEncoder.writeBytes(StreamEncoder.java:221)",
+                "at sun.nio.cs.StreamEncoder.implFlushBuffer(StreamEncoder.java:291)",
+                "at sun.nio.cs.StreamEncoder.implFlush(StreamEncoder.java:295)",
+                "at sun.nio.cs.StreamEncoder.flush(StreamEncoder.java:141)",
+                "at java.io.OutputStreamWriter.flush(OutputStreamWriter.java:229)",
+                "at org.apache.hadoop.metrics2.sink.GraphiteSinkFixed.flush(GraphiteSinkFixed.java:118)",
+                "... 5 more"
+            ],
+            "RootCause": "The root cause of the issue is the lack of reconnection logic in the GraphiteSinkFixed class. The OutputStreamWriter is initialized only once during the init method, which is called a single time per application runtime. When a network error occurs, the sink does not attempt to re-establish the connection, leading to the 'Broken pipe' error and subsequent failure to send metrics.",
+            "StepsToReproduce": [
+                "1. Set up a Hadoop environment with GraphiteSink configured.",
+                "2. Simulate a network failure while the application is running.",
+                "3. Observe the logs for the 'Broken pipe' error and the failure to reconnect."
+            ],
+            "ExpectedBehavior": "The GraphiteSink should automatically attempt to reconnect to the Graphite server after a network error, ensuring that metrics are sent continuously without loss.",
+            "ObservedBehavior": "After a network error, the GraphiteSink fails to reconnect to the Graphite server, resulting in a loss of metrics data and repeated error messages in the logs.",
+            "Suggestions": "Implement reconnection logic in the GraphiteSinkFixed class. Modify the flush method to handle SocketExceptions by attempting to re-establish the connection to the Graphite server. Additionally, consider adding a backoff strategy for retries to avoid overwhelming the server during reconnection attempts."
+        }
+    },
+    {
+        "filename": "HADOOP-9865.json",
+        "creation_time": "2013-08-12T23:22:58.000+0000",
+        "bug_report": {
+            "Title": "Regression in FileContext.globStatus() with Relative Paths on Windows",
+            "Description": "A regression was identified in the FileContext.globStatus() method, specifically when handling relative paths on Windows. The issue arises during the execution of the unit test TestMRJobClient, where a job fails due to the inability to create a JAR file with the correct classpath. This failure is triggered by passing a relative path to the FileContext.globStatus() method, which expects an absolute path. The problem is not present on Linux systems, indicating a platform-specific issue.",
+            "StackTrace": [
+                "2013-08-12 16:12:05,937 WARN  [ContainersLauncher #0] launcher.ContainerLaunch (ContainerLaunch.java:call(270)) - Failed to launch container.",
+                "org.apache.hadoop.HadoopIllegalArgumentException: Path is relative",
+                "at org.apache.hadoop.fs.Path.checkNotRelative(Path.java:74)",
+                "at org.apache.hadoop.fs.FileContext.getFSofPath(FileContext.java:304)",
+                "at org.apache.hadoop.fs.Globber.schemeFromPath(Globber.java:107)",
+                "at org.apache.hadoop.fs.Globber.glob(Globber.java:128)",
+                "at org.apache.hadoop.fs.FileContext$Util.globStatus(FileContext.java:1908)",
+                "at org.apache.hadoop.fs.FileUtil.createJarWithClassPath(FileUtil.java:1247)",
+                "at org.apache.hadoop.yarn.server.nodemanager.containermanager.launcher.ContainerLaunch.sanitizeEnv(ContainerLaunch.java:679)",
+                "at org.apache.hadoop.yarn.server.nodemanager.containermanager.launcher.ContainerLaunch.call(ContainerLaunch.java:232)",
+                "at org.apache.hadoop.yarn.server.nodemanager.containermanager.launcher.ContainerLaunch.call(ContainerLaunch.java:1)",
+                "at java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:303)",
+                "at java.util.concurrent.FutureTask.run(FutureTask.java:138)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:886)",
+                "at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:908)",
+                "at java.lang.Thread.run(Thread.java:662)"
+            ],
+            "RootCause": "The root cause of the issue is the passing of a relative path to the FileContext.globStatus() method, which leads to a HadoopIllegalArgumentException. This is a regression from a previous fix (HADOOP-9817) that may have altered the expected behavior of path handling in the context of Windows.",
+            "StepsToReproduce": [
+                "Run the unit test TestMRJobClient on a Windows environment.",
+                "Observe the failure when the job attempts to list its status after failing to launch.",
+                "Check the logs for the 'Path is relative' error message."
+            ],
+            "ExpectedBehavior": "The job should launch successfully, and the status should be retrievable without errors, regardless of the operating system.",
+            "ObservedBehavior": "The job fails to launch due to a relative path being passed to the globStatus() method, resulting in an exception and causing the unit test to fail.",
+            "Suggestions": "Modify the code in FileUtil.createJarWithClassPath to ensure that an absolute path is provided to the FileContext.globStatus() method. Additionally, implement unit tests to cover this scenario and verify that the issue is resolved across different operating systems."
+        }
+    },
+    {
+        "filename": "HADOOP-9977.json",
+        "creation_time": "2013-09-17T22:11:54.000+0000",
+        "bug_report": {
+            "Title": "Hadoop services won't start with different keypass and keystorepass when HTTPS is enabled",
+            "Description": "When configuring Hadoop services to use SSL, if the keystore password and the key password are set to different values, the services fail to start. This issue arises specifically when the following command is executed to generate the keystore:\n\n```bash\nkeytool -genkey -alias host1 -keyalg RSA -keysize 1024 -dname \"CN=host1,OU=cm,O=cm,L=san jose,ST=ca,C=us\" -keypass hadoop -keystore keystore.jks -storepass hadoopKey\n```\n\nThe configuration in `ssl-server.xml` must also reflect these passwords correctly:\n\n```xml\n<property><name>ssl.server.keystore.keypassword</name><value>hadoop</value></property>\n<property><name>ssl.server.keystore.password</name><value>hadoopKey</value></property>\n```\n\nHowever, when starting the Namenode, ResourceManager, Datanode, Nodemanager, and SecondaryNamenode, the following error is encountered:\n\n```\n2013-09-17 21:39:00,794 FATAL namenode.NameNode (NameNode.java:main(1325)) - Exception in namenode join\njava.io.IOException: java.security.UnrecoverableKeyException: Cannot recover key\n```\n\nThis indicates that the application cannot recover the key from the keystore, likely due to an incorrect password or misconfiguration.",
+            "StackTrace": [
+                "java.io.IOException: java.security.UnrecoverableKeyException: Cannot recover key",
+                "at org.apache.hadoop.http.HttpServer.<init>(HttpServer.java:222)",
+                "at org.apache.hadoop.http.HttpServer.<init>(HttpServer.java:174)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNodeHttpServer$1.<init>(NameNodeHttpServer.java:76)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNodeHttpServer.start(NameNodeHttpServer.java:74)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.startHttpServer(NameNode.java:626)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.initialize(NameNode.java:488)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.<init>(NameNode.java:684)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.<init>(NameNode.java:669)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.createNameNode(NameNode.java:1254)",
+                "at org.apache.hadoop.hdfs.server.namenode.NameNode.main(NameNode.java:1320)",
+                "Caused by: java.security.UnrecoverableKeyException: Cannot recover key",
+                "at sun.security.provider.KeyProtector.recover(KeyProtector.java:328)",
+                "at sun.security.provider.JavaKeyStore.engineGetKey(JavaKeyStore.java:138)",
+                "at sun.security.provider.JavaKeyStore$JKS.engineGetKey(JavaKeyStore.java:55)",
+                "at java.security.KeyStore.getKey(KeyStore.java:792)",
+                "at sun.security.ssl.SunX509KeyManagerImpl.<init>(SunX509KeyManagerImpl.java:131)",
+                "at sun.security.ssl.KeyManagerFactoryImpl$SunX509.engineInit(KeyManagerFactoryImpl.java:68)",
+                "at javax.net.ssl.KeyManagerFactory.init(KeyManagerFactory.java:259)",
+                "at org.apache.hadoop.security.ssl.FileBasedKeyStoresFactory.init(FileBasedKeyStoresFactory.java:170)",
+                "at org.apache.hadoop.security.ssl.SSLFactory.init(SSLFactory.java:121)",
+                "at org.apache.hadoop.http.HttpServer.<init>(HttpServer.java:220)"
+            ],
+            "RootCause": "The root cause of the issue is an UnrecoverableKeyException, which indicates that the application cannot recover the key from the keystore due to a mismatch between the keystore password and the key password.",
+            "StepsToReproduce": [
+                "1. Generate a keystore using the command provided in the description with different keypass and storepass.",
+                "2. Configure the ssl-server.xml with the respective passwords.",
+                "3. Attempt to start the Hadoop services (Namenode, ResourceManager, Datanode, Nodemanager, SecondaryNamenode).",
+                "4. Observe the error in the logs indicating the UnrecoverableKeyException."
+            ],
+            "ExpectedBehavior": "Hadoop services should start successfully without any exceptions when the correct keystore and key passwords are provided.",
+            "ObservedBehavior": "Hadoop services fail to start, throwing an UnrecoverableKeyException due to incorrect password configuration.",
+            "Suggestions": "Ensure that the keystore password and the key password are the same or correctly configured in the ssl-server.xml file. Verify the keystore settings and ensure that the correct passwords are used when starting the services."
+        }
+    },
+    {
+        "filename": "HADOOP-12611.json",
+        "creation_time": "2015-12-01T17:14:38.000+0000",
+        "bug_report": {
+            "Title": "Intermittent Failure in TestZKSignerSecretProvider#testMultipleInit",
+            "Description": "The test case `testMultipleInit` in `TestZKSignerSecretProvider` occasionally fails with an `AssertionError` indicating that a null value was expected but a non-null value was returned. This issue appears to be related to the initialization state of the `ZKSignerSecretProvider` instance, which is not properly started before the method call, leading to an `IllegalStateException` during execution.",
+            "StackTrace": [
+                "java.lang.AssertionError: expected null, but was:<[B@142bad79>",
+                "at org.junit.Assert.fail(Assert.java:88)",
+                "at org.junit.Assert.failNotNull(Assert.java:664)",
+                "at org.junit.Assert.assertNull(Assert.java:646)",
+                "at org.junit.Assert.assertNull(Assert.java:656)",
+                "at org.apache.hadoop.security.authentication.util.TestZKSignerSecretProvider.testMultipleInit(TestZKSignerSecretProvider.java:149)",
+                "2015-11-29 00:24:33,325 ERROR ZKSignerSecretProvider - An unexpected exception occurred while pulling data from ZooKeeper",
+                "java.lang.IllegalStateException: instance must be started before calling this method",
+                "at com.google.common.base.Preconditions.checkState(Preconditions.java:145)",
+                "at org.apache.curator.framework.imps.CuratorFrameworkImpl.getData(CuratorFrameworkImpl.java:363)",
+                "at org.apache.hadoop.security.authentication.util.ZKSignerSecretProvider.pullFromZK(ZKSignerSecretProvider.java:341)",
+                "at org.apache.hadoop.security.authentication.util.ZKSignerSecretProvider.rollSecret(ZKSignerSecretProvider.java:264)"
+            ],
+            "RootCause": "The root cause of the issue is that the `ZKSignerSecretProvider` instance is not properly initialized before the `testMultipleInit` method attempts to call methods on it. Specifically, the `pullFromZK` method is invoked on an instance that has not been started, leading to an `IllegalStateException`.",
+            "StepsToReproduce": [
+                "Run the test suite for `TestZKSignerSecretProvider` multiple times.",
+                "Observe the intermittent failure of the `testMultipleInit` test case."
+            ],
+            "ExpectedBehavior": "The `testMultipleInit` test case should pass without any assertion errors, and the `ZKSignerSecretProvider` should return a null value as expected.",
+            "ObservedBehavior": "The `testMultipleInit` test case fails intermittently with an `AssertionError` indicating that a non-null value was returned when null was expected.",
+            "Suggestions": "Ensure that the `ZKSignerSecretProvider` instance is properly initialized and started before invoking any methods on it in the `testMultipleInit` test case. Review the initialization logic in the test setup to confirm that all necessary preconditions are met."
+        }
+    },
+    {
+        "filename": "HADOOP-10142.json",
+        "creation_time": "2013-12-03T06:33:32.000+0000",
+        "bug_report": {
+            "Title": "Avoid groups lookup for unprivileged users such as 'dr.who'",
+            "Description": "The current implementation of `ShellBasedUnixGroupsMapping` generates excessive log entries when attempting to retrieve group information for non-existent users. For instance, when using WebHDFS from Windows, the following log is generated for each request:\n\n```\n2013-12-03 11:34:56,589 WARN org.apache.hadoop.security.ShellBasedUnixGroupsMapping: got exception trying to get groups for user dr.who\norg.apache.hadoop.util.Shell$ExitCodeException: id: dr.who: No such user\n```\n\nThis behavior leads to unnecessary log clutter and can impact performance due to repeated attempts to resolve groups for unprivileged users.",
+            "StackTrace": [
+                "org.apache.hadoop.util.Shell.runCommand(Shell.java:504)",
+                "org.apache.hadoop.util.Shell.run(Shell.java:417)",
+                "org.apache.hadoop.util.Shell$ShellCommandExecutor.execute(Shell.java:636)",
+                "org.apache.hadoop.util.Shell.execCommand(Shell.java:725)",
+                "org.apache.hadoop.util.Shell.execCommand(Shell.java:708)",
+                "org.apache.hadoop.security.ShellBasedUnixGroupsMapping.getUnixGroups(ShellBasedUnixGroupsMapping.java:83)",
+                "org.apache.hadoop.security.ShellBasedUnixGroupsMapping.getGroups(ShellBasedUnixGroupsMapping.java:52)",
+                "org.apache.hadoop.security.JniBasedUnixGroupsMappingWithFallback.getGroups(JniBasedUnixGroupsMappingWithFallback.java:50)",
+                "org.apache.hadoop.security.Groups.getGroups(Groups.java:95)",
+                "org.apache.hadoop.security.UserGroupInformation.getGroupNames(UserGroupInformation.java:1376)",
+                "org.apache.hadoop.hdfs.server.namenode.FSPermissionChecker.<init>(FSPermissionChecker.java:63)",
+                "org.apache.hadoop.hdfs.server.namenode.FSNamesystem.getPermissionChecker(FSNamesystem.java:3228)",
+                "org.apache.hadoop.hdfs.server.namenode.FSNamesystem.getListingInt(FSNamesystem.java:4063)",
+                "org.apache.hadoop.hdfs.server.namenode.FSNamesystem.getListing(FSNamesystem.java:4052)",
+                "org.apache.hadoop.hdfs.server.namenode.NameNodeRpcServer.getListing(NameNodeRpcServer.java:748)",
+                "org.apache.hadoop.hdfs.server.namenode.web.resources.NamenodeWebHdfsMethods.getDirectoryListing(NamenodeWebHdfsMethods.java:715)",
+                "org.apache.hadoop.hdfs.server.namenode.web.resources.NamenodeWebHdfsMethods.getListingStream(NamenodeWebHdfsMethods.java:727)",
+                "org.apache.hadoop.hdfs.server.namenode.web.resources.NamenodeWebHdfsMethods.get(NamenodeWebHdfsMethods.java:675)",
+                "org.apache.hadoop.hdfs.server.namenode.web.resources.NamenodeWebHdfsMethods.access$400(NamenodeWebHdfsMethods.java:114)",
+                "org.apache.hadoop.hdfs.server.namenode.web.resources.NamenodeWebHdfsMethods$3.run(NamenodeWebHdfsMethods.java:623)",
+                "org.apache.hadoop.hdfs.server.namenode.web.resources.NamenodeWebHdfsMethods$3.run(NamenodeWebHdfsMethods.java:618)",
+                "java.security.AccessController.doPrivileged(Native Method)",
+                "javax.security.auth.Subject.doAs(Subject.java:396)",
+                "org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1515)",
+                "org.apache.hadoop.hdfs.server.namenode.web.resources.NamenodeWebHdfsMethods.get(NamenodeWebHdfsMethods.java:618)",
+                "org.apache.hadoop.hdfs.server.namenode.web.resources.NamenodeWebHdfsMethods.getRoot(NamenodeWebHdfsMethods.java:586)",
+                "sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)",
+                "sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)",
+                "sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)",
+                "java.lang.reflect.Method.invoke(Method.java:597)",
+                "com.sun.jersey.spi.container.JavaMethodInvokerFactory$1.invoke(JavaMethodInvokerFactory.java:60)",
+                "com.sun.jersey.server.impl.model.method.dispatch.AbstractResourceMethodDispatchProvider$ResponseOutInvoker._dispatch(AbstractResourceMethodDispatchProvider.java:205)",
+                "com.sun.jersey.server.impl.model.method.dispatch.ResourceJavaMethodDispatcher.dispatch(ResourceJavaMethodDispatcher.java:75)",
+                "com.sun.jersey.server.impl.uri.rules.HttpMethodRule.accept(HttpMethodRule.java:288)",
+                "com.sun.jersey.server.impl.uri.rules.ResourceClassRule.accept(ResourceClassRule.java:108)",
+                "com.sun.jersey.server.impl.uri.rules.RightHandPathRule.accept(RightHandPathRule.java:147)",
+                "com.sun.jersey.server.impl.uri.rules.RootResourceClassesRule.accept(RootResourceClassesRule.java:84)",
+                "com.sun.jersey.server.impl.application.WebApplicationImpl._handleRequest(WebApplicationImpl.java:1469)",
+                "com.sun.jersey.server.impl.application.WebApplicationImpl._handleRequest(WebApplicationImpl.java:1400)",
+                "com.sun.jersey.server.impl.application.WebApplicationImpl.handleRequest(WebApplicationImpl.java:1349)",
+                "com.sun.jersey.server.impl.application.WebApplicationImpl.handleRequest(WebApplicationImpl.java:1339)",
+                "com.sun.jersey.spi.container.servlet.WebComponent.service(WebComponent.java:416)",
+                "com.sun.jersey.spi.container.servlet.ServletContainer.service(ServletContainer.java:537)",
+                "com.sun.jersey.spi.container.servlet.ServletContainer.service(ServletContainer.java:699)",
+                "javax.servlet.http.HttpServlet.service(HttpServlet.java:820)",
+                "org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)",
+                "org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1221)",
+                "org.apache.hadoop.security.authentication.server.AuthenticationFilter.doFilter(AuthenticationFilter.java:384)",
+                "org.apache.hadoop.hdfs.web.AuthFilter.doFilter(AuthFilter.java:85)",
+                "org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1212)",
+                "org.apache.hadoop.http.HttpServer$QuotingInputFilter.doFilter(HttpServer.java:1310)",
+                "org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1212)",
+                "org.apache.hadoop.http.NoCacheFilter.doFilter(NoCacheFilter.java:45)",
+                "org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1212)",
+                "org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:399)",
+                "org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)",
+                "org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)",
+                "org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:766)",
+                "org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:450)",
+                "org.mortbay.jetty.handler.ContextHandlerCollection.handle(ContextHandlerCollection.java:230)",
+                "org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)",
+                "org.mortbay.jetty.Server.handle(Server.java:326)",
+                "org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)",
+                "org.mortbay.jetty.HttpConnection$RequestHandler.headerComplete(HttpConnection.java:928)",
+                "org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:549)",
+                "org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:212)",
+                "org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)",
+                "org.mortbay.io.nio.SelectChannelEndPoint.run(SelectChannelEndPoint.java:410)",
+                "org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)"
+            ],
+            "RootCause": "The root cause of the issue is that the user 'dr.who' does not exist on the system, leading to an `ExitCodeException` when Hadoop attempts to retrieve Unix group information for that user.",
+            "StepsToReproduce": [
+                "Set up a Hadoop environment with WebHDFS enabled.",
+                "Attempt to access WebHDFS using a non-existent user, e.g., 'dr.who'.",
+                "Observe the logs generated for each request."
+            ],
+            "ExpectedBehavior": "The system should not attempt to look up group information for non-existent users, thereby reducing log clutter and improving performance.",
+            "ObservedBehavior": "The system generates multiple log entries indicating that the user 'dr.who' does not exist, leading to excessive logging and potential performance degradation.",
+            "Suggestions": "Implement a check in `ShellBasedUnixGroupsMapping` to avoid group lookups for users that do not exist. This can be achieved by validating the existence of the user before attempting to retrieve group information."
+        }
+    },
+    {
+        "filename": "HADOOP-14727.json",
+        "creation_time": "2017-08-02T21:56:38.000+0000",
+        "bug_report": {
+            "Title": "Socket Not Closed Properly When Reading Configurations with BlockReaderRemote",
+            "Description": "During internal testing of Cloudera's alpha4 release, it was reported that some hosts ran out of file descriptors (FDs). Investigation revealed that both the Oozie server and Yarn JobHistoryServer had numerous sockets in the CLOSE_WAIT state. The issue was consistently reproducible by accessing the JobHistoryServer (JHS) web UI and navigating through job logs. Debugging indicated that the CLOSE_WAIT sockets were created from the call stack involving the BlockReaderRemote class. Further analysis showed that reverting recent commits to the Configuration class eliminated the CLOSE_WAIT sockets, suggesting a potential leak in the InputStream handling.",
+            "StackTrace": [
+                "java.lang.Exception: test",
+                "at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.getRemoteBlockReaderFromTcp(BlockReaderFactory.java:745)",
+                "at org.apache.hadoop.hdfs.client.impl.BlockReaderFactory.build(BlockReaderFactory.java:385)",
+                "at org.apache.hadoop.hdfs.DFSInputStream.getBlockReader(DFSInputStream.java:636)",
+                "at org.apache.hadoop.hdfs.DFSInputStream.blockSeekTo(DFSInputStream.java:566)",
+                "at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:749)",
+                "at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:807)",
+                "at java.io.DataInputStream.read(DataInputStream.java:149)",
+                "at com.ctc.wstx.io.StreamBootstrapper.ensureLoaded(StreamBootstrapper.java:482)",
+                "at com.ctc.wstx.io.StreamBootstrapper.resolveStreamEncoding(StreamBootstrapper.java:306)",
+                "at com.ctc.wstx.io.StreamBootstrapper.bootstrapInput(StreamBootstrapper.java:167)",
+                "at org.apache.hadoop.conf.Configuration.parse(Configuration.java:2649)",
+                "at org.apache.hadoop.conf.Configuration.loadResource(Configuration.java:2697)",
+                "at org.apache.hadoop.conf.Configuration.loadResources(Configuration.java:2662)",
+                "at org.apache.hadoop.conf.Configuration.getProps(Configuration.java:2545)",
+                "at org.apache.hadoop.conf.Configuration.get(Configuration.java:1076)",
+                "at org.apache.hadoop.mapreduce.counters.Limits.init(Limits.java:45)",
+                "at org.apache.hadoop.mapreduce.counters.Limits.reset(Limits.java:130)",
+                "at org.apache.hadoop.mapreduce.v2.hs.CompletedJob.loadFullHistoryData(CompletedJob.java:363)",
+                "at org.apache.hadoop.mapreduce.v2.hs.CompletedJob.<init>(CompletedJob.java:105)",
+                "at org.apache.hadoop.mapreduce.v2.hs.HistoryFileManager$HistoryFileInfo.loadJob(HistoryFileManager.java:473)",
+                "at org.apache.hadoop.mapreduce.v2.hs.CachedHistoryStorage.loadJob(CachedHistoryStorage.java:180)",
+                "at org.apache.hadoop.mapreduce.v2.hs.CachedHistoryStorage.access$000(CachedHistoryStorage.java:52)",
+                "at org.apache.hadoop.mapreduce.v2.hs.CachedHistoryStorage$1.load(CachedHistoryStorage.java:103)",
+                "at org.apache.hadoop.mapreduce.v2.hs.CachedHistoryStorage$1.load(CachedHistoryStorage.java:100)",
+                "at com.google.common.cache.LocalCache$LoadingValueReference.loadFuture(LocalCache.java:3568)",
+                "at com.google.common.cache.LocalCache$Segment.loadSync(LocalCache.java:2350)",
+                "at com.google.common.cache.LocalCache$Segment.lockedGetOrLoad(LocalCache.java:2313)",
+                "at com.google.common.cache.LocalCache$Segment.get(LocalCache.java:2228)",
+                "at com.google.common.cache.LocalCache.get(LocalCache.java:3965)",
+                "at com.google.common.cache.LocalCache.getOrLoad(LocalCache.java:3969)",
+                "at org.apache.hadoop.mapreduce.v2.hs.CachedHistoryStorage.getFullJob(CachedHistoryStorage.java:193)",
+                "at org.apache.hadoop.mapreduce.v2.hs.JobHistory.getJob(JobHistory.java:220)",
+                "at org.apache.hadoop.mapreduce.v2.app.webapp.AppController.requireJob(AppController.java:416)",
+                "at org.apache.hadoop.mapreduce.v2.app.webapp.AppController.attempts(AppController.java:277)",
+                "at org.apache.hadoop.mapreduce.v2.hs.webapp.HsController.attempts(HsController.java:152)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)",
+                "at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)",
+                "at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)",
+                "at java.lang.reflect.Method.invoke(Method.java:498)",
+                "at org.apache.hadoop.yarn.webapp.Dispatcher.service(Dispatcher.java:162)",
+                "at javax.servlet.http.HttpServlet.service(HttpServlet.java:790)",
+                "at com.google.inject.servlet.ServletDefinition.doServiceImpl(ServletDefinition.java:287)",
+                "at com.google.inject.servlet.ServletDefinition.doService(ServletDefinition.java:277)",
+                "at com.google.inject.servlet.ServletDefinition.service(ServletDefinition.java:182)",
+                "at com.google.inject.servlet.ManagedServletPipeline.service(ManagedServletPipeline.java:91)",
+                "at com.google.inject.servlet.FilterChainInvocation.doFilter(FilterChainInvocation.java:85)",
+                "at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1759)",
+                "at org.apache.hadoop.security.http.XFrameOptionsFilter.doFilter(XFrameOptionsFilter.java:57)",
+                "at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1759)",
+                "at org.apache.hadoop.http.lib.StaticUserWebFilter$StaticUserFilter.doFilter(StaticUserWebFilter.java:109)",
+                "at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1759)",
+                "at org.apache.hadoop.http.HttpServer2$QuotingInputFilter.doFilter(HttpServer2.java:1552)",
+                "at org.eclipse.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1759)",
+                "at org.eclipse.jetty.servlet.ServletHandler.doHandle(ServletHandler.java:582)",
+                "at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:143)",
+                "at org.eclipse.jetty.security.SecurityHandler.handle(SecurityHandler.java:548)",
+                "at org.eclipse.jetty.server.session.SessionHandler.doHandle(SessionHandler.java:226)",
+                "at org.eclipse.jetty.server.handler.ContextHandler.doHandle(ContextHandler.java:1180)",
+                "at org.eclipse.jetty.servlet.ServletHandler.doScope(ServletHandler.java:512)",
+                "at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:185)",
+                "at org.eclipse.jetty.server.handler.ContextHandler.doScope(ContextHandler.java:1112)",
+                "at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141)",
+                "at org.eclipse.jetty.server.handler.HandlerCollection.handle(HandlerCollection.java:119)",
+                "at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:134)",
+                "at org.eclipse.jetty.server.Server.handle(Server.java:534)",
+                "at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:320)",
+                "at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:251)",
+                "at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:283)",
+                "at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:108)",
+                "at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:93)",
+                "at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.executeProduceConsume(ExecuteProduceConsume.java:303)",
+                "at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceConsume(ExecuteProduceConsume.java:148)",
+                "at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:136)",
+                "at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:671)",
+                "at org.eclipse.jetty.util.thread.QueuedThreadPool$2.run(QueuedThreadPool.java:589)",
+                "at java.lang.Thread.run(Thread.java:748)"
+            ],
+            "RootCause": "The root cause appears to be related to improper handling of InputStream closures in the BlockReaderFactory class, particularly in the getRemoteBlockReaderFromTcp method. The failure to close sockets properly leads to resource leaks, resulting in an accumulation of sockets in the CLOSE_WAIT state.",
+            "StepsToReproduce": [
+                "Deploy the Hadoop framework with the alpha4 release.",
+                "Access the JobHistoryServer (JHS) web UI.",
+                "Navigate through job logs to trigger the issue."
+            ],
+            "ExpectedBehavior": "Sockets should be closed properly after use, preventing accumulation in the CLOSE_WAIT state and avoiding exhaustion of file descriptors.",
+            "ObservedBehavior": "Numerous sockets remain in the CLOSE_WAIT state, leading to file descriptor exhaustion on the host.",
+            "Suggestions": "Review the InputStream handling in the BlockReaderFactory class, specifically in the getRemoteBlockReaderFromTcp method. Ensure that all InputStreams are properly closed after use. Consider implementing a try-with-resources statement or explicitly closing streams in a finally block to prevent resource leaks."
+        }
+    }
+]
