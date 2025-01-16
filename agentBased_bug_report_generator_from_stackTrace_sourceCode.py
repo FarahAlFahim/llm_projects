@@ -103,6 +103,7 @@ def generate_final_bug_report(agent_based_source_code_analysis, stack_trace):
     # print("input data:", input_data)
     print("stack trace:", stack_trace)
     print("analyzed method:", agent_based_source_code_analysis)
+    print("current_source_code_dict:", current_source_code_dict)
     print("------------------- generate final bug report (end) --------------")
     # bug_report = input_data['bug_report']
     # analyzed_methods = input_data['analyzed_methods']
@@ -152,12 +153,17 @@ def generate_final_bug_report(agent_based_source_code_analysis, stack_trace):
 
     # You are given the insights derived from agent-based analysis of source code methods below:
     {agent_based_source_code_analysis}
+
+
+    
+    # You are given the source code methods analyzed by agent-based approach below:
+    {current_source_code_dict}
     """
     prompt = PromptTemplate.from_template(template)
     llm = ChatOpenAI(model='gpt-4o-mini', temperature = 0)
 
     chain = LLMChain(llm=llm, prompt=prompt)
-    return chain.run({'stack_trace': stack_trace, 'agent_based_source_code_analysis': agent_based_source_code_analysis})
+    return chain.run({'stack_trace': stack_trace, 'agent_based_source_code_analysis': agent_based_source_code_analysis, 'current_source_code_dict': current_source_code_dict})
 
 # Tools for the agent
 tools = [
@@ -180,10 +186,10 @@ agent_executor = initialize_agent(
 
 
 # Read input and prepare output data
-# input_file = "test.json"
-# output_file = "test_output.json"
-input_file = "source_code_data/Zookeeper.json"
-output_file = "agentBased_bug_report_from_stackTrace_sourceCode/Zookeeper.json"
+input_file = "test.json"
+output_file = "test_output.json"
+# input_file = "source_code_data/Hadoop.json"
+# output_file = "agentBased_bug_report_from_stackTrace_sourceCode/Hadoop.json"
 
 with open(input_file, "r") as file:
     source_code_data = json.load(file)
