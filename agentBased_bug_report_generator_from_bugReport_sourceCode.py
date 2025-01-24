@@ -164,19 +164,92 @@ def analyze_method_and_request_next(input_data):
     # print("------- analyze_method_and_request_next (end) ----------")
     
     # Construct the LLM prompt
-    template = """
-    You are analyzing a call graph for a bug report. The current method is:
+    # template = """
+    # You are analyzing a method from the call dependency of stack traces of bug report with the goal of diagnosing the root cause. 
 
+
+    # # You are given the stack traces of the bug report below:
+    # {stack_trace}
+
+
+    # # You are given the agent based chat history below:
+    # {chat_history}
+    
+    
+    
+    # # You are given the current method below to analyze with the goal of diagnosing the root cause:
+    # Method: {input_data}
+    # Source Code:
+    # {method_body}
+
+    
+    # If this method calls any other methods not in the stack trace, identify one such method and return its name.
+    # Always request method names in the fully qualified format: 
+    # {{package}}.{{class}}.{{method}}
+
+    # If no further methods are needed, respond with observations so far based on analyzed methods.
+    # """
+
+    template = """
+    Analyze the source code of a method from the call dependency of stack traces and request the next methods that are reachable from the call dependency or provide observations based on the analysis.
+
+    # Guidelines
+    - **Understand the Input**:
+    - Inputs include:
+        - Source code of a method from the call dependency of the stack trace.
+        - Stack trace data.
+        - Chat history from the agent-based system.
+    - Use these inputs to analyze the current method, trace dependencies, and identify further methods to analyze.
+    - **Analyze the Method**:
+    - Examine the source code to determine its role in the stack trace.
+    - Identify its dependencies and analyze its contribution to the issue.
+    - **Request Next Methods**:
+    - Based on the current method’s call dependency, request the next methods to analyze in fully qualified format: `{{package}}.{{class}}.{{method}}`.
+    - If no further methods are required, summarize the observations from the analyzed methods and provide a diagnosis of the root cause.
+    - **Clarity and Relevance**:
+    - Focus on the relevant parts of the method and dependencies.
+    - Avoid unnecessary details or irrelevant method requests.
+
+    # Steps
+    1. **Input Analysis**:
+    - Parse the stack trace, source code, and chat history for relevant details.
+    - Identify the context of the current method in the call dependency.
+    2. **Method Analysis**:
+    - Analyze the current method for its role and potential issues contributing to the root cause.
+    3. **Request Next Methods**:
+    - Determine the next methods reachable from the call dependency.
+    - Request fully qualified method names if further analysis is required.
+    4. **Summarize Observations**:
+    - If no additional methods are needed, summarize observations so far based on the analyzed methods.
+    - Provide reasoning and diagnosis of the root cause.
+
+    # Output Format
+    Output should either be a request for the next method in the call dependency or a summary of observations, formatted as follows:
+    1. **Method Request**:
+    {{package}}.{{class}}.{{method}}
+
+    2. **Observations Summary**:
+    Observations: "Summary of findings and insights based on analyzed methods."
+
+
+
+    # You are given the stack traces of the bug report below:
+    {stack_trace}
+
+
+    # You are given the agent based chat history below:
+    {chat_history}
+    
+    
+    
+    # You are given the current method below to analyze with the goal of diagnosing the root cause:
     Method: {input_data}
     Source Code:
     {method_body}
 
-    If this method calls any other methods not in the stack trace, identify one such method and return its name.
-    Always request method names in the fully qualified format: 
-    {{package}}.{{class}}.{{method}}
-
-    If no further methods are needed, respond with observations so far based on analyzed methods.
     """
+
+    
     prompt = PromptTemplate.from_template(template)
     
     # Configure the LLM
@@ -185,7 +258,7 @@ def analyze_method_and_request_next(input_data):
 
     try:
         # Run the LLM chain
-        response = chain.run({'input_data': input_data, 'method_body': method_body})
+        response = chain.run({'stack_trace': stack_trace, 'chat_history': chat_history, 'input_data': input_data, 'method_body': method_body})
         print("response:", response)
         print("------- analyze_method_and_request_next (end) ----------")
         return response
@@ -207,57 +280,7 @@ def generate_final_bug_report(agent_based_source_code_analysis, dev_written_bug_
     # print("analyzed method:", agent_based_source_code_analysis)
     # print("current_source_code_dict:", current_source_code_dict)
     # print("------------------- generate final bug report (end) --------------")
-    # template = """
-    # Generate an enhanced or improved bug report by analyzing the provided bug report and incorporating insights derived from agent-based analysis of source code methods.
-
-    # # Guidelines
-    # - Use the provided bug report as the starting point and enrich it with additional details based on the agent-based analysis of source code methods.
-    # - Ensure all aspects of the bug report are clear, actionable, and detailed, improving upon the original content where possible.
-    # - Structure the final bug report to include all relevant fields, such as method-level insights, root cause analysis, and suggested resolutions.
-
-    # # Steps
-    # 1. **Analyze the Provided Bug Report**:
-    # - Review the given bug report for existing information such as the title, description, and stack trace.
-    # - Identify any gaps or areas that require further details or clarification.
-    # 2. **Incorporate Agent-Based Analysis**:
-    # - Use insights from the agent-based analysis of source code methods to add context to the bug report.
-    # - Highlight any key methods or lines of code contributing to the issue.
-    # - Summarize relevant inner method calls or dependencies that were analyzed.
-    # 3. **Enhance Bug Report**:
-    # - Refine the title, description, and any technical details for clarity and precision.
-    # - Provide actionable insights, root cause analysis, and suggestions for resolution.
-    # - Include a detailed account of all analyzed methods, with references to their source files and line numbers where applicable.
-    # 4. **Generate JSON Output**:
-    # - Compile the enhanced bug report into a structured JSON format for consistency and ease of use.
-
-    # # Output Format
-    # Output the enhanced bug report in the following JSON structure:
-    # ```json
-    # {{
-    #     "Title": "string",
-    #     "Description": "string",
-    #     "StackTrace": "string or array of stack trace lines",
-    #     "RootCause": "string or null",
-    #     "StepsToReproduce": ["string", "..."] or null,
-    #     "ExpectedBehavior": "string",
-    #     "ObservedBehavior": "string",
-    #     "Suggestions": "string or null"
-    # }}
-
-
-    # # You are given the bug report below:
-    # {bug_report}
-
-
-
-    # # You are given the insights derived from agent-based analysis of source code methods below:
-    # {agent_based_source_code_analysis}
-
-
     
-    # # You are given the source code methods analyzed by agent-based approach below:
-    # {method_cache}
-    # """
 
     template = """
     Generate or enhance a bug report with the goal of diagnosing the root cause, based on the provided bug report and agent-based analysis of source code methods.
@@ -309,68 +332,7 @@ def generate_final_bug_report(agent_based_source_code_analysis, dev_written_bug_
 
     """
 
-    # template = """
-    # Generate or enhance a bug report with the goal of diagnosing the root cause, using the provided bug report, agent-based analysis of source code methods, and the analyzed source code methods themselves.
-
-    # # Guidelines
-    # - **Understand the Inputs**:
-    # - Analyze the existing bug report for key details such as error descriptions, stack traces, and other relevant information.
-    # - Utilize insights from the agent-based system analysis, including identified methods, lines of code, and any highlighted issues.
-    # - Cross-reference the analyzed source code methods to provide context and validate findings.
-    # - **Focus on the Root Cause**:
-    # - Identify and describe the root cause based on the combined analysis of the bug report, agent insights, and source code methods.
-    # - Ensure the root cause is clearly explained and linked to the identified methods or lines of code.
-    # - **Enhance the Bug Report**:
-    # - Update the bug report with missing details, actionable insights, and resolution steps.
-    # - Maintain a clear, logical structure for better readability and utility.
-    # - **Ensure JSON Output**:
-    # - Structure the output as a JSON object for clarity and consistency.
-
-    # # Steps
-    # 1. **Analyze the Bug Report**:
-    # - Extract key components, including the error type, message, stack trace, and any provided details on affected components.
-    # - Identify any gaps or ambiguities in the report.
-    # 2. **Incorporate Agent-Based Analysis**:
-    # - Use the agent's findings to pinpoint specific methods or code sections related to the bug.
-    # - Highlight dependencies, relationships, or contextual insights that support root cause identification.
-    # 3. **Diagnose the Root Cause**:
-    # - Synthesize the extracted information to determine the root cause of the bug.
-    # - Clearly articulate how the identified methods or code areas contribute to the issue.
-    # 4. **Enhance the Bug Report**:
-    # - Add actionable details, such as steps to reproduce, expected vs. observed behavior, and suggestions for resolution.
-    # - Include relevant insights from the agent-based analysis.
-    # 5. **Format as JSON**:
-    # - Ensure the output is a well-structured JSON object, adhering to the specified format.
-
-    # # Output Format
-    # Output the bug report in the following JSON structure:
-    # ```json
-    # {{
-    #     "Title": "string",
-    #     "Description": "string",
-    #     "StackTrace": "string or array of stack trace lines",
-    #     "RootCause": "string or null",
-    #     "StepsToReproduce": ["string", "..."] or null,
-    #     "ExpectedBehavior": "string",
-    #     "ObservedBehavior": "string",
-    #     "Suggestions": "string or null"
-    # }}
-
-
-    # # You are given the bug report below:
-    # {bug_report}
-
-
-
-    # # You are given the insights derived from agent-based analysis of source code methods below:
-    # {agent_based_source_code_analysis}
-
     
-
-    # # You are given the analyzed source code methods below:
-    # {method_cache}
-
-    # """
 
     prompt = PromptTemplate.from_template(template)
     llm = ChatOpenAI(model='gpt-4o-mini', temperature = 0)
@@ -381,13 +343,41 @@ def generate_final_bug_report(agent_based_source_code_analysis, dev_written_bug_
 # Tools for the agent
 tools = [
     Tool(name="Parse Stack Trace", func=parse_stack_trace, description="Extract stack traces from the input JSON."),
-    Tool(name="Provide Method", func=provide_method, description="Provide the source code for a specific method."),
-    Tool(name="Analyze and Request Next", func=analyze_method_and_request_next, description="Analyze the method and request the next one if needed.")
+    Tool(name="Provide Method", func=provide_method, description="Use this to request specific methods from the source code."),
+    Tool(name="Analyze and Request Next", func=analyze_method_and_request_next, description="Use this to analyze the provided method and determine if more methods are needed.")
     # Tool(name="Generate Final Bug Report", func=generate_final_bug_report, description="Generate the final bug report using analyzed methods.")
 ]
 
 # Initialize LLM
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+# Define the system prompt
+system_prompt = """
+You are an intelligent assistant specialized in analyzing stack traces and source code to generate improved bug reports. You have access to three tools:
+
+1. **parse_stack_trace**: Use this tool to parse and extract information from stack traces.
+2. **provide_method**: Use this tool to request specific methods from the source code based on the stack trace or other analysis.
+3. **analyze_method_and_request_next**: Use this tool to analyze a provided method. If further methods are needed, explicitly request them using this tool.
+
+### Instructions
+Always follow this workflow:
+
+1. **Parsing**: Start by invoking `parse_stack_trace` if stack trace analysis is needed.
+2. **Method Requests**:
+   - Use the `provide_method` tool to obtain a specific method from the source code.
+   - Once a method is provided, **immediately pass it to the `analyze_method_and_request_next` tool** for analysis.
+3. **Analysis and Alternation**:
+   - After analyzing the method with `analyze_method_and_request_next`, determine if additional methods are needed:
+     - If more methods are required, return to step 2 and invoke `provide_method` again.
+     - If no further methods are needed, complete the analysis and provide a conclusion.
+4. **No Consecutive Usage**: Do not invoke `provide_method` consecutively without analyzing the last provided method. Similarly, do not repeatedly invoke `analyze_method_and_request_next` without requesting the next method if more analysis is required.
+
+### Key Behaviors
+- Alternate between `provide_method` and `analyze_method_and_request_next` until the analysis is complete.
+- Use logical reasoning to decide when to conclude the process, ensuring all necessary methods have been analyzed.
+- Strictly adhere to the workflow to ensure a systematic and efficient analysis process.
+
+"""
 
 # Initialize the agent
 agent_executor = initialize_agent(
@@ -395,27 +385,28 @@ agent_executor = initialize_agent(
     llm=llm,
     agent="zero-shot-react-description",  
     verbose=True,
+    system_prompt=system_prompt
 )
 
 
 # Read input and prepare output data
 # input_file = "test.json"
 # output_file = "test_output.json"
-input_file = "source_code_data/Hadoop.json"
-output_file = "agentBased_bug_report_from_bugReport_sourceCode/Hadoop.json"
+input_file = "source_code_data/ActiveMQ.json"
+output_file = "agentBased_bug_report_from_bugReport_sourceCode/ActiveMQ.json"
 
 # Path to source code and Git repository
 # repo_path = "/Users/fahim/Desktop/PhD/Projects/zookeeper"
 # codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main", "/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/test"]
 # git_branch = "master"
 
-# repo_path = "/Users/fahim/Desktop/PhD/Projects/activemq"
-# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-core/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-broker/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-karaf/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-kahadb-store/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-optional/src/main/java"]
-# git_branch = "main"
+repo_path = "/Users/fahim/Desktop/PhD/Projects/activemq"
+codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-core/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-broker/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-karaf/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-kahadb-store/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-optional/src/main/java"]
+git_branch = "main"
 
-repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
-codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/test/core", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java","/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-distcp/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-azure/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-auth/src/main/java"]
-git_branch = "trunk"
+# repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
+# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/test/core", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java","/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-distcp/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-azure/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-auth/src/main/java"]
+# git_branch = "trunk"
 
 with open(input_file, "r") as file:
     source_code_data = json.load(file)
@@ -438,6 +429,9 @@ for entry in source_code_data:
 
     # Cache for storing method definitions
     method_cache = {}
+
+    # Initialize an empty history object
+    chat_history = []
 
     # Step 1: Parse the stack trace
     current_source_code_dict = {}
@@ -465,8 +459,13 @@ for entry in source_code_data:
                 agent_based_source_code_analysis = trace['output']
                 # print("####################################")
                 # print("agent_based_source_code_analysis:", agent_based_source_code_analysis)
+                
+            if 'messages' in trace:
+                agent_based_chat = trace['messages'][0].content
+                chat_history.append(agent_based_chat)
+                # print("chat_history length:", len(chat_history))
+                # print("chat_history:", chat_history)
                 # print("####################################")
-
             
         else:
             print(f"Unexpected trace format: {trace}")
@@ -506,6 +505,7 @@ for entry in source_code_data:
         "filename": filename,
         "creation_time": creation_time,
         "analyzed_methods": method_cache,
+        "chat_history": chat_history,
         "bug_report": bug_report
     })
 
