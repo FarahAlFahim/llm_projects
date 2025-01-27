@@ -1,6 +1,8 @@
 .venv/
 .DS_Store
 bug_reports_with_stack_traces.json
+test.py
 test.json
 test_output.json
 source_code_data
+javalang_tree_output.txt

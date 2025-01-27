@@ -47,6 +47,11 @@ def find_method_with_javalang(full_identifier, codebase_dirs):
     """
     Locate the file corresponding to the full identifier, parse it, and extract the method.
     """
+    # Handle extra information
+    if " " in full_identifier:
+      if full_identifier.split(" ")[0].count('.') > 2:
+        full_identifier = full_identifier.split(" ")[0].strip()
+
     # Check if the method is already in the cache
     if full_identifier in method_cache:
         return method_cache[full_identifier]
@@ -64,14 +69,12 @@ def find_method_with_javalang(full_identifier, codebase_dirs):
     for dir_path in codebase_dirs:
         file_path = os.path.join(dir_path, class_dir, class_name)
         print("------- find_method_with_javalang (start) ----------")
+        print(f"full_identifier: #######{full_identifier}#########")
         print("File Path:", file_path)
         if os.path.exists(file_path):
             try:
                 with open(file_path, 'r') as f:
                     content = f.read()
-                    if "(" in full_identifier:
-                        method_cache[full_identifier] = content
-                        return content
                     # Parse the Java file with javalang
                     tree = javalang.parse.parse(content)
                     # print("Javalang Tree:", tree)
@@ -89,6 +92,20 @@ def find_method_with_javalang(full_identifier, codebase_dirs):
                             return method_code
             except Exception as e:
                 print(f"Error parsing file {file_path}: {e}")
+        else:
+            # Search full class
+            prev_class_name = class_name.split(".")[0].strip()
+            new_class_name = method_name.strip() + ".java"
+            file_path = os.path.join(dir_path, class_dir, prev_class_name, new_class_name)
+            if os.path.exists(file_path):
+                try:
+                    with open(file_path, 'r') as f:
+                        content = f.read()
+                        # full_identifier = full_identifier + "(source code of the class)"
+                        method_cache[full_identifier] = [content]
+                        return content
+                except Exception as e:
+                    print(f"Error parsing file {file_path}: {e}")
     
     # If not found, cache and return a default response
     method_cache[full_identifier] = "[Method not found in codebase]"
@@ -158,25 +175,102 @@ def analyze_method_and_request_next(input_data):
     
     # Retrieve the method source code using the cache-aware dynamic retrieval
     method_body = find_method_with_javalang(input_data, codebase_dirs)
+    
     print("------- analyze_method_and_request_next (start) ----------")
     print(f"Method '{input_data}' provided.")
+    
+    if "Invalid format" in method_body or "[Method not found in codebase]" in method_body:
+        return method_body
     # print(method_body)
     # print("------- analyze_method_and_request_next (end) ----------")
     
     # Construct the LLM prompt
-    template = """
-    You are analyzing a call graph for a bug report. The current method is:
+    # template = """
+    # You are analyzing a method from the call dependency of stack traces of bug report with the goal of diagnosing the root cause. 
 
+
+    # # You are given the stack traces of the bug report below:
+    # {stack_trace}
+
+
+    # # You are given the agent based chat history below:
+    # {chat_history}
+    
+    
+    
+    # # You are given the current method below to analyze with the goal of diagnosing the root cause:
+    # Method: {input_data}
+    # Source Code:
+    # {method_body}
+
+    
+    # If this method calls any other methods not in the stack trace, identify one such method and return its name.
+    # Always request method names in the fully qualified format: 
+    # {{package}}.{{class}}.{{method}}
+
+    # If no further methods are needed, respond with observations so far based on analyzed methods.
+    # """
+
+    template = """
+    Analyze the source code of a method from the call dependency of stack traces and request the next methods that are reachable from the call dependency or provide observations based on the analysis.
+
+    # Guidelines
+    - **Understand the Input**:
+    - Inputs include:
+        - Source code of a method from the call dependency of the stack trace.
+        - Stack trace data.
+        - Chat history from the agent-based system.
+    - Use these inputs to analyze the current method, trace dependencies, and identify further methods to analyze.
+    - **Analyze the Method**:
+    - Examine the source code to determine its role in the stack trace.
+    - Identify its dependencies and analyze its contribution to the issue.
+    - **Request Next Methods**:
+    - Based on the current method’s call dependency, request the next methods to analyze in fully qualified format: `{{package}}.{{class}}.{{method}}`.
+    - If no further methods are required, summarize the observations from the analyzed methods and provide a diagnosis of the root cause.
+    - **Clarity and Relevance**:
+    - Focus on the relevant parts of the method and dependencies.
+    - Avoid unnecessary details or irrelevant method requests.
+
+    # Steps
+    1. **Input Analysis**:
+    - Parse the stack trace, source code, and chat history for relevant details.
+    - Identify the context of the current method in the call dependency.
+    2. **Method Analysis**:
+    - Analyze the current method for its role and potential issues contributing to the root cause.
+    3. **Request Next Methods**:
+    - Determine the next methods reachable from the call dependency.
+    - Request fully qualified method names if further analysis is required.
+    4. **Summarize Observations**:
+    - If no additional methods are needed, summarize observations so far based on the analyzed methods.
+    - Provide reasoning and diagnosis of the root cause.
+
+    # Output Format
+    Output should either be a request for the next method in the call dependency or a summary of observations, formatted as follows:
+    1. **Method Request**:
+    {{package}}.{{class}}.{{method}}
+
+    2. **Observations Summary**:
+    Observations: "Summary of findings and insights based on analyzed methods."
+
+
+
+    # You are given the stack traces of the bug report below:
+    {stack_trace}
+
+
+    # You are given the agent based chat history below:
+    {chat_history}
+    
+    
+    
+    # You are given the current method below to analyze with the goal of diagnosing the root cause:
     Method: {input_data}
     Source Code:
     {method_body}
 
-    If this method calls any other methods not in the stack trace, identify one such method and return its name.
-    Always request method names in the fully qualified format: 
-    {{package}}.{{class}}.{{method}}
-
-    If no further methods are needed, respond with observations so far based on analyzed methods.
     """
+
+    
     prompt = PromptTemplate.from_template(template)
     
     # Configure the LLM
@@ -185,7 +279,7 @@ def analyze_method_and_request_next(input_data):
 
     try:
         # Run the LLM chain
-        response = chain.run({'input_data': input_data, 'method_body': method_body})
+        response = chain.run({'stack_trace': stack_trace, 'chat_history': chat_history, 'input_data': input_data, 'method_body': method_body})
         print("response:", response)
         print("------- analyze_method_and_request_next (end) ----------")
         return response
@@ -200,10 +294,10 @@ def analyze_method_and_request_next(input_data):
 
 
 
-def generate_final_bug_report(agent_based_source_code_analysis, dev_written_bug_report):
+def generate_final_bug_report(agent_based_source_code_analysis, stack_trace):
     """Generate the final bug report based on analyzed methods."""
     # print("------------------- generate final bug report (start) --------------")
-    # print("bug report:", dev_written_bug_report)
+    # print("stack_trace:", stack_trace)
     # print("analyzed method:", agent_based_source_code_analysis)
     # print("current_source_code_dict:", current_source_code_dict)
     # print("------------------- generate final bug report (end) --------------")
@@ -325,14 +419,85 @@ def generate_final_bug_report(agent_based_source_code_analysis, dev_written_bug_
 
 # Tools for the agent
 tools = [
-    Tool(name="Parse Stack Trace", func=parse_stack_trace, description="Extract stack traces from the input JSON."),
-    Tool(name="Provide Method", func=provide_method, description="Provide the source code for a specific method."),
-    Tool(name="Analyze and Request Next", func=analyze_method_and_request_next, description="Analyze the method and request the next one if needed.")
+    # Tool(name="Parse Stack Trace", func=parse_stack_trace, description="Extract stack traces from the input JSON."),
+    Tool(name="Provide Method", func=provide_method, description="Use this to request specific methods from the source code."),
+    Tool(name="Analyze and Request Next", func=analyze_method_and_request_next, description="Use this to analyze the provided method and determine if more methods are needed.")
     # Tool(name="Generate Final Bug Report", func=generate_final_bug_report, description="Generate the final bug report using analyzed methods.")
 ]
 
 # Initialize LLM
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+# Define the system prompt
+# system_prompt = """
+# You are an intelligent assistant specialized in analyzing stack traces and source code to generate improved bug reports. You have access to three tools:
+
+# 1. **parse_stack_trace**: Use this tool to parse and extract information from stack traces.
+# 2. **provide_method**: Use this tool to request specific methods from the source code based on the stack trace or other analysis.
+# 3. **analyze_method_and_request_next**: Use this tool to analyze a provided method. If further methods are needed, explicitly request them using this tool.
+
+# ### Instructions
+# Always follow this workflow:
+
+# 1. **Parsing**: Start by invoking `parse_stack_trace` if stack trace analysis is needed.
+# 2. **Method Requests**:
+#    - Use the `provide_method` tool to obtain a specific method from the source code.
+#    - Once a method is provided, **immediately pass it to the `analyze_method_and_request_next` tool** for analysis.
+# 3. **Analysis and Alternation**:
+#    - After analyzing the method with `analyze_method_and_request_next`, determine if additional methods are needed:
+#      - If more methods are required, return to step 2 and invoke `provide_method` again.
+#      - If no further methods are needed, complete the analysis and provide a conclusion.
+# 4. **No Consecutive Usage**: Do not invoke `provide_method` consecutively without analyzing the last provided method. Similarly, do not repeatedly invoke `analyze_method_and_request_next` without requesting the next method if more analysis is required.
+
+# ### Key Behaviors
+# - Alternate between `provide_method` and `analyze_method_and_request_next` until the analysis is complete.
+# - Use logical reasoning to decide when to conclude the process, ensuring all necessary methods have been analyzed.
+# - Strictly adhere to the workflow to ensure a systematic and efficient analysis process.
+
+# """
+
+# System Prompt for two tools
+system_prompt = """
+Analyze stack traces using an agent-based system and iteratively request and analyze methods from the source code until a clear diagnosis of the root cause is achieved.
+
+# Guidelines
+- **Tools Available**:
+  - `provide_method`: Retrieves methods from the source code based on the call dependency of stack traces.
+  - `analyze_method_and_request_next`: Analyzes a method and requests additional methods from the call dependency if needed.
+- **Iterative Process**:
+  1. Start by analyzing the stack traces to identify the first method to request.
+  2. Use `provide_method` to obtain the required method in fully qualified format (`{{package}}.{{class}}.{{method}}`).
+  3. Analyze the retrieved method using `analyze_method_and_request_next`.
+  4. Based on the analysis, request additional methods from the call dependency if needed.
+  5. Repeat this process until enough information is gathered to diagnose the root cause.
+- **Focus on the Root Cause**:
+  - While analyzing methods, look for patterns, errors, or interactions contributing to the issue.
+  - Ensure all relevant methods in the call dependency are considered before concluding.
+- **Output Requirements**:
+  - Provide a detailed and structured analysis summarizing the diagnostic process.
+  - Include the reasoning for requesting each method and how it contributed to identifying the root cause.
+
+# Steps
+1. **Initial Analysis**:
+   - Parse the stack traces to identify the initial method for analysis.
+   - Request this method using the `provide_method` tool.
+2. **Iterative Analysis**:
+   - For each method:
+     - Use `analyze_method_and_request_next` to examine its role in the stack trace.
+     - Request additional methods from the call dependency if necessary.
+   - Repeat until no further methods are required or the root cause is identified.
+3. **Final Diagnosis**:
+   - Summarize the analysis process, including key observations and conclusions.
+   - Provide a clear explanation of the root cause, supported by evidence from the analyzed methods.
+
+# Output Format
+- A detailed analysis should include:
+  1. A summary of the stack trace and initial method.
+  2. The methods requested and analyzed, including their fully qualified names.
+  3. Key observations and reasoning at each step.
+  4. A conclusive diagnosis of the root cause.
+
+"""
 
 # Initialize the agent
 agent_executor = initialize_agent(
@@ -340,14 +505,15 @@ agent_executor = initialize_agent(
     llm=llm,
     agent="zero-shot-react-description",  
     verbose=True,
+    system_prompt=system_prompt
 )
 
 
 # Read input and prepare output data
 # input_file = "test.json"
-# output_file = "test_output.json"
+output_file = "test_output.json"
 input_file = "source_code_data/Hadoop.json"
-output_file = "agentBased_bug_report_from_stackTrace_sourceCode/Hadoop.json"
+# output_file = "agentBased_bug_report_from_stackTrace_sourceCode/Hadoop.json"
 
 # Path to source code and Git repository
 # repo_path = "/Users/fahim/Desktop/PhD/Projects/zookeeper"
@@ -383,6 +549,9 @@ for entry in source_code_data:
     # Cache for storing method definitions
     method_cache = {}
 
+    # Initialize an empty history object
+    chat_history = []
+
     # Step 1: Parse the stack trace
     current_source_code_dict = {}
     parsed_stack_traces = agent_executor.stream({"input": stack_trace})
@@ -409,6 +578,12 @@ for entry in source_code_data:
                 agent_based_source_code_analysis = trace['output']
                 # print("####################################")
                 # print("agent_based_source_code_analysis:", agent_based_source_code_analysis)
+                
+            if 'messages' in trace and ('output' in trace or 'actions' in trace):
+                agent_based_chat = trace['messages'][0].content
+                chat_history.append(agent_based_chat)
+                # print("chat_history length:", len(chat_history))
+                # print("chat_history:", chat_history)
                 # print("####################################")
 
             
@@ -450,6 +625,7 @@ for entry in source_code_data:
         "filename": filename,
         "creation_time": creation_time,
         "analyzed_methods": method_cache,
+        "chat_history": chat_history,
         "bug_report": bug_report
     })
 

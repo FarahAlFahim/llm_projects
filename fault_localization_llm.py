@@ -215,7 +215,7 @@ def perform_fault_localization_single_repo(bug_reports_file, ground_truth_file, 
     for report in bug_reports:
         filename = report["filename"]
         creation_time = report["creation_time"]
-        bug_report_json = report["stack_trace"]
+        bug_report_json = report["bug_report"]
         bug_report = convert_bug_report_to_string(bug_report_json)
 
         # Get commit version and checkout
@@ -364,7 +364,7 @@ def process_repositories(repositories, top_n_values):
 
 
 # Example repository configuration and usage
-bug_report_folder = 'stack_traces'
+bug_report_folder = 'agentBased_bug_report_from_stackTrace_sourceCode'
 repositories = [
     {"bug_reports": f"{bug_report_folder}/Zookeeper.json", "ground_truth": "ground_truth/Zookeeper.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/zookeeper", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main", "/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/test"], "git_branch": 'master'},
     {"bug_reports": f"{bug_report_folder}/ActiveMQ.json", "ground_truth": "ground_truth/ActiveMQ.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/activemq", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-core/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-broker/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-karaf/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-kahadb-store/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-optional/src/main/java"], "git_branch": 'main'},
