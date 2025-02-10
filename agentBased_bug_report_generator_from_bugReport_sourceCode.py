@@ -10,6 +10,7 @@ from langchain.chains import LLMChain
 import os
 import javalang
 import subprocess
+import tiktoken
 
 
 # Get the commit version before a specific timestamp
@@ -162,6 +163,25 @@ def provide_method(full_identifier_data):
 
 
 
+
+def count_tokens(text, model="gpt-4o-mini"):
+    encoder = tiktoken.encoding_for_model(model)
+    return len(encoder.encode(text))
+
+# This model's maximum context length is 128000 tokens
+def split_into_chunks(text, max_tokens=100000, model="gpt-4o-mini"):
+    encoder = tiktoken.encoding_for_model(model)
+    tokens = encoder.encode(text)
+    
+    chunks = []
+    for i in range(0, len(tokens), max_tokens):
+        chunk_tokens = tokens[i:i+max_tokens]
+        chunk_text = encoder.decode(chunk_tokens)
+        chunks.append(chunk_text)
+    
+    return chunks
+
+
 @tool
 def analyze_method_and_request_next(input_data):
     """
@@ -270,23 +290,48 @@ def analyze_method_and_request_next(input_data):
 
     """
 
-    
-    prompt = PromptTemplate.from_template(template)
-    
-    # Configure the LLM
-    llm = ChatOpenAI(model='gpt-4o-mini', temperature=0)
-    chain = LLMChain(llm=llm, prompt=prompt)
+    # Handle Max Token limit exceed cases
+    # Format the full prompt
+    full_prompt = template.format(
+        stack_trace=stack_trace, 
+        chat_history=chat_history, 
+        input_data=input_data, 
+        method_body=method_body
+    )
 
-    try:
-        # Run the LLM chain
-        response = chain.run({'stack_trace': stack_trace, 'chat_history': chat_history, 'input_data': input_data, 'method_body': method_body})
-        print("response:", response)
-        print("------- analyze_method_and_request_next (end) ----------")
-        return response
-    except Exception as e:
-        # Log or handle errors gracefully
-        print(f"Error during LLM chain execution: {e}")
-        return "Error occurred during method analysis. Please try again."
+    # Check token count
+    token_count = count_tokens(full_prompt)
+
+    if token_count > 100000:
+        print(f"Token count ({token_count}) exceeds limit! Splitting into chunks...")
+        prompt_chunks = split_into_chunks(full_prompt, max_tokens=100000)
+
+        responses = []
+        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+        for chunk in prompt_chunks:
+            response = llm.invoke(chunk)
+            responses.append(response)
+
+        return "\n".join(responses)
+    else:
+        # Run normally when within token limit
+        prompt = PromptTemplate.from_template(template)
+        
+        # Configure the LLM
+        llm = ChatOpenAI(model='gpt-4o-mini', temperature=0)
+        chain = LLMChain(llm=llm, prompt=prompt)
+
+        try:
+            # Run the LLM chain
+            response = chain.run({'stack_trace': stack_trace, 'chat_history': chat_history, 'input_data': input_data, 'method_body': method_body})
+            print("response:", response)
+            print("------- analyze_method_and_request_next (end) ----------")
+            return response
+        except Exception as e:
+            # Log or handle errors gracefully
+            print(f"Error during LLM chain execution: {e}")
+            return "Error occurred during method analysis. Please try again."
 
 
 
@@ -339,7 +384,13 @@ def generate_final_bug_report(agent_based_source_code_analysis, dev_written_bug_
         "StepsToReproduce": ["string", "..."] or null,
         "ExpectedBehavior": "string",
         "ObservedBehavior": "string",
-        "Suggestions": "string or null"
+        "Suggestions": "string or null",
+        "problem_location": {{
+            "files": ["file1.java", "file2.java"],
+            "classes": ["com.example.ClassA", "com.example.ClassB"],
+            "methods": ["ClassA.methodX", "ClassB.methodY"]
+        }},
+        "possible_fix": "[Suggested resolution, including code changes if necessary.]"
     }}
 
 
@@ -454,23 +505,51 @@ agent_executor = initialize_agent(
 
 
 # Read input and prepare output data
-# input_file = "test.json"
+input_file = "test.json"
 output_file = "test_output.json"
-input_file = "source_code_data/Hadoop.json"
-# output_file = "agentBased_bug_report_from_bugReport_sourceCode/ActiveMQ.json"
+# input_file = "source_code_data/Hive.json"
+# output_file = "agentBased_bug_report_from_bugReport_sourceCode/Hive.json"
 
 # Path to source code and Git repository
+# For Zookeeper.json
 # repo_path = "/Users/fahim/Desktop/PhD/Projects/zookeeper"
 # codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main", "/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/test"]
 # git_branch = "master"
 
+# For ActiveMQ.json
 # repo_path = "/Users/fahim/Desktop/PhD/Projects/activemq"
 # codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-core/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-broker/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-karaf/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-kahadb-store/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-optional/src/main/java"]
 # git_branch = "main"
 
-repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
-codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/test/core", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java","/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-distcp/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-azure/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-auth/src/main/java"]
-git_branch = "trunk"
+# For Hadoop.json
+# repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
+# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/test/core", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java","/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-distcp/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-azure/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-auth/src/main/java"]
+# git_branch = "trunk"
+
+# For HDFS.json
+# repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
+# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hdfs/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java"]
+# git_branch = "trunk"
+
+# For Storm.json
+# repo_path = "/Users/fahim/Desktop/PhD/Projects/storm"
+# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/storm/storm-client/src/jvm", "/Users/fahim/Desktop/PhD/Projects/storm/storm-server/src/main/java", "/Users/fahim/Desktop/PhD/Projects/storm/storm-core/src/jvm", "/Users/fahim/Desktop/PhD/Projects/storm/external/storm-kafka-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/storm/external/storm-hdfs/src/main/java"]
+# git_branch = "master"
+
+# For MAPREDUCE.json
+# repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
+# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-core/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-app/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-app/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-web-proxy/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/common/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/mapreduce/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/mapreduce/src/test/mapred", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-jobclient/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java"]
+# git_branch = "trunk"
+
+# For YARN.json
+# repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
+# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-applicationhistoryservice/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-jobclient/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-gridmix/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-web-proxy/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-registry/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-tests/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-applications/hadoop-yarn-services/hadoop-yarn-services-core/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-client/src/test/java"]
+# git_branch = "trunk"
+
+# For Hive.json
+repo_path = "/Users/fahim/Desktop/PhD/Projects/hive"
+codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hive/shims/0.23/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/webhcat/svr/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/metastore/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/metastore/src/gen/thrift/gen-javabean", "/Users/fahim/Desktop/PhD/Projects/hive/ql/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/serde/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/spark-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/service/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/shims/common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/contrib/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/core/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/hcatalog-pig-adapter/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/hcatalog-pig-adapter/src/test/java"]
+git_branch = "master"
 
 with open(input_file, "r") as file:
     source_code_data = json.load(file)
@@ -573,10 +652,15 @@ for entry in source_code_data:
         "bug_report": bug_report
     })
 
+    # Write to output file after each bug report
+    with open(output_file, "w") as outfile:
+        json.dump(output_data, outfile, indent=4)
+    print(f"Progress saved to {output_file}")
 
-# Write output JSON file
-with open(output_file, "w") as outfile:
-    json.dump(output_data, outfile, indent=4)
+
+# # Write output JSON file
+# with open(output_file, "w") as outfile:
+#     json.dump(output_data, outfile, indent=4)
 
 
 print(f"Bug reports have been generated and saved to '{output_file}'")
