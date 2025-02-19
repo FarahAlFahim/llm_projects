@@ -72,7 +72,7 @@ chain = LLMChain(llm=llm, prompt=prompt)
 
 
 # Read developer written bug reports and source code data from JSON file
-with open("source_code_data/ActiveMQ.json", "r") as file:
+with open("source_code_data/Hadoop.json", "r") as file:
     source_code_data = json.load(file)
 
 # Prepare the output format
@@ -108,7 +108,7 @@ for entry in source_code_data:
     })
 
 # Write the summarized bug reports to a new JSON file
-output_file = 'bug_report_from_bugReport_sourceCode/ActiveMQ.json'
+output_file = 'bug_report_from_bugReport_sourceCode/Hadoop.json'
 with open(f"{output_file}", "w") as outfile:
     json.dump(output_data, outfile, indent=4)
 

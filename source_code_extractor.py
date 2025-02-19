@@ -251,16 +251,16 @@ def merge_bug_reports(output_data, bug_reports_file):
 # Step 9: Main Execution
 if __name__ == "__main__":
     # Read stack trace data
-    stack_trace_file = "test.json"
-    # stack_trace_file = "stack_traces/HDFS.json"
+    # stack_trace_file = "test.json"
+    stack_trace_file = "stack_traces/Hive.json"
     stack_trace_data = read_stack_traces(stack_trace_file)
 
     # Path to source code and Git repository
-    repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
-    codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hdfs/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java"]
-    git_branch = "trunk"
+    repo_path = "/Users/fahim/Desktop/PhD/Projects/hive"
+    codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hive/shims/0.23/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/webhcat/svr/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/metastore/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/metastore/src/gen/thrift/gen-javabean", "/Users/fahim/Desktop/PhD/Projects/hive/ql/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/serde/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/spark-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/service/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/shims/common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/contrib/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/core/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/hcatalog-pig-adapter/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/hcatalog-pig-adapter/src/test/java"]
+    git_branch = "master"
     # Path to developer-written bug reports
-    dev_written_bug_reports_file = "developer_written_bug_reports/HDFS.json"
+    dev_written_bug_reports_file = "developer_written_bug_reports/Hive.json"
 
     # Prepare output
     output_data = []
@@ -290,8 +290,8 @@ if __name__ == "__main__":
     output_data = merge_bug_reports(output_data, dev_written_bug_reports_file)
 
     # Write output to JSON
-    output_file = 'test_output.json'
-    # output_file = 'source_code_data/HDFS.json'
+    # output_file = 'test_output.json'
+    output_file = 'source_code_data/Hive.json'
     with open(f"{output_file}", "w") as outfile:
         json.dump(output_data, outfile, indent=4)
 
