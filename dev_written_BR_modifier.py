@@ -18,8 +18,7 @@ def modify_bug_reports(input_file, output_file):
             "creation_time": report.get("creation_time"),
             "bug_report": {
                 "Title": bug_report["fields"].get("summary"),
-                "Description": bug_report["fields"].get("description"),
-                "Priority": bug_report["fields"].get("priority", {}).get("name")
+                "Description": bug_report["fields"].get("description")
             }
         }
         modified_reports.append(modified_report)
@@ -29,8 +28,8 @@ def modify_bug_reports(input_file, output_file):
         json.dump(modified_reports, f, indent=4)
 
 # File paths
-input_file = "developer_written_bug_reports/YARN.json"
-output_file = "modified_dev_written_bug_reports/YARN.json"
+input_file = "developer_written_bug_reports/Zookeeper.json"
+output_file = "modified_dev_written_bug_reports/Zookeeper.json"
 
 # Process the bug reports
 modify_bug_reports(input_file, output_file)
