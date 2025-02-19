@@ -1,23 +1,16 @@
 import os
-import re
-import ssl
 import json
 import subprocess
 import nltk
+import re
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
+from langchain.llms import OpenAI
+from langchain.chat_models import ChatOpenAI
 from collections import defaultdict
-from nltk.tokenize import word_tokenize
-from rank_bm25 import BM25Okapi
 
-# Set SSL context to fix SSL certificate issue with nltk.download()
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    pass
-else:
-    ssl._create_default_https_context = _create_unverified_https_context
-
-# Download the punkt tokenizer for word_tokenize
-nltk.download("punkt")
+# # Load LLM 
+# llm = OpenAI(model="gpt-4o-mini", temperature=0)
 
 # Load bug reports from JSON file
 def load_bug_reports(file_path):
@@ -44,81 +37,161 @@ def get_commit_version(creation_time, repo_path, git_branch):
 
 # Checkout to the specific commit version
 def checkout_to_commit(commit_version, repo_path, git_branch):
-    # Ensure working directory is clean (optional)
     subprocess.run('git stash --include-untracked', shell=True, cwd=repo_path)
-    # reset_command = 'git reset --hard'
     reset_command = f'git checkout {git_branch}'
-    # if git_branch == "master":
-    #     reset_command = 'git reset --hard'
-    # else:
-    #     reset_command = f'git checkout {git_branch}'
     subprocess.run(reset_command, shell=True, cwd=repo_path)
     checkout_command = f'git checkout {commit_version}'
     subprocess.run(checkout_command, shell=True, cwd=repo_path)
-    
-
-# Preprocess text for tokenization
-def preprocess_text(text):
-    tokens = word_tokenize(text.lower())
-    return [token for token in tokens if token.isalnum()]
-
-# Index codebase using BM25
-def index_codebase_with_bm25(codebase_dirs):
-    if isinstance(codebase_dirs, str):  # Allow backward compatibility for a single directory
-        codebase_dirs = [codebase_dirs]
-
-    corpus = []
-    file_list = []
-
-    for codebase_dir in codebase_dirs:
-        for root, _, files in os.walk(codebase_dir):
-            for file in files:
-                if file.endswith(".java"):
-                    file_path = os.path.join(root, file)
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        content = f.read()
-                        tokens = preprocess_text(content)
-                        corpus.append(tokens)
-                        file_list.append(file_path)
-
-    # Handle empty corpus case
-    if not corpus:
-        return None, [] 
 
 
-    bm25 = BM25Okapi(corpus)
-    return bm25, file_list
-
-# Extract stack trace and keywords
+# Extract stack trace from bug reports
 def extract_stack_trace(bug_report):
     pattern = r"at (.+?)\((.+?):(\d+)\)"
     stack_trace = re.findall(pattern, bug_report)
     return stack_trace
 
-def extract_keywords(bug_report):
-    words = word_tokenize(bug_report)
-    keywords = [word.lower() for word in words if word.isalpha() and len(word) > 3]
-    return keywords
-
-# Rank files using BM25
-def rank_files_with_bm25(bm25, file_list, keywords, stack_trace, codebase_dirs):
-    if bm25 is None:  # Handle empty corpus case
-        print("Warning: No indexed source code files found. Returning empty rankings.")
-        return []
-
-    query = preprocess_text(" ".join(keywords))
-    scores = bm25.get_scores(query)
-
-    file_scores = {file: score for file, score in zip(file_list, scores)}
+# Process stack trace: Group by file, aggregate methods and lines
+def process_stack_trace(stack_trace):
+    file_to_methods = defaultdict(lambda: {"methods": set(), "lines": set()})
+    
     for class_name, file_name, line_number in stack_trace:
         package_path = os.sep.join(class_name.split('.')[:-1]) + ".java"
-        for codebase_dir in codebase_dirs:
-            full_path = os.path.join(codebase_dir, package_path)
-            if full_path in file_scores:
-                file_scores[full_path] += 5
+        file_key = package_path  # Use package_path as the key
+        method_name = class_name.split('.')[-1]  # Extract method name (last part after the dot)
+        
+        file_to_methods[file_key]["methods"].add(method_name)
+        file_to_methods[file_key]["lines"].add(line_number)
+    
+    # Convert sets to lists for JSON serialization or further processing
+    return {
+        file_name: {"methods": list(data["methods"]), "lines": list(data["lines"])}
+        for file_name, data in file_to_methods.items()
+    }
 
-    ranked_files = sorted(file_scores.items(), key=lambda x: x[1], reverse=True)
+
+# Retrieve unique files referenced in the stack trace
+def get_relevant_files(stack_trace, codebase_dirs):
+    processed_trace = process_stack_trace(stack_trace)
+    # print("-------------------- processed_trace (start) --------------------------")
+    # print(processed_trace)
+    # print("-------------------- processed_trace (end) --------------------------")
+    relevant_files = []
+
+    for file_name, details in processed_trace.items():
+        for codebase_dir in codebase_dirs:
+            full_path = os.path.join(codebase_dir, file_name)
+            if os.path.exists(full_path):
+                relevant_files.append({
+                    "file_path": full_path,
+                    "methods": details["methods"],
+                    "lines": details["lines"]
+                })
+    
+    return relevant_files
+
+
+# Summarize code by extracting classes, methods, and comments
+def summarize_code(content):
+    classes = re.findall(r"\b(class|interface)\s+\w+", content)
+    methods = re.findall(r"(public|protected|private|static|\s)+[\w<>\[\]]+\s+\w+\s*\([^)]*\)\s*\{?", content)
+    comments = re.findall(r"(//.*?$|/\*.*?\*/)", content, re.DOTALL | re.MULTILINE)
+    
+    summarized_content = "Classes:\n" + "\n".join(classes) + "\n\n"
+    summarized_content += "Methods:\n" + "\n".join(methods) + "\n\n"
+    summarized_content += "Comments:\n" + "\n".join(comments)
+    
+    return summarized_content.strip()
+
+
+# Prepare the corpus text for the LLM with method and line context
+def prepare_corpus_for_llm(relevant_files):
+    corpus = []
+    for file in relevant_files:
+        try:
+            with open(file["file_path"], "r", encoding="utf-8") as f:
+                content = f.read()
+                summary = summarize_code(content)
+                
+                # Include method and line details
+                file_context = f"File: {file['file_path']}\n" \
+                               f"Methods Referenced: {', '.join(file['methods'])}\n" \
+                               f"Lines Referenced: {', '.join(file['lines'])}\n" \
+                               f"Summary:\n{summary}"
+                corpus.append(file_context)
+        except Exception as e:
+            print(f"Error reading file {file['file_path']}: {e}")
+    
+    return corpus
+
+
+# Chunk corpus into smaller pieces for LLM processing
+def chunk_corpus(corpus, chunk_size=5):
+    return [corpus[i:i + chunk_size] for i in range(0, len(corpus), chunk_size)]
+
+
+# Perform semantic search using LLM
+def perform_semantic_search(query, corpus):
+    corpus_chunks = chunk_corpus(corpus, chunk_size=5)
+    file_scores = defaultdict(list)  # To store scores for each file
+
+    for chunk in corpus_chunks:
+        # Prepare corpus text for the LLM
+        # corpus_text = "\n".join(chunk)
+        corpus_text = chunk
+        # print("-------------------- chunk (start) --------------------------")
+        # print("chunk:", chunk)
+        # print("corpus_text:", corpus_text)
+        # print("-------------------- chunk (end) --------------------------")
+
+
+        # LLM prompt
+        template = """
+        You are a debugging assistant. Given the following bug report or stack trace:
+        {query}
+
+        Analyze the relevant files below and assign a relevance score (0-10) to each file based on how likely it is to contain the bug.
+        
+        {corpus}
+
+        # Output Format
+        ```json
+        [
+            {{"file": "<file_path_1>", "score": <integer>}},
+            {{"file": "<file_path_2>", "score": <integer>}}
+        ]
+        ```
+        """
+        prompt = PromptTemplate.from_template(template)
+        llm = ChatOpenAI(model='gpt-4o-mini', temperature = 0)
+
+        # LLM Chain
+        chain = LLMChain(llm=llm, prompt=prompt)
+        response = chain.run({"query": query, "corpus": corpus_text})
+        # print("-------------------- response (start) --------------------------")
+        # print("response:", response)
+        # # print("ranked_files_response:", ranked_files_response)
+        # print("-------------------- response (end) --------------------------")
+
+        # Parse LLM response
+        try:
+            ranked_files_chunk = json.loads(response.replace("```json\n", "").replace("\n```", ""))
+            for entry in ranked_files_chunk:
+                file_scores[entry["file"]].append(entry["score"])  # Collect scores for each file
+        except json.JSONDecodeError as e:
+            print(f"Error parsing response: {e}")
+            print("Raw response:", response)
+
+    # Aggregate scores (e.g., take max score per file)
+    aggregated_scores = {
+        file: max(scores) for file, scores in file_scores.items()
+    }
+
+    # Sort files by aggregated score in descending order
+    ranked_files = sorted(aggregated_scores.items(), key=lambda x: x[1], reverse=True)
     return ranked_files
+
+
+
 
 # Convert file path to ground truth format
 def convert_to_ground_truth_format(file_path, codebase_dirs):
@@ -133,32 +206,7 @@ def transform_ranked_files(ranked_files, codebase_dirs):
     return [convert_to_ground_truth_format(file, codebase_dirs) for file, _ in ranked_files]
 
 
-def save_ranked_files(filename, ranked_files, transformed_ranked_files, ground_truth):
-    results_file = f"results/BM25/{bug_report_folder}.json"
-    # Load existing results if the file exists
-    if os.path.exists(results_file):
-        with open(results_file, "r") as f:
-            try:
-                results = json.load(f)
-            except json.JSONDecodeError:
-                results = []
-    else:
-        results = []
-
-    # Append new data
-    results.append({
-        "filename": filename,
-        "ranked_files": ranked_files,
-        "transformed_ranked_files": transformed_ranked_files,
-        "ground_truth": ground_truth.get(filename, [])
-    })
-
-    # Save the updated results back to the file
-    with open(results_file, "w") as f:
-        json.dump(results, f, indent=4)
-
-
-# Perform fault localization for a single repository
+# Perform file-level fault localization using LLM
 def perform_fault_localization_single_repo(bug_reports_file, ground_truth_file, repo_path, codebase_dirs, git_branch, top_n_values):
     bug_reports = load_bug_reports(bug_reports_file)
     ground_truth = load_ground_truth(ground_truth_file)
@@ -175,24 +223,39 @@ def perform_fault_localization_single_repo(bug_reports_file, ground_truth_file, 
         if commit_version:
             checkout_to_commit(commit_version, repo_path, git_branch)
 
-            # Index repository with BM25
-            bm25, file_list = index_codebase_with_bm25(codebase_dirs)
-
-            # Extract stack trace and keywords
+            # Extract stack trace
             stack_trace = extract_stack_trace(bug_report)
-            keywords = extract_keywords(bug_report)
+            # print("-------------------- stack trace (start) --------------------------")
+            # print(stack_trace)
+            # print("-------------------- stack trace (end) --------------------------")
+            
+            # Step 1: Filter files based on the stack trace
+            relevant_files = get_relevant_files(stack_trace, codebase_dirs)
+            # print("-------------------- relevant_files (start) --------------------------")
+            # print(relevant_files)
+            # print("-------------------- relevant_files (end) --------------------------")
 
-            # Rank files using BM25
-            ranked_files = rank_files_with_bm25(bm25, file_list, keywords, stack_trace, codebase_dirs)
+            # Step 2: Prepare the corpus for LLM
+            corpus = prepare_corpus_for_llm(relevant_files)
+            # print("-------------------- Corpus (start) --------------------------")
+            # print(corpus)
+            # print("-------------------- Corpus (end) --------------------------")
+
+            # Step 3: Perform semantic search and ranking with LLM
+            ranked_files = perform_semantic_search(bug_report, corpus)
+            # print("-------------------- ranked_files (start) --------------------------")
+            # print(ranked_files)
+            # print("-------------------- ranked_files (end) --------------------------")
 
             # Transform ranked files to ground truth format for comparison
             transformed_ranked_files = transform_ranked_files(ranked_files, codebase_dirs)
+            print("-------------------- transformed_ranked_files (start) --------------------------")
+            print(transformed_ranked_files)
+            print("-------------------- transformed_ranked_files (end) --------------------------")
             results.append((filename, transformed_ranked_files))
 
-            # Save to results file
-            save_ranked_files(filename, ranked_files, transformed_ranked_files, ground_truth)
-
     return evaluate_metrics(results, ground_truth, top_n_values)
+
 
 # Function to compare if a ranked file ends with any ground truth file
 def match_ranked_to_ground_truth(ranked_file, ground_truth_files):
@@ -219,8 +282,6 @@ def evaluate_metrics(results, ground_truth, top_n_values):
         relevant_within_top_n = {n: False for n in top_n_values}
 
         for rank, file in enumerate(ranked_files, start=1):
-            # if file in ground_truth_files:
-            # # Check if any ranked file ends with ground truth file (using endswith)
             if match_ranked_to_ground_truth(file, ground_truth_files):
                 relevant_found += 1
                 precision_sum += relevant_found / rank
@@ -235,8 +296,6 @@ def evaluate_metrics(results, ground_truth, top_n_values):
         metrics["MAP"].append(avg_precision)
 
     metrics["total_reports"] = total_reports
-    # Print Top@N for each repo
-    print(f"Final Top@N totals: {metrics['Top@N']}")
     return metrics
 
 # Aggregate results across multiple repositories
@@ -249,11 +308,6 @@ def evaluate_metrics(results, ground_truth, top_n_values):
 #         overall_metrics["MRR"] += sum(result["MRR"]) / len(result["MRR"]) * result["total_reports"]
 #         for n in top_n_values:
 #             overall_metrics["Top@N"][n] += result["Top@N"][n]
-
-#     # Print Top@N accross all repositories
-#     print("\nTotal Top@N counts across all repositories (raw counts):")
-#     for n in top_n_values:
-#         print(f"Top-{n}: {overall_metrics['Top@N'][n]}")
 
 #     overall_metrics["MAP"] /= total_reports
 #     overall_metrics["MRR"] /= total_reports
@@ -275,10 +329,8 @@ def aggregate_results(results_list, top_n_values):
 
     # Print Top@N accross all repositories
     print("\nTotal Top@N counts across all repositories (raw counts):")
-    top_n_counts = {}
     for n in top_n_values:
         print(f"Top-{n}: {overall_metrics['Top@N'][n]}")
-        top_n_counts[f"Top-{n}"] = overall_metrics['Top@N'][n]
 
     if total_reports > 0:
         overall_metrics["MAP"] /= total_reports
@@ -286,7 +338,8 @@ def aggregate_results(results_list, top_n_values):
         for n in top_n_values:
             overall_metrics["Top@N"][n] /= total_reports
 
-    return overall_metrics, top_n_counts
+    return overall_metrics
+
 
 # Main function to process all repositories
 def process_repositories(repositories, top_n_values):
@@ -302,40 +355,18 @@ def process_repositories(repositories, top_n_values):
         )
         results_list.append(result)
 
-    overall_metrics, top_n_counts = aggregate_results(results_list, top_n_values)
-
-    # Save overall result to the output file
-    results_file = f"results/BM25/{bug_report_folder}.json"
-    # Load existing results if the file exists
-    if os.path.exists(results_file):
-        with open(results_file, "r") as f:
-            try:
-                overall_results = json.load(f)
-            except json.JSONDecodeError:
-                overall_results = []
-    else:
-        overall_results = []
-
-    overall_results.append({
-        "bug_report_folder": bug_report_folder,
-        "overall_metrics": overall_metrics,
-        "top@N_value_counts": top_n_counts
-    })
-    # Save the updated results back to the file
-    with open(results_file, "w") as f:
-        json.dump(overall_results, f, indent=4)
-
-
+    overall_metrics = aggregate_results(results_list, top_n_values)
     print("\nOverall Metrics:")
     print(f"Mean Average Precision (MAP): {overall_metrics['MAP']}")
     print(f"Mean Reciprocal Rank (MRR): {overall_metrics['MRR']}")
     for n in top_n_values:
         print(f"Top-{n} Accuracy: {overall_metrics['Top@N'][n]}")
 
+
 # Example repository configuration and usage
 bug_report_folder = 'agentBased_bug_report_from_bugReport_sourceCode'
 repositories = [
-    {"bug_reports": f"{bug_report_folder}/Zookeeper.json", "ground_truth": "ground_truth/Zookeeper.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/zookeeper", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main"], "git_branch": 'master'},
+    {"bug_reports": f"test.json", "ground_truth": "ground_truth/Zookeeper.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/zookeeper", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main", "/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/test"], "git_branch": 'master'},
     # {"bug_reports": f"{bug_report_folder}/ActiveMQ.json", "ground_truth": "ground_truth/ActiveMQ.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/activemq", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-core/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-broker/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-karaf/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-kahadb-store/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-optional/src/main/java"], "git_branch": 'main'},
     # {"bug_reports": f"{bug_report_folder}/Hadoop.json", "ground_truth": "ground_truth/Hadoop.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/test/core", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java","/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-distcp/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-azure/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-auth/src/main/java"], "git_branch": 'trunk'},
     # {"bug_reports": f"{bug_report_folder}/HDFS.json", "ground_truth": "ground_truth/HDFS.json", "repo_path": "/Users/fahim/Desktop/PhD/Projects/hadoop", "codebase_dir": ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hdfs/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java"], "git_branch": 'trunk'},
