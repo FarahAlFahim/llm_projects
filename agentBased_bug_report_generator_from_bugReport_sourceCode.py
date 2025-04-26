@@ -22,141 +22,307 @@ def get_commit_version(creation_time, repo_path, git_branch):
 
 # Checkout to the specific commit version
 def checkout_to_commit(commit_version, repo_path, git_branch):
-    # Ensure working directory is clean (optional)
-    subprocess.run('git stash --include-untracked', shell=True, cwd=repo_path)
-    reset_command = f'git checkout {git_branch}'
-    subprocess.run(reset_command, shell=True, cwd=repo_path)
-    checkout_command = f'git checkout {commit_version}'
-    subprocess.run(checkout_command, shell=True, cwd=repo_path)
+    # Reset any local changes
+    subprocess.run('git reset --hard', shell=True, cwd=repo_path)
+    # Ensure a clean stash
+    subprocess.run('git stash push --include-untracked', shell=True, cwd=repo_path)
+    # Switch back to the main branch before checking out the commit
+    subprocess.run(f'git checkout {git_branch}', shell=True, cwd=repo_path)
+    # Ensure branch is up-to-date
+    subprocess.run('git pull', shell=True, cwd=repo_path)
+    # Checkout to the required commit
+    subprocess.run(f'git checkout {commit_version}', shell=True, cwd=repo_path)
+    # Drop the stash if it's no longer needed
+    subprocess.run('git stash drop', shell=True, cwd=repo_path)
 
 
+# Find method in codebase and return its source code along with class skeleton
+def find_method_with_javalang(method_name, codebase_dirs, repo_path):
+    global last_accessed_path
+    # if method_name in method_cache:
+    #     return method_cache[method_name]
 
-# Define tools (as before)
-@tool
-def parse_stack_trace(stack_trace):
-    """Parse stack traces directly provided in the input JSON."""
-    # print("------- Parse Stack Trace (start) ----------")
-    # print("input stack trace:", stack_trace)
-    # print(json.dumps(stack_trace))
-    # print("------- Parse Stack Trace (end) ----------")
-    return json.dumps(stack_trace)
+    if method_name and method_name[-1] == ".":
+        method_name = method_name[:-1]
 
+    if " " in method_name:
+        method_name_list = method_name.split(" ")
+        found_name = False
+        for method in method_name_list:
+            if method.count('.') >= 1: # at least 1 dot [might change to at least 2 dots]
+                if method.count('.') == 1 and (method[0] == "." or method[-1] == "."):
+                    continue
+                else:
+                    method_name = method.strip()
+                    if "(" in method_name:
+                        method_name = method_name.split("(")[0].strip()
+                    found_name = True
+                    break
+        if not found_name:
+            return "Invalid format. Please request a method using the fully qualified format: {package}.{class}.{method}"
 
-
-
-def find_method_with_javalang(full_identifier, codebase_dirs):
-    """
-    Locate the file corresponding to the full identifier, parse it, and extract the method.
-    """
-    # Handle extra information
-    if " " in full_identifier:
-      if full_identifier.split(" ")[0].count('.') > 2:
-        full_identifier = full_identifier.split(" ")[0].strip()
-
-    # Check if the method is already in the cache
-    if full_identifier in method_cache:
-        return method_cache[full_identifier]
+    if '.' in method_name:
+        method_name_only = method_name.split(".")[-1].strip()
+        class_method_name = ".".join(method_name.split(".")[-2:])
+        class_method_name_only = ".".join(method_name.split(".")[-2:])
+    else:
+        method_name_only = method_name
+        class_method_name = method_name
+        class_method_name_only = None
     
-    # Validate the full_identifier format
-    if not full_identifier or full_identifier.count('.') < 2:
-        return "Invalid format. Please request a method using the fully qualified format: {package}.{class}.{method}"
-
-    # Split the full identifier into class path and method name
-    *class_path, method_name = full_identifier.split('.')
-    class_name = class_path[-1] + ".java"
-    class_dir = os.path.join(*class_path[:-1])  # Exclude the class name
-
-    # Traverse through codebase directories to find the class file
-    for dir_path in codebase_dirs:
-        file_path = os.path.join(dir_path, class_dir, class_name)
-        print("------- find_method_with_javalang (start) ----------")
-        print(f"full_identifier: #######{full_identifier}#########")
-        print("File Path:", file_path)
-        if os.path.exists(file_path):
-            try:
-                with open(file_path, 'r') as f:
-                    content = f.read()
-                    # Parse the Java file with javalang
-                    tree = javalang.parse.parse(content)
-                    # print("Javalang Tree:", tree)
-                    for _, method in tree.filter(javalang.tree.MethodDeclaration):
-                        # Check if this is the requested method
-                        if method.name == method_name:
-                            print("method.name:", method.name)
-                            print("method.position:", method.position)
-                            # Extract full method code
-                            method_code = extract_method_code(content, method.position)
-                            # Cache the result for future lookups
-                            method_cache[full_identifier] = method_code
-                            # print("method_cache:", method_cache)
-                            print("------- find_method_with_javalang (end) ----------")
-                            return method_code
-            except Exception as e:
-                print(f"Error parsing file {file_path}: {e}")
-        else:
-            # Search full class
-            prev_class_name = class_name.split(".")[0].strip()
-            new_class_name = method_name.strip() + ".java"
-            file_path = os.path.join(dir_path, class_dir, prev_class_name, new_class_name)
-            if os.path.exists(file_path):
+    # Check method_cache first
+    for method_key, method_body in method_cache.items():
+        if method_key.endswith(f".{class_method_name}"):
+            class_path = "/".join(method_key.split(".")[:-1]) 
+            last_accessed_path = f"{repo_path}/{class_path}.java"
+            method_body = f"# You have already accessed this. Please avoid requesting it again. \n\n{method_body}"
+            return method_body
+        
+        
+    # Check class_skeleton_cache if it is asking for a class
+    for class_key, class_body in class_skeleton_cache.items():
+        if class_key.endswith(f".{method_name_only}"):
+            class_path = "/".join(class_key.split(".")) 
+            last_accessed_path = f"{repo_path}/{class_path}.java"
+            # Access full content
+            if os.path.exists(last_accessed_path):
                 try:
-                    with open(file_path, 'r') as f:
+                    with open(last_accessed_path, 'r') as f:
                         content = f.read()
-                        # full_identifier = full_identifier + "(source code of the class)"
-                        method_cache[full_identifier] = [content]
+                        method_cache[class_key] = [content]
                         return content
                 except Exception as e:
-                    print(f"Error parsing file {file_path}: {e}")
+                        print(f"Error extracting class content from {last_accessed_path}: {e}")
+            
+        
+    # If not in method_cache, search in source_code_dict
+    for method_key, method_body in source_code_dict.items():
+        if method_key.lower().endswith(f".{class_method_name}".lower()):
+            # Handle if class name is lower case
+            parts = method_key.split(".")
+            if parts[-2][0].islower():
+                parts[-2] = parts[-2][0].upper() + parts[-2][1:]
+                method_key = ".".join(parts)
+
+            class_path = "/".join(method_key.split(".")[:-1]) 
+            last_accessed_path = repo_path + '/' + class_path + '.java'
+            class_full_name = ".".join(method_key.split(".")[:-1])
+
+            class_skeleton = None
+            if class_full_name not in class_skeleton_cache:
+                if os.path.exists(last_accessed_path):
+                    try:
+                        with open(last_accessed_path, 'r') as f:
+                            content = f.read()
+                            tree = javalang.parse.parse(content)
+                            class_skeleton = extract_class_skeleton(tree)
+                            class_skeleton_cache[class_full_name] = class_skeleton
+                    except Exception as e:
+                        print(f"Error extracting class skeleton from {last_accessed_path}: {e}")
+
+            if class_skeleton:
+                method_cache[method_key] = method_body
+                method_body = f"# Class Skeleton: {class_skeleton}\n\n# Requested Method: {method_body}"
+            else:
+                method_cache[method_key] = method_body
+            return method_body
+        
     
-    # If not found, cache and return a default response
-    method_cache[full_identifier] = "[Method not found in codebase]"
+    # If not in source_code_dict, search method in the last_accessed_path
+    if method_name_only[0].islower() and last_accessed_path:
+        found_method = search_method_in_file(last_accessed_path, method_name_only, repo_path)
+        if found_method:
+            return found_method
+        else:
+            # The file path might be wrong, search the correct file path
+            if class_method_name_only:
+                class_name_only = class_method_name_only.split(".")[0]
+                correct_file_path = find_class_file(class_name_only, codebase_dirs)
+                if correct_file_path:
+                    found_method = search_method_in_file(correct_file_path, method_name_only, repo_path)
+                    if found_method:
+                        last_accessed_path = correct_file_path
+                        return found_method
+
+    
+    # If still not found, attempt caller method resolution
+    calling_method = resolve_caller_method(method_name_only, last_accessed_path)
+    if calling_method and last_accessed_path:
+        new_class_name = calling_method.split(".")[0]
+        # Replace the old class name in the path with the new one
+        dir_path, old_file_name = os.path.split(last_accessed_path)
+        new_file_path = os.path.join(dir_path, f"{new_class_name}.java")
+        # Search method in the new path
+        found_method = search_method_in_file(new_file_path, method_name_only, repo_path)
+        if found_method:
+            last_accessed_path = new_file_path
+            return found_method
+        
+    # If the requested method name starts with upper case, it requested full class
+    if method_name_only[0].isupper():
+        if last_accessed_path:
+            # Replace the old class name in the path with the new one
+            dir_path, old_file_name = os.path.split(last_accessed_path)
+            new_file_path = os.path.join(dir_path, f"{method_name_only}.java")
+            # Access full content
+            if os.path.exists(new_file_path):
+                try:
+                    with open(new_file_path, 'r') as f:
+                        content = f.read()
+                        new_class_key = new_file_path.replace(repo_path + '/', '').replace('/', '.')
+                        new_class_key = new_class_key[:-5]
+                        method_cache[new_class_key] = [content]
+                        last_accessed_path = new_file_path
+                        return content
+                except Exception as e:
+                        print(f"Error extracting class content from {new_file_path}: {e}")
+            else:
+                # If the file path is wrong, search for the correct file
+                correct_file_path = find_class_file(method_name_only, codebase_dirs)
+                if correct_file_path:
+                    try:
+                        with open(correct_file_path, 'r') as f:
+                            content = f.read()
+                            correct_class_key = correct_file_path.replace(repo_path + '/', '').replace('/', '.')
+                            correct_class_key = correct_class_key[:-5]
+                            method_cache[correct_class_key] = [content]
+                            last_accessed_path = correct_file_path
+                            return content
+                    except Exception as e:
+                        print(f"Error extracting class content from {correct_file_path}: {e}")
+                else:
+                    print(f"Class file {method_name_only}.java not found in the codebase.")
+
+
+    method_cache[method_name] = "[Method not found in codebase]"
     return "[Method not found in codebase]"
 
+
+def find_class_file(class_name, codebase_dirs):
+    """
+    Searches for a Java file with the given class name inside the provided codebase directories.
+    
+    :param class_name: The class name to search for (e.g., "QuorumVerifier").
+    :param codebase_dirs: List of directories to search in.
+    :return: Full path of the file if found, else None.
+    """
+    for base_dir in codebase_dirs:
+        for root, _, files in os.walk(base_dir):
+            for file in files:
+                if file == f"{class_name}.java":
+                    return os.path.join(root, file)
+    return None  # File not found
+
+
+# Search for a method inside a Java file
+def search_method_in_file(file_path, method_name, repo_path):
+    try:
+        with open(file_path, 'r') as f:
+            content = f.read()
+            tree = javalang.parse.parse(content)
+            class_name = file_path.replace(repo_path + '/', '').replace('/', '.')
+            class_name = class_name[:-5]
+            
+            class_skeleton = None
+            # Store class skeleton if not cached
+            if class_name not in class_skeleton_cache:
+                class_skeleton = extract_class_skeleton(tree)
+                class_skeleton_cache[class_name] = class_skeleton
+            
+            for _, method in tree.filter(javalang.tree.MethodDeclaration):
+                if method.name == method_name:
+                    found_method = extract_method_code(content, method.position)
+                    
+                    # Cache the method
+                    method_key = f"{class_name}.{method_name}"
+                    if class_skeleton:
+                        method_cache[method_key] = found_method
+                        found_method = f"# Class Skeleton: {class_skeleton}\n\n# Requested Method: {found_method}"
+                    else:
+                        method_cache[method_key] = found_method
+                    
+                    return found_method
+    except Exception as e:
+        print(f"Error parsing file {file_path}: {e}")
+    return None
+
+
+# Resolve the caller method for a given method
+def resolve_caller_method(method_name, file_path):
+    try:
+        with open(file_path, 'r') as f:
+            content = f.read()
+            tree = javalang.parse.parse(content)
+
+            for _, call in tree.filter(javalang.tree.MethodInvocation):
+                if call.member == method_name:
+                    if call.qualifier:
+                        if call.qualifier[0].isupper():  # Ensure it's a class name
+                            return f"{call.qualifier}.{method_name}"
+                        elif call.qualifier[0].islower():  # It's likely an object, resolve its class type
+                            class_type = resolve_variable_type_with_javalang(call.qualifier, tree)
+                            if class_type:
+                                return f"{class_type}.{method_name}"
+
+    except Exception as e:
+        print(f"Error resolving caller method in {file_path}: {e}")
+    return None
+
+
+def resolve_variable_type_with_javalang(variable_name, tree):
+    """
+    Resolves the class type of a given variable by analyzing the AST with javalang.
+    """
+    for path, local_var in tree.filter(javalang.tree.LocalVariableDeclaration):
+        for declarator in local_var.declarators:
+            if declarator.name == variable_name:
+                if hasattr(local_var.type, 'name'):
+                    return local_var.type.name
+    return None
+
+
+
+# Extract class skeleton
+def extract_class_skeleton(tree):
+    skeleton = []
+    for _, node in tree.filter(javalang.tree.ClassDeclaration):
+        skeleton.append(f"class {node.name} {{")
+        for method in node.methods:
+            params = ', '.join([p.type.name + ' ' + p.name for p in method.parameters])
+            skeleton.append(f"    {method.return_type.name if method.return_type else 'void'} {method.name}({params});")
+        skeleton.append("}")
+    return '\n'.join(skeleton)
+
 def extract_method_code(file_content, position):
-    """
-    Extract the full method code using the position provided by javalang.
-    """
     lines = file_content.splitlines()
-    start_line = position.line - 1  # javalang position is 1-indexed
+    start_line = position.line - 1
     method_lines = []
     open_braces = 0
-    found_method_start = False  # To track when the method body starts
+    found_method_start = False
 
     for i in range(start_line, len(lines)):
         line = lines[i]
         method_lines.append(line)
-
-        # Update brace counts
         open_braces += line.count('{')
         open_braces -= line.count('}')
-
-        # Check if we are inside the method body
         if '{' in line and not found_method_start:
             found_method_start = True
-
-        # Stop when all braces are balanced after method body starts
         if found_method_start and open_braces == 0:
             break
-
-    print("------- extract_method_code (start) ----------")
-    print("start_line:", start_line)
-    print("------- extract_method_code (end) ----------")
     return "\n".join(method_lines)
 
 
 
 
 @tool
-def provide_method(full_identifier_data):
+def provide_method(method_name):
     """
-    Provide the source code for a specific method given its full identifier.
-    Note:
-        Always request method names in the fully qualified format: {package}.{class}.{method}.
+    Provide the source code for a specific method given its name.
     """
-    full_identifier = full_identifier_data.strip().replace("'","").replace('"', '').replace("`","")
-    method_code = find_method_with_javalang(full_identifier, codebase_dirs)
+    method_name = method_name.strip().replace("'", "").replace('"', '').replace("`", "")
+    method_code = find_method_with_javalang(method_name, codebase_dirs, repo_path)
     print("------- provide_method (start) ----------")
-    print(f"Method '{full_identifier}' provided.")
+    print(f"Method '{method_name}' provided.")
     # print(method_code)
     print("------- provide_method (end) ----------")
     return method_code
@@ -186,15 +352,12 @@ def split_into_chunks(text, max_tokens=100000, model="gpt-4o-mini"):
 def analyze_method_and_request_next(input_data):
     """
     Analyze the provided method and determine if further methods are required.
-    Returns the next method to request or observations so far if no further methods are needed.
-    Note:
-        Always request method names in the fully qualified format: {package}.{class}.{method}.
     """
     # Normalize input_data
     input_data = input_data.strip().replace("'","").replace('"', '').replace("`","")
     
     # Retrieve the method source code using the cache-aware dynamic retrieval
-    method_body = find_method_with_javalang(input_data, codebase_dirs)
+    method_body = find_method_with_javalang(input_data, codebase_dirs, repo_path)
     
     print("------- analyze_method_and_request_next (start) ----------")
     print(f"Method '{input_data}' provided.")
@@ -205,32 +368,6 @@ def analyze_method_and_request_next(input_data):
     # print("------- analyze_method_and_request_next (end) ----------")
     
     # Construct the LLM prompt
-    # template = """
-    # You are analyzing a method from the call dependency of stack traces of bug report with the goal of diagnosing the root cause. 
-
-
-    # # You are given the stack traces of the bug report below:
-    # {stack_trace}
-
-
-    # # You are given the agent based chat history below:
-    # {chat_history}
-    
-    
-    
-    # # You are given the current method below to analyze with the goal of diagnosing the root cause:
-    # Method: {input_data}
-    # Source Code:
-    # {method_body}
-
-    
-    # If this method calls any other methods not in the stack trace, identify one such method and return its name.
-    # Always request method names in the fully qualified format: 
-    # {{package}}.{{class}}.{{method}}
-
-    # If no further methods are needed, respond with observations so far based on analyzed methods.
-    # """
-
     template = """
     Analyze the source code of a method from the call dependency of stack traces and request the next methods that are reachable from the call dependency or provide observations based on the analysis.
 
@@ -289,6 +426,7 @@ def analyze_method_and_request_next(input_data):
     {method_body}
 
     """
+
 
     # Handle Max Token limit exceed cases
     # Format the full prompt
@@ -399,6 +537,10 @@ def generate_final_bug_report(agent_based_source_code_analysis, dev_written_bug_
 
 
 
+    # You are given the agent based chat history below:
+    {chat_history}
+    
+    
     # You are given the insights derived from agent-based analysis of source code methods below:
     {agent_based_source_code_analysis}
 
@@ -410,7 +552,7 @@ def generate_final_bug_report(agent_based_source_code_analysis, dev_written_bug_
     llm = ChatOpenAI(model='gpt-4o-mini', temperature = 0)
 
     chain = LLMChain(llm=llm, prompt=prompt)
-    return chain.run({'bug_report': dev_written_bug_report, 'agent_based_source_code_analysis': agent_based_source_code_analysis})
+    return chain.run({'bug_report': dev_written_bug_report, 'chat_history': chat_history, 'agent_based_source_code_analysis': agent_based_source_code_analysis})
 
 # Tools for the agent
 tools = [
@@ -423,42 +565,20 @@ tools = [
 # Initialize LLM
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-# Define the system prompt
-# system_prompt = """
-# You are an intelligent assistant specialized in analyzing stack traces and source code to generate improved bug reports. You have access to three tools:
-
-# 1. **parse_stack_trace**: Use this tool to parse and extract information from stack traces.
-# 2. **provide_method**: Use this tool to request specific methods from the source code based on the stack trace or other analysis.
-# 3. **analyze_method_and_request_next**: Use this tool to analyze a provided method. If further methods are needed, explicitly request them using this tool.
-
-# ### Instructions
-# Always follow this workflow:
-
-# 1. **Parsing**: Start by invoking `parse_stack_trace` if stack trace analysis is needed.
-# 2. **Method Requests**:
-#    - Use the `provide_method` tool to obtain a specific method from the source code.
-#    - Once a method is provided, **immediately pass it to the `analyze_method_and_request_next` tool** for analysis.
-# 3. **Analysis and Alternation**:
-#    - After analyzing the method with `analyze_method_and_request_next`, determine if additional methods are needed:
-#      - If more methods are required, return to step 2 and invoke `provide_method` again.
-#      - If no further methods are needed, complete the analysis and provide a conclusion.
-# 4. **No Consecutive Usage**: Do not invoke `provide_method` consecutively without analyzing the last provided method. Similarly, do not repeatedly invoke `analyze_method_and_request_next` without requesting the next method if more analysis is required.
-
-# ### Key Behaviors
-# - Alternate between `provide_method` and `analyze_method_and_request_next` until the analysis is complete.
-# - Use logical reasoning to decide when to conclude the process, ensuring all necessary methods have been analyzed.
-# - Strictly adhere to the workflow to ensure a systematic and efficient analysis process.
-
-# """
 
 # System Prompt for two tools
 system_prompt = """
-Analyze stack traces using an agent-based system and iteratively request and analyze methods from the source code until a clear diagnosis of the root cause is achieved.
+You are an intelligent assistant specialized in analyzing stack traces and source code to diagnose the root cause of issues. 
+Your goal is to iteratively analyze methods, extract insights, and ensure efficient debugging by avoiding redundant method requests.
 
 # Guidelines
 - **Tools Available**:
   - `provide_method`: Retrieves methods from the source code based on the call dependency of stack traces.
   - `analyze_method_and_request_next`: Analyzes a method and requests additional methods from the call dependency if needed.
+- **Tracking Requested Methods**:
+  - Keep track of all previously requested methods.
+  - **Do not request a method again if it has already been retrieved and analyzed**.
+  - If additional analysis is needed, refer to previous findings instead of making redundant requests.
 - **Iterative Process**:
   1. Start by analyzing the stack traces to identify the first method to request.
   2. Use `provide_method` to obtain the required method in fully qualified format (`{{package}}.{{class}}.{{method}}`).
@@ -494,6 +614,7 @@ Analyze stack traces using an agent-based system and iteratively request and ana
 
 """
 
+
 # Initialize the agent
 agent_executor = initialize_agent(
     tools=tools,
@@ -507,49 +628,49 @@ agent_executor = initialize_agent(
 # Read input and prepare output data
 input_file = "test.json"
 output_file = "test_output.json"
-# input_file = "source_code_data/Hive.json"
-# output_file = "agentBased_bug_report_from_bugReport_sourceCode/Hive.json"
+# input_file = "source_code_data/method_list/Hive.json"
+# output_file = "agentBased_bug_report_from_modified_bugReport_sourceCode/Hive.json"
 
 # Path to source code and Git repository
 # For Zookeeper.json
 # repo_path = "/Users/fahim/Desktop/PhD/Projects/zookeeper"
-# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main", "/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/test"]
+# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main"]
 # git_branch = "master"
 
 # For ActiveMQ.json
 # repo_path = "/Users/fahim/Desktop/PhD/Projects/activemq"
-# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-core/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-broker/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-karaf/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-kahadb-store/src/main/java", "/Users/fahim/Desktop/PhD/Projects/activemq/activemq-optional/src/main/java"]
+# codebase_dirs = ['/Users/fahim/Desktop/PhD/Projects/activemq/activemq-broker/src/main/java', '/Users/fahim/Desktop/PhD/Projects/activemq/activemq-client/src/main/java', '/Users/fahim/Desktop/PhD/Projects/activemq/activemq-core/src/main/java', '/Users/fahim/Desktop/PhD/Projects/activemq/activemq-jdbc-store/src/main/java', '/Users/fahim/Desktop/PhD/Projects/activemq/activemq-kahadb-store/src/main/java', '/Users/fahim/Desktop/PhD/Projects/activemq/activemq-karaf/src/main/java', '/Users/fahim/Desktop/PhD/Projects/activemq/activemq-optional/src/main/java', '/Users/fahim/Desktop/PhD/Projects/activemq/kahadb/src/main/java']
 # git_branch = "main"
 
 # For Hadoop.json
 # repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
-# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/test/core", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java","/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-distcp/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-azure/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-auth/src/main/java"]
+# codebase_dirs = ['/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-auth/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-kms/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-app/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-core/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-aws/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-azure/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-distcp/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/src/java']
 # git_branch = "trunk"
 
 # For HDFS.json
 # repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
-# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hdfs/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java"]
+# codebase_dirs = ['/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-nfs/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs-client/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs-nfs/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hdfs/src/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/src/core', '/Users/fahim/Desktop/PhD/Projects/hadoop/src/hdfs']
 # git_branch = "trunk"
 
 # For Storm.json
 # repo_path = "/Users/fahim/Desktop/PhD/Projects/storm"
-# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/storm/storm-client/src/jvm", "/Users/fahim/Desktop/PhD/Projects/storm/storm-server/src/main/java", "/Users/fahim/Desktop/PhD/Projects/storm/storm-core/src/jvm", "/Users/fahim/Desktop/PhD/Projects/storm/external/storm-kafka-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/storm/external/storm-hdfs/src/main/java"]
+# codebase_dirs = ['/Users/fahim/Desktop/PhD/Projects/storm/examples/storm-loadgen/src/main/java', '/Users/fahim/Desktop/PhD/Projects/storm/external/storm-hdfs-blobstore/src/main/java', '/Users/fahim/Desktop/PhD/Projects/storm/external/storm-hdfs/src/main/java', '/Users/fahim/Desktop/PhD/Projects/storm/external/storm-kafka-client/src/main/java', '/Users/fahim/Desktop/PhD/Projects/storm/storm-client/src/jvm', '/Users/fahim/Desktop/PhD/Projects/storm/storm-core/src/jvm', '/Users/fahim/Desktop/PhD/Projects/storm/storm-server/src/main/java', '/Users/fahim/Desktop/PhD/Projects/storm/storm-webapp/src/main/java']
 # git_branch = "master"
 
 # For MAPREDUCE.json
 # repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
-# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-core/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-app/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-app/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-web-proxy/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/common/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/mapreduce/src/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/mapreduce/src/test/mapred", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-jobclient/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-hdfs-project/hadoop-hdfs/src/main/java"]
+# codebase_dirs = ['/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-app/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-core/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-hs/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-jobclient/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-api/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-web-proxy/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/src/contrib/gridmix/src/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/src/tools', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-streaming/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/mapreduce/src/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/src/contrib/fairscheduler/src/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/src/core', '/Users/fahim/Desktop/PhD/Projects/hadoop/src/examples', '/Users/fahim/Desktop/PhD/Projects/hadoop/src/mapred']
 # git_branch = "trunk"
 
 # For YARN.json
-# repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
-# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-applicationhistoryservice/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-jobclient/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-gridmix/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-web-proxy/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-registry/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-tests/src/test/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-applications/hadoop-yarn-services/hadoop-yarn-services-core/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-client/src/test/java"]
-# git_branch = "trunk"
+repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
+codebase_dirs = ['/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-app/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-sls/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-applications/hadoop-yarn-applications-distributedshell/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-applications/hadoop-yarn-applications-unmanaged-am-launcher/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-applications/hadoop-yarn-services/hadoop-yarn-services-core/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-client/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-registry/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-applicationhistoryservice/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-web-proxy/src/main/java']
+git_branch = "trunk"
 
 # For Hive.json
-repo_path = "/Users/fahim/Desktop/PhD/Projects/hive"
-codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/hive/shims/0.23/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/webhcat/svr/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/metastore/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/metastore/src/gen/thrift/gen-javabean", "/Users/fahim/Desktop/PhD/Projects/hive/ql/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/serde/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/spark-client/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/service/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/shims/common/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/contrib/src/java", "/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/core/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/hcatalog-pig-adapter/src/main/java", "/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/hcatalog-pig-adapter/src/test/java"]
-git_branch = "master"
+# repo_path = "/Users/fahim/Desktop/PhD/Projects/hive"
+# codebase_dirs = ['/Users/fahim/Desktop/PhD/Projects/hive/common/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/hbase-handler/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/core/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/server-extensions/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/webhcat/svr/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/metastore/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/orc/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/ql/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/serde/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/service/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/0/20S/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/0/23/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/src/0/20/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/src/common-secure/java', '/Users/fahim/Desktop/PhD/Projects/hive/spark-client/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/standalone-metastore/src/main/java']
+# git_branch = "master"
 
 with open(input_file, "r") as file:
     source_code_data = json.load(file)
@@ -572,6 +693,8 @@ for entry in source_code_data:
 
     # Cache for storing method definitions
     method_cache = {}
+    class_skeleton_cache = {}
+    last_accessed_path = None
 
     # Initialize an empty history object
     chat_history = []
@@ -648,6 +771,7 @@ for entry in source_code_data:
         "filename": filename,
         "creation_time": creation_time,
         "analyzed_methods": method_cache,
+        "class_skeleton_cache": class_skeleton_cache,
         "chat_history": chat_history,
         "bug_report": bug_report
     })
