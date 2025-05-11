@@ -39,6 +39,7 @@ def checkout_to_commit(commit_version, repo_path, git_branch):
 # Find method in codebase and return its source code along with class skeleton
 def find_method_with_javalang(method_name, codebase_dirs, repo_path):
     global last_accessed_path
+    global method_extracted_successfully
     # if method_name in method_cache:
     #     return method_cache[method_name]
 
@@ -60,11 +61,24 @@ def find_method_with_javalang(method_name, codebase_dirs, repo_path):
                     break
         if not found_name:
             return "Invalid format. Please request a method using the fully qualified format: {package}.{class}.{method}"
+        
+    if method_name.endswith("()"):
+        method_name = method_name.replace("()", "")
+
+    if method_name.endswith(")"):
+        st_index = method_name.find("(")
+        method_name = method_name[:st_index]
 
     if '.' in method_name:
         method_name_only = method_name.split(".")[-1].strip()
         class_method_name = ".".join(method_name.split(".")[-2:])
         class_method_name_only = ".".join(method_name.split(".")[-2:])
+        if '$' in class_method_name:
+            inner_start_index = class_method_name.find('$')
+            dot_index = class_method_name.find('.')
+            inner_class_name = class_method_name[inner_start_index:dot_index]
+            class_method_name = class_method_name.replace(inner_class_name, "")
+            class_method_name_only = class_method_name
     else:
         method_name_only = method_name
         class_method_name = method_name
@@ -90,6 +104,7 @@ def find_method_with_javalang(method_name, codebase_dirs, repo_path):
                     with open(last_accessed_path, 'r') as f:
                         content = f.read()
                         method_cache[class_key] = [content]
+                        method_extracted_successfully = True
                         return content
                 except Exception as e:
                         print(f"Error extracting class content from {last_accessed_path}: {e}")
@@ -125,6 +140,40 @@ def find_method_with_javalang(method_name, codebase_dirs, repo_path):
                 method_body = f"# Class Skeleton: {class_skeleton}\n\n# Requested Method: {method_body}"
             else:
                 method_cache[method_key] = method_body
+            method_extracted_successfully = True
+            return method_body
+        
+    # If not in method_cache, search in source_code_dict [if {class}.{method} not found, then method_name only]
+    for method_key, method_body in source_code_dict.items():
+        if method_key.lower().endswith(f".{method_name_only}".lower()):
+            # Handle if class name is lower case
+            parts = method_key.split(".")
+            if parts[-2][0].islower():
+                parts[-2] = parts[-2][0].upper() + parts[-2][1:]
+                method_key = ".".join(parts)
+
+            class_path = "/".join(method_key.split(".")[:-1]) 
+            last_accessed_path = repo_path + '/' + class_path + '.java'
+            class_full_name = ".".join(method_key.split(".")[:-1])
+
+            class_skeleton = None
+            if class_full_name not in class_skeleton_cache:
+                if os.path.exists(last_accessed_path):
+                    try:
+                        with open(last_accessed_path, 'r') as f:
+                            content = f.read()
+                            tree = javalang.parse.parse(content)
+                            class_skeleton = extract_class_skeleton(tree)
+                            class_skeleton_cache[class_full_name] = class_skeleton
+                    except Exception as e:
+                        print(f"Error extracting class skeleton from {last_accessed_path}: {e}")
+
+            if class_skeleton:
+                method_cache[method_key] = method_body
+                method_body = f"# Class Skeleton: {class_skeleton}\n\n# Requested Method: {method_body}"
+            else:
+                method_cache[method_key] = method_body
+            method_extracted_successfully = True
             return method_body
         
     
@@ -172,6 +221,7 @@ def find_method_with_javalang(method_name, codebase_dirs, repo_path):
                         new_class_key = new_file_path.replace(repo_path + '/', '').replace('/', '.')
                         new_class_key = new_class_key[:-5]
                         method_cache[new_class_key] = [content]
+                        method_extracted_successfully = True
                         last_accessed_path = new_file_path
                         return content
                 except Exception as e:
@@ -186,6 +236,7 @@ def find_method_with_javalang(method_name, codebase_dirs, repo_path):
                             correct_class_key = correct_file_path.replace(repo_path + '/', '').replace('/', '.')
                             correct_class_key = correct_class_key[:-5]
                             method_cache[correct_class_key] = [content]
+                            method_extracted_successfully = True
                             last_accessed_path = correct_file_path
                             return content
                     except Exception as e:
@@ -216,6 +267,7 @@ def find_class_file(class_name, codebase_dirs):
 
 # Search for a method inside a Java file
 def search_method_in_file(file_path, method_name, repo_path):
+    global method_extracted_successfully
     try:
         with open(file_path, 'r') as f:
             content = f.read()
@@ -240,7 +292,7 @@ def search_method_in_file(file_path, method_name, repo_path):
                         found_method = f"# Class Skeleton: {class_skeleton}\n\n# Requested Method: {found_method}"
                     else:
                         method_cache[method_key] = found_method
-                    
+                    method_extracted_successfully = True
                     return found_method
     except Exception as e:
         print(f"Error parsing file {file_path}: {e}")
@@ -520,7 +572,7 @@ def analyze_method_and_request_next(input_data):
 
 
 
-def generate_final_bug_report(agent_based_source_code_analysis, stack_trace):
+def generate_final_bug_report(method_cache, stack_trace):
     """Generate the final bug report based on analyzed methods."""
     # print("------------------- generate final bug report (start) --------------")
     # print("stack_trace:", stack_trace)
@@ -528,66 +580,93 @@ def generate_final_bug_report(agent_based_source_code_analysis, stack_trace):
     # print("current_source_code_dict:", current_source_code_dict)
     # print("------------------- generate final bug report (end) --------------")
 
-    template = """
-    Generate a bug report with the goal of diagnosing the root cause, based on provided stack traces and agent-based analysis of source code methods.
+    template = '''
+    Generate a bug report with the goal of diagnosing the root cause.
 
-    # Guidelines
-    - Use stack traces to extract key details such as error type, location, and involved methods or files.
-    - Leverage insights from agent-based analysis to identify root causes, including any interdependent method calls or contributing factors.
-    - Clearly describe the issue and provide actionable debugging steps for resolution.
-    - Ensure the report is detailed, accurate, and presented in JSON format.
+    You are a professional assistant analyzing stack traces. You will be provided with three key input data sources:
+    1. **Raw Stack Traces**: These contain error messages and exceptions.
+    2. **Agent-Based Chat History**: Logs of source code method analysis, showing methods requested by the agent and its reasoning.
+    3. **Source Code Methods Analyzed by the Agent**: Methods referenced in the stack traces or their dependent methods.
 
-    # Steps
-    1. **Parse Stack Traces**:
-    - Extract and analyze critical elements like error messages, line numbers, and method calls.
-    - Identify the initial point of failure and trace subsequent calls.
-    2. **Incorporate Agent-Based Analysis**:
-    - Add details about relevant methods, their roles, and dependencies in the source code.
-    - Highlight specific methods or lines contributing to the issue.
-    3. **Diagnose the Root Cause**:
-    - Combine stack trace data and agent insights to deduce the root cause of the error.
-    - Provide reasoning that connects observed behavior to the diagnosed issue.
-    4. **Construct the Bug Report**:
-    - Summarize the issue with a clear title and description.
-    - Detail steps to reproduce, expected behavior, observed behavior, and actionable suggestions for resolution.
-    5. **Format the Output**:
-    - Compile the bug report into a well-structured JSON format.
+    ## Steps
 
-    # Output Format
-    Output the bug report in the following JSON structure:
+    1. **Analyze the Stack Trace**:  
+    - Identify key error messages and exceptions.  
+    - Determine which methods or classes are involved.  
+
+    2. **Correlate with Agent-Based Chat History**:  
+    - Extract the agent’s reasoning behind method requests.  
+    - Identify patterns in how the agent analyzed methods.  
+
+    3. **Examine the Source Code Methods**:  
+    - Review the actual implementations of the methods mentioned in the stack trace and chat history.  
+    - Look for logical errors, incorrect dependencies, or improper exception handling.  
+    - Trace the flow of execution using method dependencies.  
+
+    4. **Determine the Root Cause**:  
+    - Identify the primary source of the bug based on stack trace information and source code examination.  
+    - Avoid assumptions—base your findings solely on provided data.  
+
+    5. **Generate a Bug Report**:  
+    - Populate each field in the bug report using your analysis:  
+        - **Title**: Concise description of the bug.  
+        - **Description**: Summary of findings.  
+        - **Root Cause**: Clear explanation of what is causing the issue.  
+        - **Steps to Reproduce**: How the issue can be replicated.  
+        - **Expected Behavior**: What should happen instead.  
+        - **Observed Behavior**: The actual incorrect behavior.  
+        - **Suggestions**: Possible directions for fixing the issue.  
+        - **Problem Location**: Specific file/class/method responsible for the issue.  
+        - **Possible Fix**: If a solution is evident, provide a suggestion.  
+
+    ## Output Format
+
+    Provide the bug report in **JSON format** with the following structure:
+
     ```json
     {{
-        "Title": "string",
-        "Description": "string",
+        "Title": "<Bug Title>",
+        "Description": "<Detailed Description based on analysis>",
         "StackTrace": "string or array of stack trace lines",
-        "RootCause": "string or null",
-        "StepsToReproduce": ["string", "..."] or null,
-        "ExpectedBehavior": "string",
-        "ObservedBehavior": "string",
-        "Suggestions": "string or null",
+        "RootCause": "<Explanation of the root cause>",
+        "StepsToReproduce": ["<Step-by-step reproduction guide>"] or null,
+        "ExpectedBehavior": "<Correct system behavior>",
+        "ObservedBehavior": "<Actual faulty behavior>",
+        "Suggestions": "<Possible fixes or mitigation steps>",
         "problem_location": {{
             "files": ["file1.java", "file2.java"],
             "classes": ["com.example.ClassA", "com.example.ClassB"],
             "methods": ["ClassA.methodX", "ClassB.methodY"]
         }},
-        "possible_fix": "[Suggested resolution, including code changes if necessary.]"
+        "possible_fix": "[Proposed code fix or strategy]"
     }}
 
 
-    # You are given the stack traces below:
+    ### **Notes**  
+    - Do **not** hallucinate information—only use provided data.
+    - Follow a **structured reasoning approach** before reaching conclusions.
+    - Ensure all fields are **accurate and complete** based on available inputs.
+    - Maintain **clarity and conciseness** in all explanations.
+
+
+
+
+    # You are given the **Raw Stack Traces** below:
+
     {stack_trace}
 
 
-    
-    # You are given the agent based chat history below:
+
+    # You are given the **Agent-Based Chat History** below:
+
     {chat_history}
 
 
 
-    # You are given the insights derived from agent-based analysis of source code methods below:
-    {agent_based_source_code_analysis}
+    # You are given the **Source Code Methods Analyzed by the Agent** below:
 
-    """
+    {analyzed_methods}
+    '''
 
 
     
@@ -595,7 +674,10 @@ def generate_final_bug_report(agent_based_source_code_analysis, stack_trace):
     llm = ChatOpenAI(model='gpt-4o-mini', temperature = 0)
 
     chain = LLMChain(llm=llm, prompt=prompt)
-    return chain.run({'stack_trace': stack_trace, 'chat_history': chat_history, 'agent_based_source_code_analysis': agent_based_source_code_analysis})
+    if method_extracted_successfully:
+        return chain.run({'stack_trace': stack_trace, 'chat_history': chat_history, 'analyzed_methods': method_cache})
+    else:
+        return chain.run({'stack_trace': stack_trace, 'chat_history': chat_history, 'analyzed_methods': source_code_dict})
 
 # Tools for the agent
 tools = [
@@ -670,13 +752,13 @@ agent_executor = initialize_agent(
 # Read input and prepare output data
 input_file = "test.json"
 output_file = "test_output.json"
-# input_file = "source_code_data/method_list/YARN.json"
-# output_file = "agentBased_bug_report_from_stackTrace_sourceCode/YARN.json"
+# input_file = "source_code_data/method_list/Hive.json"
+# output_file = "agentBased_bug_report_from_stackTrace_sourceCode/Hive.json"
 
 # Path to source code and Git repository
 # For Zookeeper.json
 # repo_path = "/Users/fahim/Desktop/PhD/Projects/zookeeper"
-# codebase_dirs = ["/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main"]
+# codebase_dirs = ['/Users/fahim/Desktop/PhD/Projects/zookeeper/src/java/main']
 # git_branch = "master"
 
 # For ActiveMQ.json
@@ -705,14 +787,14 @@ output_file = "test_output.json"
 # git_branch = "trunk"
 
 # For YARN.json
-repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
-codebase_dirs = ['/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-app/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-sls/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-applications/hadoop-yarn-applications-distributedshell/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-applications/hadoop-yarn-applications-unmanaged-am-launcher/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-applications/hadoop-yarn-services/hadoop-yarn-services-core/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-client/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-registry/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-applicationhistoryservice/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-web-proxy/src/main/java']
-git_branch = "trunk"
+# repo_path = "/Users/fahim/Desktop/PhD/Projects/hadoop"
+# codebase_dirs = ['/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-common-project/hadoop-common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-app/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-tools/hadoop-sls/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-api/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-applications/hadoop-yarn-applications-distributedshell/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-applications/hadoop-yarn-applications-unmanaged-am-launcher/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-applications/hadoop-yarn-services/hadoop-yarn-services-core/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-client/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-registry/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-applicationhistoryservice/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-resourcemanager/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-timelineservice/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-web-proxy/src/main/java']
+# git_branch = "trunk"
 
 # For Hive.json
-# repo_path = "/Users/fahim/Desktop/PhD/Projects/hive"
-# codebase_dirs = ['/Users/fahim/Desktop/PhD/Projects/hive/common/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/hbase-handler/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/core/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/server-extensions/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/webhcat/svr/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/metastore/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/orc/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/ql/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/serde/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/service/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/0/20S/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/0/23/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/src/0/20/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/src/common-secure/java', '/Users/fahim/Desktop/PhD/Projects/hive/spark-client/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/standalone-metastore/src/main/java']
-# git_branch = "master"
+repo_path = "/Users/fahim/Desktop/PhD/Projects/hive"
+codebase_dirs = ['/Users/fahim/Desktop/PhD/Projects/hive/common/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/hbase-handler/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/core/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/server-extensions/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/hcatalog/webhcat/svr/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/metastore/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/orc/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/ql/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/serde/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/service/src/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/0/20S/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/0/23/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/common/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/src/0/20/java', '/Users/fahim/Desktop/PhD/Projects/hive/shims/src/common-secure/java', '/Users/fahim/Desktop/PhD/Projects/hive/spark-client/src/main/java', '/Users/fahim/Desktop/PhD/Projects/hive/standalone-metastore/src/main/java']
+git_branch = "master"
 
 with open(input_file, "r") as file:
     source_code_data = json.load(file)
@@ -736,6 +818,8 @@ for entry in source_code_data:
     method_cache = {}
     class_skeleton_cache = {}
     last_accessed_path = None
+    method_extracted_successfully = False # True if method requested by agent can be extracted
+
 
     # Initialize an empty history object
     chat_history = []
@@ -784,7 +868,7 @@ for entry in source_code_data:
     # Step 3: Generate the final bug report
     try:
         # Manually trigger the final bug report generation
-        final_bug_report = generate_final_bug_report(agent_based_source_code_analysis, stack_trace)
+        final_bug_report = generate_final_bug_report(method_cache, stack_trace)
         print("####################################")
         print("Final bug report called manually:", final_bug_report)
         # print("method_cache:", method_cache)
@@ -815,6 +899,7 @@ for entry in source_code_data:
         "analyzed_methods": method_cache,
         "class_skeleton_cache": class_skeleton_cache,
         "chat_history": chat_history,
+        "method_extracted_successfully": method_extracted_successfully,
         "bug_report": bug_report
     })
 
